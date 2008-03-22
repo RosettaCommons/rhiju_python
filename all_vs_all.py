@@ -3,8 +3,8 @@
 from sys import argv,stdout,stderr
 from os import system
 import string
-infilelist = argv[1]
 
+infilelist = argv[1]
 
 rmsd_threshold = 8.0
 if argv.count('-R'):
@@ -27,10 +27,12 @@ for i in range(len(lines)):
         line2 = lines[j]
 
         command = '/work/rhiju/python/superimpose.py %s %s  -R %d > blah.pdb 2> blah.err' % (line1,line2,rmsd_threshold)
-        #print(command)
+#        print(command)
         system(command)
 
         superimposeline = open( 'blah.err', 'r').readlines()[-1]
+ #       print superimposeline
+
         fit_threshold = float( string.split(superimposeline)[3] )
         maxsub = int( string.split(superimposeline)[5] )
         if fit_threshold > rmsd_threshold:

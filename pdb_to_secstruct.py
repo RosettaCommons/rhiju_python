@@ -7,23 +7,44 @@ import string
 import sys
 from os import popen,system
 import pdb
+from os.path import basename
 
-if len(sys.argv) !=3:
+if len(sys.argv) < 2:
     print '\n'+'-'*75
     print 'Usage: %s <pdb> <chain> > <coords_file>'
     print '-'*75+'\n\n'
     assert 0==1
 
 pdb_file = sys.argv[1]
-chain = sys.argv[2]
+
+chain_defined = 0
+chain = ''
+if len( sys.argv ) > 2:
+    chain = sys.argv[2]
+    chain_defined = 1
 
 if chain == '_' or chain == '-':
     chain = ' '
 
 
-lines = popen('/users/pbradley/dssp '+pdb_file+' | grep "RESIDUE AA" -A10000 | '+\
-              ' grep "^.[ 0-9][ 0-9][ 0-9][ 0-9]......'+\
-              chain+'"').readlines()
+gzipped = 0
+if (pdb_file[-3:]=='.gz'):
+
+    copy_pdb_file = '~/'+basename(pdb_file)
+
+    system( 'cp -rf '+pdb_file+' '+copy_pdb_file )
+    system( 'gunzip -f '+copy_pdb_file )
+    pdb_file = copy_pdb_file.replace('.gz','')
+    gzipped = 1
+
+
+if chain_defined:
+    lines = popen('~rhiju/dssp '+pdb_file+' | grep "RESIDUE AA" -A10000 | '+\
+                  ' grep "^.[ 0-9][ 0-9][ 0-9][ 0-9]......'+\
+                  chain+'"').readlines()
+else:
+    lines = popen('~rhiju/dssp '+pdb_file+' | grep "RESIDUE AA" -A10000 | '+\
+                  ' grep "^.[ 0-9][ 0-9][ 0-9][ 0-9]"' ).readlines()
 
 lowercase = list('abcdefghijklmnopqrstuvwxyz')
 
@@ -52,3 +73,7 @@ assert len(ss3) == len(seq)
 
 
 print ss3
+
+
+if (gzipped):
+    'rm -rf '+pdb_file

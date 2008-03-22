@@ -101,7 +101,8 @@ def ssystem( cmd, timeout ):
 
 def whips_by_usage( MAX_LOAD = 1000 ):
     timeout = 10
-    hosts = map(lambda x:'whip%02d'%x, range(1,12) )
+    hosts = map(lambda x:'whip%02d'%x, [1,2,3,4,5,6,7,8,9,11,12,13,14,15])
+
 
     host_list = []
     for host in hosts:

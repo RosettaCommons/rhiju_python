@@ -207,7 +207,7 @@ for phaser_pdbfile in phaser_pdbfiles:
                 #            print shift[i]
 
 
-            MAXDIST2 = 16.0
+            MAXDIST2 = 4.0
             goodcount = 0
             totcount  = 0
             for j in range( numres ):

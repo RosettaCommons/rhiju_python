@@ -36,13 +36,15 @@ def Read_fragments(fragment_file):
 # 1di1 A   231 V H  -66.832  -46.265  179.757
 
     base = string.split(fragment_file,'/')[-1]
-    size = int(base[-14:-12])
-    sys.stderr.write('Reading fragment file: %s size= %d\n'\
-                     %(fragment_file,size))
     if fragment_file[-3:] == '.gz':
-        data = popen('gzip -dc '+fragment_file)
+        data = popen('zcat '+fragment_file)
+        size = int(base[-17:-15])
     else:
         data = open(fragment_file,'r')
+        size = int(base[-14:-12])
+    sys.stderr.write('Reading fragment file: %s size= %d\n'\
+                     %(fragment_file,size))
+
     line = data.readline()
     prev = (-1,-1)
     ss_count = {}

@@ -19,6 +19,12 @@ if len(argv)<2:
     Help()
 
 
+try:
+    NSTRUCT = int(argv[-1])
+    del(argv[-1])
+except:
+    NSTRUCT = 9999999
+
 infiles = argv[1]
 clusternums = argv[2:]
 

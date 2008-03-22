@@ -57,8 +57,10 @@ else:
 
     big_count = 0
 
-    MF_EXE = '/users/pbradley/nnmake/08.02.05/nnmake/make_fragments_whip.pl'
-    NN_EXE = '/users/pbradley/nnmake/08.02.05/nnmake/pNNMAKE.gnu'
+#    MF_EXE = '/users/pbradley/nnmake/08.02.05/nnmake/make_fragments_whip.pl'
+#    NN_EXE = '/users/pbradley/nnmake/08.02.05/nnmake/pNNMAKE.gnu'
+    MF_EXE = '/work/tex/fragpicker/nnmake/make_fragments.pl'
+    NN_EXE = '/work/tex/fragpicker/nnmake/pNNMAKE.gnu'
 
     dir_list = glob('%s/?????/'%base_dir)
     dir_list.sort()
@@ -81,13 +83,13 @@ else:
             hom_id = id
 
             if round == 1:
-                frag_files = glob('%s/ch?????0?_05.200_v1_4'%dir)
+                frag_files = glob('%s/ch?????0?_05.200_v1_3'%dir)
                 if len(frag_files) == 2:
                     print 'already done:',id,hom_id
                     continue
             else:
                 assert round == 2
-                frag_files = glob('%s/ch?????0?_05.200_v1_4'%dir)
+                frag_files = glob('%s/ch?????0?_05.200_v1_3'%dir)
                 if len(frag_files) != 2:
                     print 'missing:',id,hom_id
                     continue
@@ -100,11 +102,11 @@ else:
                         cmd = '%s -xx ch -verbose -id %s -nohoms -nocleanup -nosam %s.fasta > mf.out 2> mf.err'\
                               %(MF_EXE,hom_id,hom_id)
                     else:
-                        cmd = '%s -xx ch -verbose -id %s -nohoms -nocleanup %s.fasta > mf.out 2> mf.err'\
+                        cmd = '%s -xx aa -verbose -id %s -nohoms -nocleanup %s.fasta > mf.out 2> mf.err'\
                               %(MF_EXE,hom_id,hom_id)
 
                 else:
-                    frag_files = glob('%s/aa?????0?_05.200_v1_4'%dir)
+                    frag_files = glob('%s/aa?????0?_05.200_v1_3'%dir)
                     if len(frag_files) == 2:
                       print 'already done:',id,hom_id
                       continue

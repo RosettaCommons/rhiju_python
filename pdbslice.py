@@ -86,6 +86,7 @@ for pdbfile in pdbfiles:
     oldresidue = '   '
     for line in lines:
         currentresidue = line[22:26]
+
         if not currentresidue == oldresidue:
             i += 1
         oldresidue = currentresidue

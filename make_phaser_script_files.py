@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python2
 
 from phil import *
 import sys
@@ -8,89 +8,144 @@ from glob import glob
 
 def Help():
     print '\n This file reads in a list of PDB files and generates the phaser script for batch PHASER runs on the clusters\n'
-    print '\nUsage: <pdbs> <input mtz file> \n'
+    print '\nUsage: '+argv[0]+' <starting phaser script> <input mtz file> <pdbs> [<N>]\n'
+    print '   if you specify an integer N, then that is how many phaser jobs are bundled into'
+    print '   one condor job.'
     exit()
 
 if len(argv) < 2:
     Help()
 
-files = sys.argv[1:-1]
-mtzfile =  sys.argv[-1]
+for pos in range( len(argv) ):
+    try:
+        NUMJOBS = int( argv[pos] )
+        del( argv[pos] )
+        break
+    except:
+        NUMJOBS = 1
+        continue
+
+phaser_append = 0
+if argv.count( '-append' ):
+    pos = argv.index( '-append' )
+    del( argv[pos] )
+    phaser_append = 1
+    # print 'APPENDING TO PHASER SCRIPT!'
+
+phaser_script = sys.argv[1]
+mtzfile =  sys.argv[2]
+files = sys.argv[3:]
+
+if not phaser_script[-6:] == 'script':
+    print
+    print ' Must give a starting phaser script as first argument!'
+    Help()
 
 if not mtzfile[-3:] == 'mtz':
     print
-    print ' Must give mtz file at end!'
+    print ' Must give mtz file as second argument!'
     Help()
 
-condor_file = open('jobPHASER','w')
+if phaser_append:
+    condor_file = open('jobPHASER','a')
+else:
+    condor_file = open('jobPHASER','w')
 
-condor_file.write('universe     = vanilla\n')
-condor_file.write('\n')
-condor_file.write('Notify_user  = rhiju@u.washington.edu\n')
-condor_file.write('notification = Error\n')
-condor_file.write('\n')
-condor_file.write('Log          = condorscript.log\n')
-condor_file.write('\n')
-condor_file.write('Executable   = ./run_phaser.py\n')
-condor_file.write('\n')
-condor_file.write('GetEnv       = True\n')
-condor_file.write('\n')
-condor_file.write('Error   = logerr\n')
-condor_file.write('Output  = logout\n')
-condor_file.write('\n')
+count = 0
+if not phaser_append:
+    condor_file.write('universe     = vanilla\n')
+    condor_file.write('\n')
+    condor_file.write('Notify_user  = rhiju@u.washington.edu\n')
+    condor_file.write('notification = Error\n')
+    condor_file.write('\n')
+    condor_file.write('Executable   = ./run_phaser.py\n')
+    condor_file.write('\n')
+    condor_file.write('GetEnv       = True\n')
+    condor_file.write('\n')
+    condor_file.write('Error   = logerr\n')
+    condor_file.write('Output  = logout\n')
+    condor_file.write('\n')
 
-command = 'cp ~/python/run_phaser.py .'
-system(command)
 
-command = 'chmod 777 run_phaser.py .'
-system(command)
+    command = 'cp ~/python/run_phaser.py .'
+    system(command)
 
+    command = 'rsync -az ~/phaser . '
+    system(command)
+
+    command = 'chmod 777 run_phaser.py .'
+    system(command)
+
+condor_file.write('Arguments = ')
+
+lines = open( phaser_script ).readlines();
+
+finished = 0
+
+globfiles = []
 for file in files:
     if not exists(file): # Need to use glob
         print 'Using glob... '
-        globfiles = glob( file )
+        globfiles += glob( file )
     else:
-        globfiles = [file]
+        globfiles += [file]
 
-    for globfile in globfiles:
+
+
+
+for globfile in globfiles:
+
+    outdir = globfile[:-4]+"_out/"
+    command = "mkdir -p "+outdir
+    system(command)
+
+    log_file = outdir + '/' + basename(globfile)[:-4] + '.log'
+    sol_file = outdir + '/' + basename(globfile)[:-4] + '.sol'
+
+    if exists( log_file ):
+        if exists( sol_file ):
+            print 'NOT DOING ',globfile,'. (Already seeing log file ',log_file,'.)'
+            continue
+        else:
+            system( 'rm '+log_file)
+    else:
         print 'Doing ... '+globfile
 
-        data_file = globfile[:-4]+".script"
-        data = open(data_file,'w')
+    data_file = globfile[:-4]+".script"
+    data = open(data_file,'w')
+
+    # Don't want absolute paths...
+    #        file = abspath( globfile ).replace('/work/','/users/')
+    #        mtzfile = abspath( mtzfile ).replace('/work/','/users/')
+    #        outdir = abspath( outdir ).replace('/work/','/users/')
+    #        data_file = abspath( data_file ).replace('/work/','/users/')
+
+    for line in lines:
+        if line.count('HKLIN'):
+            line = 'HKLIN "%s"\n'% mtzfile
+
+        if line.count('PDBFILE'):
+            line = '    PDBFILE "%s" &\n'%(globfile)
+
+        if line.count('ROOT'):
+            line = 'ROOT "%s"\n'%( outdir + '/'+basename(globfile[:-4]))
+
+        line = line.replace('/work/','/users/')
+
+        data.write( line )
 
 
-        outdir = globfile[:-4]+"_out/"
-        command = "mkdir -p "+outdir
-        system(command)
+    count += 1
+    condor_file.write(' %s %s ' % (data_file,log_file))
+    if ( count % NUMJOBS == 0 ):
+        condor_file.write('\nQueue 1\n')
+        if ( globfile == globfiles[-1] ):
+            finished = 1
+        else:
+            condor_file.write( '\nArguments = ')
 
-        file = abspath( globfile ).replace('/work/','/users/')
-        mtzfile = abspath( mtzfile ).replace('/work/','/users/')
-        outdir = abspath( outdir ).replace('/work/','/users/')
-        data_file = abspath( data_file ).replace('/work/','/users/')
 
-        file = abspath( globfile ).replace('/Users/','/users/')
-        mtzfile = abspath( mtzfile ).replace('/Users/','/users/')
-        outdir = abspath( outdir ).replace('/Users/','/users/')
-        data_file = abspath( data_file ).replace('/Users/','/users/')
-
-        data.write('MODE MR_AUTO\n')
-        data.write('HKLIN "%s"\n'%(mtzfile))
-        data.write('LABIN  F=F_pk SIGF=SIGF_pk\n')
-        data.write('TITLE [No title given]\n')
-        data.write('COMPOSITION PROTEIN MW 9200 NUMBER 2\n')
-        data.write('TOPFILES 1\n')
-        data.write('ENSEMBLE ensemble1 &\n')
-        data.write('    PDBFILE "%s" &\n'%(file))
-        data.write('    RMS 1.50\n')
-        data.write('SEARCH ENSEMBLE ensemble1 &\n')
-        data.write('    NUMBER 2\n')
-    #    data.write('PACK 5\n')
-        data.write('ROOT "%s"\n'%( outdir + '/'+basename(globfile[:-4])))
-        data.write('END\n')
-        data.close()
-
-        log_file = outdir + '/' + basename(globfile)[:-4] + '.log'
-        condor_file.write(' Arguments = %s %s\n' % (data_file,log_file))
-        condor_file.write('Queue 1 \n\n')
-
+if not finished and (count > 0):
+    condor_file.write('\nQueue 1\n')
+condor_file.write('\n')
 condor_file.close()

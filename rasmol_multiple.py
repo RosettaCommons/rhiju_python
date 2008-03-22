@@ -10,14 +10,12 @@ scriptname = sys.argv[1]
 
 fid = open("/tmp/temp.script",'w')
 for filename in filenames:
-
-    absfilename = abspath( filename ).replace(' ','\ ')
-    fid.write("zap\nload %s\necho loading ... %s\nscript %s\n" % (absfilename,absfilename,abspath(scriptname)) )
+    fid.write("zap\nload %s\necho loading ... %s\nscript %s\n" % (abspath(filename),abspath(filename),abspath(scriptname)) )
     if not filename == filenames[-1]:
         fid.write("pause\n");
 fid.close()
 
-command = "cd /tmp; /Applications/rasmol_32bit -script temp.script"
+command = "cd /tmp; /net/local/bin/rasmol -script temp.script"
 system(command)
 
 command = "rm -f /tmp/temp.*"

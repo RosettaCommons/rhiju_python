@@ -26,13 +26,13 @@ for line in lines:
 
 	    if not (line[16]==' ' or line[16]=='A'): continue
 
-            resnum = line_edit[23:26]
+            resnum = line_edit[22:26]
             if not resnum == oldresnum:
                 count = count + 1
             oldresnum = resnum
 
-            newnum = '%3d' % count
-            line_edit = line_edit[0:23] + newnum + line_edit[26:]
+            newnum = '%4d' % count
+            line_edit = line_edit[0:22] + newnum + line_edit[26:]
 
             outid.write(line_edit)
 

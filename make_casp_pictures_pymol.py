@@ -236,7 +236,7 @@ if 1:
     #Also would like an estimate of what residues are buried... check out the natives
     rescored_native = string.split(e_file,'.pdb')[0] + '_0001.pdb'
     if not exists(rescored_native):
-        command = '~rhiju/HOME/rosetta++/rosetta.gcc -score -fa_input -s %s -nstruct 1 -scorefile blah -decoyfeatures -paths ~rhiju/paths.txt' % e_file
+        command = '~rhiju/src/rosetta_scale_hessian/rosetta.gcc -read_all_chains -score -fa_input -s %s -nstruct 1 -scorefile blah -decoyfeatures -paths ~rhiju/paths.txt' % e_file
         print(command)
         system(command)
 
@@ -273,6 +273,7 @@ if 1:
             notalign.append(pos)
         else:
             align.append(pos)
+    fid.write('\n')
 
     fid.write('select notaligned, resi ')
     for pos in notalign:
@@ -281,6 +282,7 @@ if 1:
             fid.write('\n')
         else:
             fid.write('+')
+    fid.write('\n')
 
     fid.write('select aligned, resi ')
     for pos in align:
@@ -307,7 +309,7 @@ if 1:
     fid.write('select continuous_aligned, resi %d-%d\n' %  (min(align),max(align)))
     fid.write('select hydro, elem H\n');
     fid.write('select backbone, name o+c+n\n');
-    fid.write('select sc, not backbone and not hydro\n');
+    fid.write('select sc, not backbone and not hydro or (name n and resn pro)\n');
     fid.write('select core_sc, sc and not hydro and buried and aligned\n');
     fid.write('\n');
     fid.write('show cartoon, all\n');
@@ -319,7 +321,7 @@ if 1:
     fid.write('select prediction_align, prediction and aligned\n');
     fid.write('cmd.spectrum(selection = "native_align")\n');
     fid.write('cmd.spectrum(selection = "prediction_align")\n');
-    fid.write('color white, notalign\n');
+    fid.write('color white, notaligned\n');
     fid.write('\n');
     fid.write('\n');
     fid.close()

@@ -23,6 +23,12 @@ if len(argv)<2:
     Help()
 
 
+replace_names = 1
+if argv.count('-no_replace_names'):
+    pos = argv.index('-no_replace_names')
+    del( argv[pos] )
+    replace_names = 0
+
 try:
     NSTRUCT = int(argv[-1])
     del(argv[-1])
@@ -71,7 +77,7 @@ for infile in infiles:
     outfilename = infile
 
     fid.close()
-    command = '~rhiju/rosetta++/rosetta.mactelboincgraphics -extract -l %s -paths /users/rhiju/paths.txt -s %s'% (templist_name,outfilename)
+    command = '/work/rhiju/rosetta++/rosetta.gcc -extract -l %s -paths /work/rhiju/paths.txt -s %s'% (templist_name,outfilename)
 
     # Check if this is an RNA run.
     fid = open( infile, 'r')
@@ -79,7 +85,6 @@ for infile in infiles:
     if (line.count('a') or line.count('c') or
         line.count('g') or line.count('u')):
         command  += ' -enable_dna -enable_rna '
-#        command = command.replace('rosetta++','rosetta_rna')
 
     lines = popen('head -n 8 '+outfilename).readlines()
     if len(string.split(lines[7])) > 10:
@@ -96,14 +101,15 @@ for infile in infiles:
 
 
     count = 1
-    for tag in tags:
-        if scorecol_defined:
-            command = 'mv %s.pdb %s.%s.%d.pdb' % (tag,infile,scoretag,count)
-        else:
-            command = 'mv %s.pdb %s.%d.pdb' % (tag,infile,count)
-        print(command)
-        system(command)
-        count += 1
+    if replace_names:
+        for tag in tags:
+            if scorecol_defined:
+                command = 'mv %s.pdb %s.%s.%d.pdb' % (tag,infile,scoretag,count)
+            else:
+                command = 'mv %s.pdb %s.%d.pdb' % (tag,infile,count)
+            print(command)
+            system(command)
+            count += 1
 
     command = 'rm '+templist_name
     print(command)

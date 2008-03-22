@@ -57,7 +57,7 @@ SSoutname = sys.argv[2]
 SSpairs = open(SSlist,'r').readlines()
 SSpairs = map(lambda x: x[:-1], SSpairs) #Get rid of newlines
 
-print SSpairs
+#print SSpairs
 
 numSSpairs = len(SSpairs)
 if (numSSpairs < 4):
@@ -68,7 +68,7 @@ permutelist = makepermutelist(numSSpairs)
 totpermutations = len(permutelist)
 
 
-makethepermutelist = 1
+makethepermutelist = 0
 
 find_force_pairs = 0
 if sys.argv.count('-forcepairs'):
@@ -195,12 +195,13 @@ else: #User has specified a desired permutation
 
     userpermute = sys.argv[2:]
 
-    outfilename = '%s.bar' % (SSoutname)
-    fid = open(outfilename,'w')
+#		outfilename = '%s.bar' % (SSoutname)    
+#    fid = open( outfilename,'w')
+    fid = sys.	stdout
     fid.write('PERMUTE  1.0  ');
 
     permutation = map(lambda x:int(x)-1, userpermute) #Back to python numbering.
-    permutation.append( permutation[0] ) # Make it a circle!
+    #permutation.append( permutation[0] ) # Make it a circle!
 
     nummembers = len(permutation)
     numbadpairs = 0
@@ -221,4 +222,5 @@ else: #User has specified a desired permutation
                 else:
                     #print j+1,k+1
                     continue
-    print numbadpairs
+      #print numbadpairs
+    print

@@ -38,6 +38,13 @@ if '-w' in args:
     pos = args.index('-w')
     del args[pos]
 
+LANDSCAPE = 0
+if '-landscape' in args:
+    by_width = 0
+    pos = args.index('-landscape')
+    del args[pos]
+    LANDSCAPE = 1
+
 out_file = args[0]
 N = int(args[1])
 L = N
@@ -98,21 +105,32 @@ out.write('\\usepackage{epsf}\n')
 out.write('\\textwidth=8.5in\n')
 out.write('\\textheight=11in\n')
 
+if not LANDSCAPE:
+    out.write('\\topmargin=-0.5in\n')
+    out.write('\\oddsidemargin=-1in\n')
+    out.write('\\evensidemargin=-1in\n')
+else:
+    out.write('\\topmargin=-1in\n')
+    out.write('\\oddsidemargin=-0.5in\n')
+    out.write('\\evensidemargin=-0.5in\n')
 
-out.write('\\topmargin=-0.5in\n')
-out.write('\\oddsidemargin=-1in\n')
-out.write('\\evensidemargin=-1in\n')
 out.write('\\pagestyle{empty}\n')
 out.write('\\begin{document}\n')
 
 
 PLOTS_PER_PAGE = L*W
-print by_width
+#print by_width
 
-if not by_width:
-    SIZE = str( 0.1*(9*10/L))+'in'
+if not LANDSCAPE:
+    if not by_width:
+        SIZE = str( 0.1*(10*10/L))+'in'
+    else:
+        SIZE = str( 0.1*(floor(70.0/W)))+'in'
 else:
-    SIZE = str( 0.1*(floor(70.0/W)))+'in'
+    if not by_width:
+        SIZE = str( 0.1*(10*10/W))+'in'
+    else:
+        SIZE = str( 0.1*(floor(70.0/L)))+'in'
 
 
 for i in range((len(plots)-1)/PLOTS_PER_PAGE +1):
@@ -127,7 +145,10 @@ out.close()
 system('latex '+base_name+'.tex 2> /dev/null > /dev/null')
 assert exists(base_name+'.dvi')
 
-system('dvips -o '+out_file+' '+base_name+'.dvi 2> /dev/null > /dev/null')
+landscape_tag = ''
+if LANDSCAPE: landscape_tag = '-t landscape'
+
+system('dvips '+landscape_tag+' -o '+out_file+' '+base_name+'.dvi 2> /dev/null > /dev/null')
 system('rm '+base_name+'.dvi')
 system('rm '+base_name+'.tex')
 system('rm '+base_name+'.log')

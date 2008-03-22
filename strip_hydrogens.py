@@ -1,13 +1,14 @@
 #!/usr/bin/python
 
 from os import popen,system
-from os.path import exists
+from os.path import exists,basename
 import sys
 import string
 
 def Help():
     print sys.argv[0]," <pdb1> <pdb2> ... "
     print '  Removes hydrogens from pdb file.'
+
 
 pdbfiles = sys.argv[1:]
 suffix = '_noH'
@@ -22,7 +23,7 @@ if not exists(pdbfiles[-1]):
 
 for pdbfile in pdbfiles:
     gzipped = 0
-    outfile  = pdbfile.replace( '.pdb', suffix+'.pdb')
+    outfile  = basename(pdbfile).replace( '.pdb', suffix+'.pdb')
     outid = open( outfile ,'w')
 
     lines = open(pdbfile).readlines()
@@ -37,3 +38,4 @@ for pdbfile in pdbfiles:
 
     outid.close()
 
+    print 'Stripped: ', outfile

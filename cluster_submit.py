@@ -54,7 +54,7 @@ if argv.count('-nstruct'):
 
 file = argv[1]
 
-clusterlist = [ 'maat',  'bes', 'hapy', 'niau', 'seth',  'yah', 'gebb', 'ptah', 'apep',  'set',   'ra',  'dua', 'atum']
+clusterlist = [ 'maat','bes', 'hapy', 'niau', 'seth',  'yah', 'gebb', 'ptah', 'apep',  'set',   'ra',  'dua', 'atum']
 
 try:
     clustername = argv[2]

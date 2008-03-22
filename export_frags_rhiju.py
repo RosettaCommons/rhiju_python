@@ -18,6 +18,8 @@ proteinname = basename( abspath(outdir))
 fivelettercode = proteinname[-5:]
 prefix = proteinname[:-5]
 
+chain = fivelettercode[-1]
+
 infile = glob(indir+'/*.fasta')[0]
 outfile = outdir+'/'+prefix+fivelettercode+'.fasta'
 command = 'cp '+infile+' '+outfile
@@ -38,10 +40,14 @@ print(command)
 system(command)
 
 fourlettercode = fivelettercode[:4]
-infile = indir+'/'+ fourlettercode+'.pdb'
-if exists(infile):
+infiles = glob(indir+'/*.pdb')
+if len( infiles ) > 0:
+    infile = infiles[0]
     outfile = outdir+'/'+ prefix + fourlettercode+'.pdb'
-    command = 'cp '+infile+' '+outfile
+    command = 'renumber_pdb.py '+infile+' > '+outfile
+    print(command)
+    system(command)
+    command = '~rhiju/python/replace_chain_inplace.py   '+outfile+' '+chain
     print(command)
     system(command)
     command = 'gzip -f '+outfile

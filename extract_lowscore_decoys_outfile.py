@@ -24,10 +24,10 @@ if len(argv)<2:
 
 
 try:
-    NSTRUCT = int(argv[-1])
+    NSTRUCT_IN = float(argv[-1])
     del(argv[-1])
 except:
-    NSTRUCT = 2
+    NSTRUCT_IN = 2
 
 scorecol_defined = 0
 try:
@@ -75,7 +75,12 @@ for infile in infiles:
 
     assert(infile[-3:] == 'out')
 
-#    print 'grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1)
+    #    print 'grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1)
+
+    NSTRUCT = NSTRUCT_IN
+    if (NSTRUCT < 1.0 ):
+        NUMDECOYS = int( string.split(popen('grep SCORE '+infile+' | wc').readlines()[0])[0] ) - 1
+        NSTRUCT = round( NSTRUCT_IN * NUMDECOYS )
 
     lines = popen('grep SCORE '+infile+' | grep -v NATIVE | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
 
@@ -118,7 +123,7 @@ for infile in infiles:
         line = fid.readline()
 
     command = 'rm '+templist_name
-    print(command)
+    #    print(command)
     system(command)
 
 

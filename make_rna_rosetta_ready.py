@@ -50,7 +50,7 @@ if chainid == '_':
 
 for line in lines:
     if len(line)>5 and line[:6]=='ENDMDL':break #Its an NMR model.
-    if len(line) < 22:  continue
+    if len(line) < 21:  continue
     if (chainid == line[21] or ignore_chain):
         line_edit = line
         if line[0:3] == 'TER':

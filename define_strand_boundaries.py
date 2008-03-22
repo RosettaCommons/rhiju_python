@@ -14,10 +14,11 @@ for secstructprobfile in secstructprobfiles:
     Eweight = []
     for line in lines:
         cols = string.split(line)
-        resnum = int( cols[0] )
-        Cweight.append( float( cols[1] ) )
-        Hweight.append( float( cols[2] ) )
-        Eweight.append( float( cols[3] ) )
+        if len(cols) > 3:
+            resnum = int( cols[0] )
+            Cweight.append( float( cols[1] ) )
+            Hweight.append( float( cols[2] ) )
+            Eweight.append( float( cols[3] ) )
 
 
     in_strand = 0

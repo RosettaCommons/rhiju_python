@@ -1,9 +1,19 @@
 #!/usr/bin/python
 
-from sys import argv
+from sys import argv,exit
 from os import system,popen
 from os.path import basename
 import string
+
+
+def Help():
+    print
+    print argv[0],' <native pdb> <outfile 1> <outfile 2> ...  [<align_extended file>]'
+    print
+    print
+    exit()
+
+if len( argv ) < 2: Help()
 
 trimN = 0
 trimC = 0

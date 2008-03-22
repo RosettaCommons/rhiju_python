@@ -8,6 +8,12 @@ from os.path import exists
 sol_files = argv[1:]
 llg_lines = []
 
+print_all = 0
+if sol_files.count('-all'):
+    pos =  sol_files.index('-all')
+    del( sol_files[pos] )
+    print_all = 1
+
 if not exists(sol_files[0]): # Need to use glob
     print 'Using glob... '
     sol_files = glob( sol_files[0] )
@@ -26,7 +32,10 @@ for sol_file in sol_files:
 
 llg_lines.sort()
 
-for llg_line in llg_lines[-10:]:
+if not print_all:
+    llg_lines = llg_lines[-10:]
+
+for llg_line in llg_lines:
     print llg_line[2],'==>',llg_line[1]
 
 
