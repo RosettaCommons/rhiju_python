@@ -3,7 +3,7 @@
 #
 import sys
 from os import system
-from os.path import basename,abspath
+from os.path import basename,abspath,exists
 
 filenames = sys.argv[2:]
 scriptname = sys.argv[1]
@@ -15,7 +15,14 @@ for filename in filenames:
         fid.write("pause\n");
 fid.close()
 
-command = "cd /tmp; /net/local/bin/rasmol -script temp.script"
+RASMOL_EXE = '/net/local/bin/rasmol'
+if not exists( RASMOL_EXE ):
+    RASMOL_EXE = '/Applications/rasmol_32BIT'
+if not exists( RASMOL_EXE ):
+    print
+    print 'Cannot find rasmol executable. Edit %s to point to the path!' % sys.argv[0]
+
+command = "cd /tmp; %s -script temp.script" % RASMOL_EXE
 system(command)
 
 command = "rm -f /tmp/temp.*"
