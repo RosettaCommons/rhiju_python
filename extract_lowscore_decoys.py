@@ -147,7 +147,12 @@ for infile in infiles:
             system( 'ln -fs '+bonds_files[0].replace('.bonds','.rot_templates') \
                     +' '+wanted_rot_templates_file )
 
-    command = '~rhiju/rosetta++/rosetta.gcc -extract -l %s -paths ~rhiju/paths.txt -s %s %s %s '% (templist_name,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
+
+    EXE = '~rhiju/rosetta++/rosetta.gcc'
+    if not exists( EXE ):
+        EXE = 'rm boinc* ros*txt; ~rhiju/rosetta++/rosetta.mactelboincgraphics '
+
+    command = '%s -extract -l %s -paths ~rhiju/paths.txt -s %s %s %s '% (EXE, templist_name,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
 
 
 
