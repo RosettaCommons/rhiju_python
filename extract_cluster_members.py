@@ -88,19 +88,17 @@ for outfilename in outfilenames:
     for tag in taglist[outfilename]:
         fid.write(tag+'\n')
     fid.close()
-    command = '/users/rhiju/rosetta++/rosetta.mactelboincgraphics -extract -l temp.list -paths /users/rhiju/paths.txt -s '+outfilename
-
-    # Check if this is an RNA run.
-    fid = open( outfilename, 'r')
-    line = fid.readline(); # Should be the sequence.
-    if (line.count('a') or line.count('c') or
-        line.count('g') or line.count('u')):
-        command  += ' -enable_dna -enable_rna '
-
+    command = '~rhiju/rosetta++/rosetta.gcc -extract -l temp.list -paths ~rhiju/paths.txt -s '+outfilename
 
     lines = popen('head -n 8 '+outfilename).readlines()
     if len(string.split(lines[7])) > 10:
         command += ' -fa_input'
+
+    line = lines[0]
+    if (line.count('a') or line.count('c') or
+        line.count('g') or line.count('u')):
+        command  += ' -enable_dna -enable_rna '
+
 
     print(command)
     system(command)

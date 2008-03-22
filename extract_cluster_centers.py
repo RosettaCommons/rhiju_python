@@ -63,7 +63,7 @@ for infile in infiles:
         for tag in taglist[outfilename]:
             fid.write(tag+'\n')
         fid.close()
-        command = '~rhiju/rosetta++/rosetta.mactel -extract -l '+templist+' -paths ~rhiju/paths.txt -s '+outfilename
+        command = '/work/rhiju/rosetta++/rosetta.gcc -extract -l '+templist+' -paths /work/rhiju/paths.txt -s '+outfilename
 
         # Check if this is an RNA run.
         fid = open( infile, 'r')

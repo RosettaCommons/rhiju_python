@@ -2,10 +2,10 @@
 
 from sys import argv,exit
 from os import popen, system
-from os.path import basename
+from os.path import basename,exists
 import string
 import commands
-
+from glob import glob
 
 def Help():
     print
@@ -81,7 +81,6 @@ if not scorecol_defined:
 infiles = argv[1:]
 
 
-
 for infile in infiles:
     tags = []
 
@@ -136,7 +135,19 @@ for infile in infiles:
     extract_first_chain_tag = ''
     if (extract_first_chain): extract_first_chain_tag = ' -extract_first_chain '
 
-    command = 'rm ros*txt boinc*txt; ~rhiju/rosetta++/rosetta.mactelboincgraphics -extract -l %s -paths ~rhiju/paths.txt -s %s %s %s '% (templist_name,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
+    #Set up bonds file?
+    softlink_bonds_file = 0
+    wanted_bonds_file = infile+'.bonds'
+    wanted_rot_templates_file = infile+'.rot_templates'
+    bonds_files = glob( '*.bonds')
+    if len( bonds_files ) > 0:
+        if not exists( wanted_bonds_file ):
+            softlink_bonds_file = 1
+            system( 'ln -fs '+bonds_files[0]+' '+wanted_bonds_file )
+            system( 'ln -fs '+bonds_files[0].replace('.bonds','.rot_templates') \
+                    +' '+wanted_rot_templates_file )
+
+    command = '~rhiju/rosetta++/rosetta.gcc -extract -l %s -paths ~rhiju/paths.txt -s %s %s %s '% (templist_name,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
 
 
 
@@ -179,4 +190,8 @@ for infile in infiles:
     print(command)
     system(command)
 
+    if (softlink_bonds_file):
+        #system( 'rm '+wanted_bonds_file+' '+wanted_rot_templates_file )
+        print ' WARNING! WARNING'
+        print ' Found a .bonds and .rot_templates file and used it!'
 
