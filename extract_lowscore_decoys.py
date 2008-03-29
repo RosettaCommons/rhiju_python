@@ -35,7 +35,6 @@ if argv.count('-extract_first_chain'):
     del( argv[pos] )
     extract_first_chain = 1
 
-
 use_start_pdb = 0
 if argv.count('-start_pdb'):
     pos = argv.index('-start_pdb')
@@ -52,15 +51,15 @@ except:
 
 scorecol_defined = 0
 try:
-    SCORECOL = int(argv[-1])
+    scorecol = int(argv[-1])
     del(argv[-1])
     scorecol_defined = 1
 except:
-    SCORECOL = -1
+    scorecol = -1
 
 
 REVERSE = ''
-if SCORECOL > 0:
+if scorecol > 0:
     REVERSE = ' --reverse '
 
 #Another possibility... user supplies -rms or +rms
@@ -87,12 +86,18 @@ for infile in infiles:
     scoretags = string.split( popen('head -n 2 '+infile).readlines()[1] )
     scoretag=''
     if scorecol_defined:
-        scoretag = scoretags[ abs(SCORECOL) ]
+        scoretag = scoretags[ abs(scorecol) ]
 
     if scorecol_name_defined:
-        assert( scoretags.count( scorecol_name ))
-        SCORECOL = scoretags.index( scorecol_name )
+        scorecol_names = string.split( scorecol_name,',' )
+        scorecols = []
+        for s in scorecol_names:
+            assert( scoretags.count( s ))
+            scorecol = scoretags.index( s )
+            scorecols.append( scorecol )
         scoretag = scorecol_name
+    else:
+        scorecols  = [scorecol]
 
     assert(infile[-3:] == 'out')
 #    lines = popen('grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
@@ -110,7 +115,21 @@ for infile in infiles:
 
 
     # Make the list of decoys to extract
-    lines = popen( 'grep SCORE '+infile+' | grep -v NATIVE | sort -nk %d %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1)).readlines()
+    lines = popen( 'grep SCORE '+infile+' | grep -v NATIVE').readlines()
+
+    score_plus_lines = []
+    for line in lines:
+        cols = string.split( line )
+        score = 0.0
+        try:
+            for scorecol in scorecols: score += float( cols[ abs(scorecol) ] )
+        except:
+            continue
+        if REVERSE: score *= -1
+        score_plus_lines.append( ( score, line ))
+
+    score_plus_lines.sort()
+    lines = map( lambda x:x[-1], score_plus_lines[:NSTRUCT] )
 
     templist_name = 'temp.%s.list'% basename(infile)
 
@@ -148,7 +167,7 @@ for infile in infiles:
                     +' '+wanted_rot_templates_file )
 
 
-    EXE = '~rhiju/rosetta++/rosetta.gcc'
+    EXE = '/work/rhiju/rosetta++/rosetta.gcc'
     if not exists( EXE ):
         EXE = 'rm boinc* ros*txt; ~rhiju/rosetta++/rosetta.mactelboincgraphics '
 
