@@ -188,6 +188,13 @@ for infile in infiles:
     if len(string.split(lines[6])) > 10:
         command += ' -fa_input'
 
+
+    # Hey this could be a new mini RNA file
+    if (scoretags.count('rna_torsion') or scoretags.count('rna_axis') ):
+        MINI_EXE = '~rhiju/src/mini/bin/rna_test.linuxgccrelease'
+        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
+                  ( MINI_EXE, outfilename, string.join( tags ) )
+
     print(command)
     system(command)
 
