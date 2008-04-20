@@ -33,6 +33,37 @@ if argv.count('-subset'):
     endseq = 10000000000
 
 
+############################
+if argv.count('-segments'):
+    use_subset = 1
+    pos = argv.index('-segments')
+    del argv[pos]
+
+    segment_residues = []
+    stderr.write( 'PDBSLICE using a subset of residues: '  )
+    goodint = 1
+    while goodint:
+        try:
+            segment_residue = int(argv[pos])
+            segment_residues.append( segment_residue )
+            del argv[pos]
+            stderr.write('%d ' % segment_residue )
+        except:
+            goodint = 0
+
+    stderr.write( '\n'  )
+
+    pdbfiles = argv[1:-1]
+
+    prefix = argv[-1]
+    startseq = 1
+    endseq = 10000000000
+    for i in range( len(segment_residues)/2):
+        for j in range( segment_residues[2*i], segment_residues[2*i+1]+1 ):
+            subset_residues.append( j )
+
+    print subset_residues
+
 use_excise = 0
 excise_residues = []
 if argv.count('-excise'):
