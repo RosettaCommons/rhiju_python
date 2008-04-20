@@ -50,7 +50,7 @@ if chainid == '_':
 
 for line in lines:
     if len(line)>5 and line[:6]=='ENDMDL':break #Its an NMR model.
-    if len(line) < 21:  continue
+    if len(line) <= 21:  continue
     if (chainid == line[21] or ignore_chain):
         line_edit = line
         if line[0:3] == 'TER':
@@ -87,8 +87,8 @@ for line in lines:
                     fastaid.write( 'X')
             oldresnum = resnum
 
-            newnum = '%3d' % count
-            line_edit = line_edit[0:17] + longname + line_edit[20:23] + \
+            newnum = '%4d' % count
+            line_edit = line_edit[0:17] + longname + line_edit[20:22] + \
                         newnum + line_edit[26:]
             if removechain:
                 line_edit = line_edit[0:21]+'  '+line_edit[23:]
