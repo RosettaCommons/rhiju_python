@@ -16,9 +16,11 @@ if argv.count('-R'):
 lines = open(infilelist,'r').readlines()
 lines = [x[:-1] for x in lines]
 
+fit_threshold_save = {}
 maxsub_save = {}
 for line in lines:
     maxsub_save[line] = {}
+    fit_threshold_save[line] = {}
 
 
 for i in range(len(lines)):
@@ -26,7 +28,7 @@ for i in range(len(lines)):
     for j in range(i, len(lines)):
         line2 = lines[j]
 
-        command = '/work/rhiju/python/superimpose.py %s %s  -R %d > blah.pdb 2> blah.err' % (line1,line2,rmsd_threshold)
+        command = '~rhiju/python/superimpose.py %s %s  -R %d > blah.pdb 2> blah.err' % (line1,line2,rmsd_threshold)
 #        print(command)
         system(command)
 
@@ -37,11 +39,15 @@ for i in range(len(lines)):
         maxsub = int( string.split(superimposeline)[5] )
         if fit_threshold > rmsd_threshold:
             maxsub = 0 # Failure!
+            fit_threshold = -1
 
-        stderr.write('%s %s %d\n' % (line1, line2, maxsub))
+        stderr.write('%s %s %5.3f %d\n' % (line1, line2, fit_threshold, maxsub))
 
         maxsub_save[line1][line2] = maxsub
         maxsub_save[line2][line1] = maxsub
+
+        fit_threshold_save[line1][line2] = fit_threshold
+        fit_threshold_save[line2][line1] = fit_threshold
 
 print
 print
@@ -53,6 +59,13 @@ for line1 in lines:
     print '%s' % line1+blanks[len(line1):maxlen],
     for line2 in lines:
         print '%03d' % maxsub_save[line1][line2],
+    print
+
+print
+for line1 in lines:
+    print '%s' % line1+blanks[len(line1):maxlen],
+    for line2 in lines:
+        print '%5.3f' % fit_threshold_save[line1][line2],
     print
 
 command = 'rm maxsub*pdb blah*pdb'

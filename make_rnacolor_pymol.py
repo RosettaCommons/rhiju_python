@@ -30,7 +30,7 @@ if len(pdbfiles) > 1:
 #        for i in highlight_residues:
 #            command += " %d " % i
 
-    command += " -R 0.1 > "+ prefix+"_superposition.pdb"
+    command += " -R 10.0 > "+ prefix+"_superposition.pdb"
 #    command += " > "+ prefix+"_superposition.pdb"
 
     print( command )

@@ -8,6 +8,7 @@ from sys import argv,stderr,exit
 from os import popen,system
 from os.path import exists
 from operator import add
+from math import sqrt
 
 #############################
 def Help():
@@ -46,6 +47,12 @@ if args.count('-D'):
     pos = args.index('-D')
     distance_threshold = float(args[pos+1])
     assert(R_DEFINED)
+
+CALC_PER_RESIDUE_DEVIATIONS = 0
+if args.count('-per_res'):
+    pos = args.index('-per_res')
+    del( args[ pos] )
+    CALC_PER_RESIDUE_DEVIATIONS = 1
 
 if R_DEFINED:
     stderr.write( 'using distance threshold %5.1f A; reporting number of residues within %5.1f A \n' % (distance_threshold, rmsd_threshold))
@@ -207,6 +214,8 @@ for pdb in pdb_list[1:]:
         model0_resnum = []
         hetatm_lines = []
 
+        model0_xyzs = []
+
         if SHOW_MODEL_0:
             print 'MODEL     %4d'%model_count
             model_count = model_count+1
@@ -219,6 +228,8 @@ for pdb in pdb_list[1:]:
                 if line[:4] in ['ATOM','HETA']:
                     atom_count = atom_count + 1
                     print '%s%5d%s'%(line[:6],atom_count,line[11:-1])
+
+                    if line[12:16]==' CA ' and CALC_PER_RESIDUE_DEVIATIONS: model0_xyzs.append( [float(line[30:38]), float(line[38:46]), float(line[46:54])] )
 
                     if COPY_RESNUM:
                         resnum = line[22:26]
@@ -253,13 +264,20 @@ for pdb in pdb_list[1:]:
                                   P_translation,
                                   E_translation)
 
+                current_resnum = line[22:26]
+                if prev_resnum != current_resnum:
+                    rescount += 1
+                prev_resnum = current_resnum
                 if COPY_RESNUM:
-                    current_resnum = line[22:26]
-                    if prev_resnum != current_resnum:
-                        rescount += 1
-                    prev_resnum = current_resnum
                     new_resnum = model0_resnum[rescount]
                     line = line[0:22]+new_resnum+line[26:]
+
+                if line[12:16]==' CA ' and CALC_PER_RESIDUE_DEVIATIONS:
+                    stderr.write( '%4d %8.4f\n' % (rescount+1, \
+                                                       sqrt( ( model0_xyzs[rescount][0] - pos[0] )*( model0_xyzs[rescount][0] - pos[0] ) +
+                                                             ( model0_xyzs[rescount][1] - pos[1] )*( model0_xyzs[rescount][1] - pos[1] ) +
+                                                             ( model0_xyzs[rescount][2] - pos[2] )*( model0_xyzs[rescount][2] - pos[2] ) ) ) )
+
 
                 if RENUMBER_ATOMS:
                     print '%s%5d%s%8.3f%8.3f%8.3f%s'\

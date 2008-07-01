@@ -12,14 +12,14 @@ dirs = ['.'] #Current directory
 
 for dir in dirs:
 
-    work_prefix = 'dig25:/work/'
-    command = 'ssh dig25 mkdir -p ' + abspath(dir).replace('/Users/','/work/')
+    work_prefix = 'dig22:/work/'
+    command = 'ssh dig22 mkdir -p ' + abspath(dir).replace('/Users/','/work/')
     print(command)
     system(command)
 
     digdir = abspath(dir).replace('/Users/',work_prefix)
 
-    command = 'rsync -avz '+dir+'/ '+digdir+' '+string.join(extra_args)
+    command = 'rsync -avz '+dir+'/'+string.join(extra_args)+' '+digdir
     print(command)
     system(command)
 

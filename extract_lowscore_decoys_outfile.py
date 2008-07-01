@@ -58,8 +58,6 @@ if not scorecol_defined:
 
 infiles = argv[1:]
 
-
-
 for infile in infiles:
     tags = []
 
@@ -75,7 +73,7 @@ for infile in infiles:
 
     assert(infile[-3:] == 'out')
 
-    #    print 'grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1)
+    #   print 'grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1)
 
     NSTRUCT = NSTRUCT_IN
     if (NSTRUCT < 1.0 ):
@@ -124,6 +122,6 @@ for infile in infiles:
 
     command = 'rm '+templist_name
     #    print(command)
-    system(command)
+    #system(command)
 
 

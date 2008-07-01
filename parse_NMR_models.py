@@ -12,8 +12,9 @@ lines = open( pdbfile ).readlines()
 count = 0
 writeout = 0
 outfiles = []
+in_pdb = 0
 for line in lines:
-    if line[0:6] == 'ENDMDL':
+    if line[0:6] == 'ENDMDL' or line[0:5] == 'MODEL' and in_pdb:
         fid.close()
         writeout = 0
 
@@ -26,6 +27,7 @@ for line in lines:
         outfiles.append(outfile)
         fid = open( outfile, 'w')
         writeout = 1
+        in_pdb = 1
 
 
 #        command = '/users/rhiju/python/replace_chain.py '+outfile+' A _ > temp'
