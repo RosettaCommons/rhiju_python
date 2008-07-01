@@ -15,7 +15,7 @@ if len(argv)<2:
     Help()
 
 cluster = argv[1]
-clusterlist = [ 'syd1','syd2','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut' ];
+clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin' ];
 if cluster not in clusterlist:
     print 'Hey, '+cluster+' is not a known cluster.'
     Help()
@@ -26,10 +26,10 @@ dir = '.'
 clusterdir = abspath(dir).replace('/Users/rhiju/','')
 clusterdir = clusterdir.replace('/work/rhiju/','')
 
-if cluster[:3]=='syd':
-    n = cluster[3]
-    cluster = 'syd'
-    clusterdir = 'work'+n+'/'+clusterdir
+#if cluster[:3]=='syd':
+#    n = cluster[3]
+#    cluster = 'syd'
+#    clusterdir = 'work'+n+'/'+clusterdir
 
 command = 'ssh ' + cluster + ' mkdir -p '+clusterdir
 print(command)

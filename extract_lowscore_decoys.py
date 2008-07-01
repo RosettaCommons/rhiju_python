@@ -99,6 +99,12 @@ for infile in infiles:
     else:
         scorecols  = [scorecol]
 
+
+    binary_silentfile = 0
+    remark_tags = string.split( popen('head -n 3 '+infile).readlines()[-1] )
+    if remark_tags.count('BINARY_SILENTFILE'):
+        binary_silentfile = 1
+
     assert(infile[-3:] == 'out')
 #    lines = popen('grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
 
@@ -196,6 +202,14 @@ for infile in infiles:
             MINI_EXE = '~rhiju/src/mini/bin/rna_test.macosgccrelease'
         command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
                   ( MINI_EXE, outfilename, string.join( tags ) )
+
+    if ( binary_silentfile ):
+        MINI_EXE = '/work/rhiju/src/mini/bin/score.linuxgccrelease'
+        if not exists( MINI_EXE):
+            MINI_EXE = '~rhiju/src/mini/bin/score.macosgccrelease'
+        command = '%s -in:file:silent  %s  -rescore:output_only -in::file::binary_silentfile  -tags %s -database ~/minirosetta_database/ -in::file::fullatom' % \
+                  ( MINI_EXE, outfilename, string.join( tags ) )
+
 
     print(command)
     system(command)

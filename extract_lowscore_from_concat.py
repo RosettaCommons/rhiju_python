@@ -8,7 +8,7 @@ files = argv[1:]
 
 for file in files:
     if file[-3:]=='.gz':
-        lines = popen(  'gzcat '+file ).readlines()
+        lines = popen(  'zcat '+file ).readlines()
     else:
         lines = open( file ).readlines()
 

@@ -93,7 +93,7 @@ fid = open( dirname( abspath( scorefile) )+'/data_for_matlab.txt', 'w' )
 fid_pdbnames = open( dirname( abspath( scorefile) )+'/pdbnames_for_matlab.txt', 'w' )
 
 header_cols = string.split( header_line )
-useful_cols = ['rms','mxn','mxrms','mm11','mm22','mm33','mm43','mm74','gdtmm']
+useful_cols = ['rms','mxn','mxrms','mm11','mm22','mm33','mm43','mm74','gdtmm','score']
 useful_index = []
 for useful_col in useful_cols:
     useful_index.append( header_cols.index( useful_col  ) )

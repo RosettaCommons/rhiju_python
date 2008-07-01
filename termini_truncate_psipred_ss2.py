@@ -19,7 +19,7 @@ else:
     outid = sys.stdout
 
 if psipred_ss2file[-2:] == 'gz':
-    lines = popen('gzcat '+psipred_ss2file).readlines()
+    lines = popen('zcat '+psipred_ss2file).readlines()
 else:
     lines = open(psipred_ss2file).readlines()
 

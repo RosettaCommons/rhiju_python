@@ -28,24 +28,27 @@ for i in range(1, len(outfiles)):
     line = data.readline() # Skip first two lines
     line = data.readline()
 
-    line = data.readline()
     while line:
-        line = data.readline()
+        line = data.readline()[:-1]
 
-        description_index = line.find('S')
+        description_index = line.find('S_')
         if description_index < 0:
-            description_index = line.find('F')
+            description_index = line.find('F_')
 
-        tag = line[description_index:]
 
-        tagcols = string.split(tag,'_')
-        try:
-            tagnum = int( tagcols[-1] )
-            tagcols[-1] = '%06d' %  (tagnum + 10000*i)
-            newtag = string.join( tagcols,'_')
+        if description_index >= 0:
+            tag = line[description_index:]
 
-            line = line[:description_index] + newtag
-        except:
-            continue
+            tagcols = string.split(tag,'_')
+            try:
+                tagnum = int( tagcols[-1] )
+                tagcols[-1] = '%06d' %  (tagnum + 10000*i)
+                newtag = string.join( tagcols,'_')
+
+                line = line[:description_index] + newtag
+            except:
+                continue
+
+        if len(line) < 1: continue
 
         print line

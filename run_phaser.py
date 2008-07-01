@@ -15,6 +15,6 @@ for i in range( len(sys.argv)/2 ):
         inputfile  = inputfile.replace('users','work')
         outputfile = outputfile.replace('users','work')
 
-    if not(exists(outputfile)):
+    if not(exists(outputfile)) or outputfile == '/dev/null':
         system("%s < %s > %s"%(executable,inputfile,outputfile))
 

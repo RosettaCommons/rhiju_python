@@ -4,8 +4,8 @@
 from phil import *
 from os.path import dirname
 
-scop_file = '/work/pbradley/scop/dir.cla.scop.txt'
-VALL_SCOP_FILE = '/work/pbradley/scop/vall.scop.1.65.2001-02-02'
+scop_file = '~rhiju/scop/dir.cla.scop.txt'
+VALL_SCOP_FILE = '~rhiju/scop/vall.scop.1.65.2001-02-02'
 #VALL_SCOP_FILE = '/data/pbradley/scop/vall.scop.1.65.2001-02-02'
 OVERWRITE = 1
 

@@ -101,15 +101,23 @@ for globfile in globfiles:
 
     log_file = outdir + '/' + basename(globfile)[:-4] + '.log'
     sol_file = outdir + '/' + basename(globfile)[:-4] + '.sol'
+    sum_file = outdir + '/' + basename(globfile)[:-4] + '.sum'
 
-    if exists( log_file ):
-        if exists( sol_file ):
-            print 'NOT DOING ',globfile,'. (Already seeing log file ',log_file,'.)'
-            continue
-        else:
-            system( 'rm '+log_file)
+    if exists( sol_file ):
+        #print 'NOT DOING ',globfile,'. (Already seeing sol file ',sol_file,'.)'
+        continue
     else:
-        print 'Doing ... '+globfile
+        if exists( log_file ): system( 'rm '+log_file)
+
+    #if exists( sum_file ):
+    #    lines = open( sum_file ).readlines()
+    #    if (lines[-2].find( '0 accepted' ) > 0 ):
+    #        #print 'NOT DOING ',globfile,'. (Already seeing failed sum file ',sum_file,'.)'
+    #        continue
+    #else:
+    #    if exists( log_file ): system( 'rm '+log_file)
+
+    print 'Doing ... ',globfile
 
     data_file = globfile[:-4]+".script"
     data = open(data_file,'w')
@@ -136,6 +144,12 @@ for globfile in globfiles:
 
 
     count += 1
+
+    ##############################
+    # Trying to reduce file i/o
+    ##############################
+    log_file = '/dev/null'
+
     condor_file.write(' %s %s ' % (data_file,log_file))
     if ( count % NUMJOBS == 0 ):
         condor_file.write('\nQueue 1\n')
