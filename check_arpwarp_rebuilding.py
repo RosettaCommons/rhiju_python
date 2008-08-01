@@ -29,7 +29,8 @@ for logfile in globfiles:
         numresMAX = 0
         for line in lines:
             cols = string.split( line )
-            numres = int( cols[4][1:] )
+            #print cols
+            numres = int( cols[-2][1:] )
             if numres >= numresMAX:
                 numresMAX = numres
                 bestline = line

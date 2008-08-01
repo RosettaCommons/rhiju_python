@@ -67,10 +67,10 @@ if not phaser_append:
     condor_file.write('\n')
 
 
-    command = 'cp ~/python/run_phaser.py .'
+    command = 'cp ~rhiju/python/run_phaser.py .'
     system(command)
 
-    command = 'rsync -az ~/phaser . '
+    command = 'rsync -az ~rhiju/phaser . '
     system(command)
 
     command = 'chmod 777 run_phaser.py .'

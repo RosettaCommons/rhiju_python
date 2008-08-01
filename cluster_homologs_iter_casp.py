@@ -32,8 +32,9 @@ print(command)
 system(command)
 
 for line in out_file_list:
+	    print line
             out_file=line[0]
-            name = line[1]
+            name = line[-1]
             command = ' cat %s > big.out'%out_file
             print(command)
             system(command)

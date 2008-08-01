@@ -56,9 +56,9 @@ for i in range(len(lines)):
 
     line = lines[i]
 
-    #    if len(line)>5 and line[:6]=='ENDMDL':break #Its an NMR model.
+    if len(line)>5 and line[:6]=='ENDMDL':break #Its an NMR model.
 
-    if (chainid == line[21] or ignorechain):
+    if ( ((len(line)>22) and chainid == line[21]) or ignorechain):
         line_edit = line
         if line[0:3] == 'TER':
             continue

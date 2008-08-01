@@ -64,9 +64,7 @@ else:
         print 'bad silent file type'
         sys.exit()
 
-#al = NBAlign(silent_seq,seq)
-#TEMPORARY HACK!!
-al = NBAlign(seq,seq)
+al = NBAlign(silent_seq,seq)
 
 sys.stderr.write('found dssp secondary structure for %d percent of sequence\n' \
                  %( (len(al.keys())*100)/len(silent_seq)))
@@ -83,18 +81,21 @@ sys.stderr.write('found coordinates for %d percent of sequence\n' \
                  %( (len(ca.keys())*100)/len(silent_seq)))
 
 
-print "# PSIPRED VFORMAT (PSIPRED V2.5 by David Jones)"
+print "# PSIPRED HFORMAT (PSIPRED V2.6 by David Jones)"
 print
-for i in range(len(silent_seq)):
-    sschar = "C"
-    ssprob = [1.00, 0.00, 0.00]
 
-    if i in al.keys():
-        if ss3[al[i]] == "H":
-            sschar = "H"
-            ssprob = [0.00, 1.00, 0.00]
-        elif ss3[al[i]] == "E":
-            sschar = "E"
-            ssprob = [0.00, 0.00, 1.00]
+confidence = ""
+for i in range( len( silent_seq) ): confidence+='9'
+print "Conf:",confidence
 
-    print "%4d %s %s   %5.3f  %5.3f  %5.3f" % ( i+1, silent_seq[i], sschar, ssprob[0],ssprob[1],ssprob[2])
+print
+
+prediction =''
+for i in range( len( silent_seq) ):
+    prediction += ss3[al[i]]
+
+print "Pred:", prediction
+print "  AA:", silent_seq
+print
+
+
