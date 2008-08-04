@@ -302,4 +302,4 @@ for pdb in pdb_list[1:]:
     print 'ENDMDL'
 
 
-#system('rm maxsub_sup.pdb maxsub_sup2.pdb rasmol.tcl')
+system('rm maxsub_sup.pdb maxsub_sup2.pdb rasmol.tcl')
