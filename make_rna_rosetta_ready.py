@@ -74,6 +74,8 @@ for line in lines:
             line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
         elif (line[0:6] == 'HETATM') & (line[17:20]==' DC'): #Selenomethionine
             line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
+        elif (line[0:6] == 'HETATM') & (line[17:20]=='CBR'): #Selenomethionine
+            line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
 
         #Don't save alternative conformations.
         if line[16] == 'B': continue;
@@ -84,6 +86,7 @@ for line in lines:
                 #print "AAH ==> " ,  resnum, oldresnum, line_edit
                 count = count + 1
                 longname = line_edit[17:20]
+
                 if longname == '  G':
                     longname = ' rG'
                 elif longname == '  A':
@@ -100,8 +103,18 @@ for line in lines:
                     longname =   ' rC'
                 elif longname == 'U  ':
                     longname =   ' rU'
+                elif longname == ' DG':
+                    longname = ' rG'
+                elif longname == ' DA':
+                    longname = ' rA'
+                elif longname == ' DC':
+                    longname = ' rC'
+                elif longname == ' DT':
+                    longname = ' rU'
                 else:
+                    print longname
                     continue
+
 
 
                 if longer_names.has_key(longname):

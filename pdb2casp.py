@@ -5,7 +5,7 @@ from os import system
 
 def Help():
     print
-    print 'Usage: pdb2casp.py <file1.pdb> <file2.pdb> ... <CASP number>'
+    print 'Usage: pdb2casp.py [-refinement] <file1.pdb> <file2.pdb> ... <CASP number>'
     print
     exit()
 

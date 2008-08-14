@@ -3,12 +3,12 @@ from os import chdir,remove,popen
 import string
 from time import time
 from os.path import exists
-from whrandom import random
+#from whrandom import random
 
 
 def bl2seq(seq1,seq2):
     chdir('/users/pbradley/blast/')
-    
+
     out = open('junk1_bl2.seq','w')
     out.write('>s1\n'+seq1+'\n')
     out.close()
@@ -26,12 +26,12 @@ def bl2seq(seq1,seq2):
     chdir('/users/pbradley/python/')
     return id
 
-    
+
 def al2seq(seq1,seq2):
 
 
-    file1 = '/scratch/Phil/al2seq'+str(random())
-    file2 = '/scratch/Phil/al2seq'+str(random())
+    file1 = '/scratch/Phil/al2seq111'#+str(random())
+    file2 = '/scratch/Phil/al2seq222'#+str(random())
     out = open(file1,'w')
     out.write('>s1\n'+seq1+'\n')
     out.close()
@@ -64,7 +64,7 @@ def al2seq(seq1,seq2):
             assert len(l) == 4
             a2 = a2 + l[2]
             start2 = min(start2,int(l[1]))
-            
+
     s1 = string.join(string.split(a1,'-'),'')
     s2 = string.join(string.split(a2,'-'),'')
     off1 = string.find(seq1,s1)
@@ -87,10 +87,10 @@ def al2seq(seq1,seq2):
             al.append([pos1,pos2])
     return al,id
 
-    
+
 def al2seqD(seq1,seq2):
     chdir('/users/pbradley/blast/')
-    
+
     out = open('/scratch/Phil/junk1_al2.seq','w')
     out.write('>s1\n'+seq1+'\n')
     out.close()
@@ -121,7 +121,7 @@ def al2seqD(seq1,seq2):
             assert len(l) == 4
             a2 = a2 + l[2]
             start2 = min(start2,int(l[1]))
-            
+
     s1 = string.join(string.split(a1,'-'),'')
     s2 = string.join(string.split(a2,'-'),'')
     off1 = string.find(seq1,s1)
@@ -147,7 +147,7 @@ def al2seqD(seq1,seq2):
     chdir('/users/pbradley/python/')
     return al
 
-    
+
 def allal2seq(seq1,seq2):
     chdir('/users/pbradley/blast/')
 
@@ -158,14 +158,14 @@ def allal2seq(seq1,seq2):
         f1 = f1[:-1 * len(str(count-1))] + str(count)
         f2 = f1[:-1 * len(str(count-1))] + str(count)
         count = count + 1
-        
+
     out = open(f1,'w')
     out.write('>s1\n'+seq1+'\n')
     out.close()
     out = open(f2,'w')
     out.write('>s2\n'+seq2+'\n')
     out.close()
-    
+
     lines = popen('./bl2seq -F F -i '+f1+' -j '+f2+' -p blastp').readlines()
     alignments  = []
     a1 = ''
@@ -202,7 +202,7 @@ def allal2seq(seq1,seq2):
             assert len(l) == 4
             a2 = a2 + l[2]
             start2 = min(start2,int(l[1]))
-            
+
     al = {}
     s1 = string.join(string.split(a1,'-'),'')
     s2 = string.join(string.split(a2,'-'),'')
@@ -221,7 +221,7 @@ def allal2seq(seq1,seq2):
     chdir('/users/pbradley/python/')
     return alignments
 
-    
+
 def Align(a,b):
     ## first use subword matching, length 6
     a2b = {}
@@ -236,7 +236,7 @@ def Align(a,b):
         for i in range(len(b)):
             a2b[i+pos] = i
         return a2b
-    
+
     W = 6
     done = 0
     while not done:
@@ -302,7 +302,7 @@ def Align(a,b):
         #print 'al',al
         #print 'b4',before
         #print 'after',after
-        
+
         for i in al.keys():
             if i not in a2b.keys() and before[i] < al[i] < after[i]:
                 a2b[i] = al[i]
@@ -329,8 +329,8 @@ def Align(a,b):
         ks.sort()
         for i in range(len(ks)-1):
             assert a2b[ks[i+1]]>a2b[ks[i]]
-        
-            
+
+
     ks = a2b.keys()
     ks.sort()
 
@@ -352,7 +352,7 @@ def NoBlastAlign(a,b):
         for i in range(len(b)):
             a2b[i+pos] = i
         return a2b
-    
+
     W = 6
     done = 0
     while not done:
@@ -383,7 +383,7 @@ def NoBlastAlign(a,b):
 def NBAlign(a,b):
     LB = len(b)
     LA = len(a)
-    
+
     a2b = {}
     if string.count(b,a) == 1:
         pos = string.find(b,a)
@@ -414,7 +414,7 @@ def NBAlign(a,b):
     for k in counts.keys():l.append([len(counts[k]),k])
     l.sort()
     l.reverse()
-    
+
 
     before = {}
     for i in range(LA):before[i] = -1
@@ -429,7 +429,7 @@ def NBAlign(a,b):
                before[p1]<p1+offset and \
                after[p1]>p1+offset:
                 a2b[p1] = p1+offset
-    
+
         #reset before,after
         prev = -1
         before = {}
@@ -447,7 +447,7 @@ def NBAlign(a,b):
                 prev = a2b[i]
             else:
                 after[i] = prev
-    
+
     if len(a2b.keys()) == min(LA,LB):
         return a2b
 

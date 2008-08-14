@@ -39,11 +39,11 @@ if (pdb_file[-3:]=='.gz'):
 
 
 if chain_defined:
-    lines = popen('~rhiju/dssp '+pdb_file+' | grep "RESIDUE AA" -A10000 | '+\
+    lines = popen(' /users/rhiju/src/dssp/dsspcmbi '+pdb_file+' | grep "RESIDUE AA" -A10000 | '+\
                   ' grep "^.[ 0-9][ 0-9][ 0-9][ 0-9]......'+\
                   chain+'"').readlines()
 else:
-    lines = popen('~rhiju/dssp '+pdb_file+' | grep "RESIDUE AA" -A10000 | '+\
+    lines = popen(' /users/rhiju/src/dssp/dsspcmbi  '+pdb_file+' | grep "RESIDUE AA" -A10000 | '+\
                   ' grep "^.[ 0-9][ 0-9][ 0-9][ 0-9]"' ).readlines()
 
 lowercase = list('abcdefghijklmnopqrstuvwxyz')
