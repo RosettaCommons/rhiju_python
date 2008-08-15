@@ -197,7 +197,7 @@ for infile in infiles:
 
     # Hey this could be a new mini RNA file
     if (scoretags.count('rna_torsion') or scoretags.count('rna_base_axis') ):
-        MINI_EXE = '~rhiju/src/mini/bin/rna_test.linuxgccrelease'
+        MINI_EXE = '/work/rhiju/src/mini/bin/rna_test.linuxgccrelease'
         if not exists( MINI_EXE ):
             MINI_EXE = '~rhiju/src/mini/bin/rna_test.macosgccrelease'
         command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \

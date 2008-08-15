@@ -12,10 +12,9 @@ param_file = 'amber99'
 
 pdbfile = argv[1]
 
-min_pdbfile = 'min_' + pdbfile
+min_pdbfile = param_file + '_' + pdbfile
 tag = min_pdbfile.replace('.pdb','')
 xyzfile = min_pdbfile.replace('.pdb','.xyz')
-scorefile = '%s.sc' % tag
 
 ###########################################################
 # Convert pdb to xyz
@@ -49,11 +48,14 @@ command = '%s/minimize %s 0.01 -k test.key' % ( TINKER_BIN, tag )
 print( command )
 system( command )
 
-############################################################
-# analyze score components
-command = '%s/analyze %s E  -k test.key' % ( TINKER_BIN, tag )
+#################################################################
+# Score
+
+command = '%s/analyze %s E -k test.key' % ( TINKER_BIN, tag )
 print( command )
 lines = popen( command ).readlines()
+
+scorefile = 'minimize_'+pdbfile.replace('.pdb','.sc')
 fid = open( scorefile, 'w' )
 for line in lines:
     if ( len( line ) > 2 and not line[1]=='#' ): fid.write( line )
@@ -65,5 +67,5 @@ system( '%s/xyzpdb %s %s.prm' % ( TINKER_BIN, tag, param_file ) )
 
 ############################################################
 # Cleanup
-system( 'mv %s.pdb_2 %s.pdb'  % (tag,tag) )
-system( 'rm -rf %s.seq* %s.xyz* test.key %s.prm ' % (tag,tag,param_file ) )
+system( 'mv %s.pdb_2 %s.pdb'  % (tag,tag.replace(param_file + '_','minimize_') ) )
+system( 'rm -rf test.key %s* ' % (param_file ) )

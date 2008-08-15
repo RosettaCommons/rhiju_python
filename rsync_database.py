@@ -18,8 +18,8 @@ username = popen( 'whoami' ).readlines()[0][:-1]
 CURRENT_DATABASE_LOCATION = '/work/%s/minirosetta_database' % username
 NEW_DATABASE_LOCATION = '/scratch/USERS/%s/' % username
 
-#rsync_command = '"rsync -avzL --delete %s %s"' % ( CURRENT_DATABASE_LOCATION, NEW_DATABASE_LOCATION )
-rsync_command = '"rsync --bwlimit=500 -avzL %s %s"' % ( CURRENT_DATABASE_LOCATION, NEW_DATABASE_LOCATION )
+rsync_command = '"rsync -avzL --delete %s %s"' % ( CURRENT_DATABASE_LOCATION, NEW_DATABASE_LOCATION )
+#rsync_command = '"rsync --bwlimit=500 -avzL %s %s"' % ( CURRENT_DATABASE_LOCATION, NEW_DATABASE_LOCATION )
 #rsync_command = '"cp -rf %s/scoring/weights/rna_hires.wts %s/minirosetta_database/scoring/weights"' % ( CURRENT_DATABASE_LOCATION, NEW_DATABASE_LOCATION )
 
 
