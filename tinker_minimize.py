@@ -3,12 +3,18 @@
 from sys import argv,exit
 from os.path import exists
 from os import system, popen
+import string
 
 ##########################################################
-# NOTE: WILL NEED TO FIX THIS FOR CLUSTER USE!
 TINKER_BIN = '~rhiju/src/tinker/bin/'
 TINKER_PARAMS = '~rhiju/src/tinker/params/'
 param_file = 'amber99'
+
+CONSTRAIN = 0
+if (argv.count( '-constrain' ) ):
+    pos = argv.index( '-constrain' )
+    del( argv[ pos ] )
+    CONSTRAIN = 1
 
 pdbfile = argv[1]
 
@@ -17,36 +23,49 @@ tag = min_pdbfile.replace('.pdb','')
 xyzfile = min_pdbfile.replace('.pdb','.xyz')
 
 ###########################################################
-# Convert pdb to xyz
+# Convert pdb to xyz -- this will figure out chainbreaks too.
 system( 'rm -rf %s*' % tag  ) # Get rid of anything from before
-
-#First need to remove r from rG, rA, rC, rU...
-lines = open( pdbfile ).readlines()
-fid = open( min_pdbfile, 'w')
-for line in lines:
-    if line[:4] == 'ATOM':
-        fid.write( line[:16] + '   '+line[19:] )
-fid.close()
-
-# We'll need this params file.
-system( 'cp %s/%s.prm .' % (TINKER_PARAMS, param_file ) )
-
-# OK, convert
-system( '%s/pdbxyz %s %s.prm' % ( TINKER_BIN, min_pdbfile, param_file ) )
-assert( exists( xyzfile) )
+system( 'cp '+pdbfile+' '+min_pdbfile )
+system( 'cp '+TINKER_PARAMS+param_file+'.prm .' )
+system( '~rhiju/python/pdb2xyz.py '+min_pdbfile )
 
 ###########################################################
 # Minimize it.
-# First, need to make a "key" file, which will allow
-# for GB/SA calculation.
-fid = open( 'test.key', 'w' )
-fid.write( 'parameters amber99\n' )
-fid.write( '# Potential Function Parameter\n' )
-fid.write( 'SOLVATE            GBSA\n' )
-fid.close()
-command = '%s/minimize %s 0.01 -k test.key' % ( TINKER_BIN, tag )
-print( command )
-system( command )
+# Should we do one round with a constraint?
+if (CONSTRAIN):
+    lines = open( tag+".xyz" ).readlines()
+    coords = []
+    for line in lines[1:]:
+        cols = string.split( line )
+        coords.append( [ cols[2],cols[3],cols[4] ] )
+
+    # First, need to make a "key" file, which will allow
+    # for GB/SA calculation.
+    fid = open( 'test.key', 'w' )
+    fid.write( 'parameters amber99\n' )
+    fid.write( '# Potential Function Parameter\n' )
+    fid.write( 'SOLVATE            GBSA\n' )
+    force_constant = 0.6 * ( 1/2.0) * (1/2.0) #In units of (kcal/mol)/Angstrom^2
+    for i in range( len( coords) ):
+        fid.write( 'RESTRAIN-POSITION %5d %12s %12s %12s %12.6f\n' % \
+                       (i+1, coords[i][0],coords[i][1],coords[i][2],force_constant));
+    fid.close()
+
+    command = '%s/minimize %s 0.01 -k test.key' % ( TINKER_BIN, tag )
+    print( command )
+    system( command )
+else:
+    # First, need to make a "key" file, which will allow
+    # for GB/SA calculation.
+    fid = open( 'test.key', 'w' )
+    fid.write( 'parameters amber99\n' )
+    fid.write( '# Potential Function Parameter\n' )
+    fid.write( 'SOLVATE            GBSA\n' )
+    fid.close()
+    command = '%s/minimize %s 0.01 -k test.key' % ( TINKER_BIN, tag )
+    print( command )
+    system( command )
+
 
 #################################################################
 # Score
