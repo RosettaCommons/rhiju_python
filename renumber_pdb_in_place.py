@@ -18,6 +18,7 @@ for pdbname in pdbnames:
 
 	outid  = open( 'temp.txt','w')
 
+	atomnum  = 0
 	for line in lines:
 		line_edit = line
 		if line[0:3] == 'TER':
@@ -27,13 +28,15 @@ for pdbname in pdbnames:
 
 		    if not (line[16]==' ' or line[16]=='A'): continue
 
+		    atomnum += 1
+
 		    resnum = line_edit[23:26]
 		    if not resnum == oldresnum:
 			count = count + 1
 		    oldresnum = resnum
 
 		    newnum = '%3d' % count
-		    line_edit = line_edit[0:23] + newnum + line_edit[26:]
+		    line_edit = '%s%4d%s%s%s' % (line_edit[0:7],atomnum,line[11:23], newnum, line_edit[26:] )
 
 		    outid.write(line_edit)
 

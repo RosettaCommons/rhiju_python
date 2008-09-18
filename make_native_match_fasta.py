@@ -35,9 +35,9 @@ for pdb_file in pdb_files:
     prefix = fastaname[:-5]
 
     pdb_file_goodchain = 'temp'+basename(pdb_file)
-    command = '/work/rhiju/python/replace_chain.py '+pdb_file+' '+chain+' '+newchain+' > '+ pdb_file_goodchain
+    command = '~rhiju/python/replace_chain.py '+pdb_file+' '+chain+' '+newchain+' > '+ pdb_file_goodchain
     if CLEANUP:
-        command = '/work/rhiju/python/replace_chain.py '+pdb_file+' '+newchain+' > '+ pdb_file_goodchain
+        command = '~rhiju/python/replace_chain.py '+pdb_file+' '+newchain+' > '+ pdb_file_goodchain
     print(command)
     system(command)
 
@@ -46,7 +46,12 @@ for pdb_file in pdb_files:
     if newchain == '_' or newchain == '-':
         newchain_fix = ' '
 
-    lines = popen('/work/rhiju/dssp '+pdb_file_goodchain+' | grep "RESIDUE AA" -A10000 | '+\
+    DSSP_EXE = '/work/rhiju/dssp'
+    if not exists( DSSP_EXE ):
+        DSSP_EXE =  '/Users/rhiju/src/dssp/dsspcmbi'
+        assert( exists( DSSP_EXE) )
+
+    lines = popen( DSSP_EXE + ' '+pdb_file_goodchain+' | grep "RESIDUE AA" -A10000 | grep -v \! | '+\
                   ' grep "^.[ 0-9][ 0-9][ 0-9][ 0-9]......'+\
                   newchain_fix+'"').readlines()
 
@@ -97,7 +102,12 @@ for pdb_file in pdb_files:
             print 'bad silent file type'
             sys.exit()
 
+    print silent_seq
+    print seq
+
     al = NBAlign(silent_seq,seq)
+
+    print al
 
     sys.stderr.write('found dssp secondary structure for %d percent of sequence\n' \
                      %( (len(al.keys())*100)/len(silent_seq)))
@@ -112,7 +122,6 @@ for pdb_file in pdb_files:
 
     sys.stderr.write('found coordinates for %d percent of sequence\n' \
                      %( (len(ca.keys())*100)/len(silent_seq)))
-
 
     al_in_pdbfile = [ al[x] for x in al.keys() ]
     align_seq_silent = '-'*min( al_in_pdbfile)
@@ -148,10 +157,15 @@ for pdb_file in pdb_files:
     if exists( boinc_frag_file )  or  exists( boinc_frag_file+'.gz' ):
         boinc_prefix = 'boinc_'
 
+    ROSETTA_EXE = '/work/rhiju/rosetta++/rosetta.gcc'
+    if not exists( ROSETTA_EXE) :
+        ROSETTA_EXE = '/Users/rhiju/rosetta++/rosetta.mactel'
+        assert( exists( ROSETTA_EXE) )
+
     if len(prefix) > 0:
-        command = '/work/rhiju/rosetta++/rosetta.gcc pp '+fourlettercode+' '+newchain+' -map_sequence '+align_file+' -paths /work/rhiju/paths.txt -score -nstruct 1 -fa_input -s '+pdb_file_goodchain + ' -protein_name_prefix ' + prefix + ' -frags_name_prefix ' + boinc_prefix + prefix
+        command =  ROSETTA_EXE + ' pp '+fourlettercode+' '+newchain+' -map_sequence '+align_file+' -paths ~rhiju/paths.txt -score -nstruct 1 -fa_input -s '+pdb_file_goodchain + ' -protein_name_prefix ' + prefix + ' -frags_name_prefix ' + boinc_prefix + prefix
     else:
-        command = '/work/rhiju/rosetta++/rosetta.gcc pp '+fourlettercode+' '+newchain+' -map_sequence '+align_file+' -paths /work/rhiju/paths.txt -score -nstruct 1 -fa_input -s '+pdb_file_goodchain
+        command = ROSETTA_EXE + ' pp '+fourlettercode+' '+newchain+' -map_sequence '+align_file+' -paths ~rhiju/paths.txt -score -nstruct 1 -fa_input -s '+pdb_file_goodchain
     print(command)
     system(command)
 

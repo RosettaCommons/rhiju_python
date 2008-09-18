@@ -54,11 +54,13 @@ for i in range( len( chainids ) ) :
     if chainids[i] == '_':
         chainids[i] = ' '
 
+goodnames = [' rA',' rC',' rG',' rU']
 for line in lines:
     if len(line)>5 and line[:6]=='ENDMDL':break #Its an NMR model.
     if len(line) <= 21:  continue
     if (line[21] in chainids or ignore_chain):
         line_edit = line
+
         if line[0:3] == 'TER':
             continue
         elif (line[0:6] == 'HETATM') & (line[17:20]=='MSE'): #Selenomethionine
@@ -76,6 +78,8 @@ for line in lines:
             line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
         elif (line[0:6] == 'HETATM') & (line[17:20]=='CBR'): #Selenomethionine
             line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
+        elif (line[0:6] == 'HETATM') & (line[17:20]=='CB2'):
+            line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
 
         #Don't save alternative conformations.
         if line[16] == 'B': continue;
@@ -86,7 +90,6 @@ for line in lines:
                 #print "AAH ==> " ,  resnum, oldresnum, line_edit
                 count = count + 1
                 longname = line_edit[17:20]
-
                 if longname == '  G':
                     longname = ' rG'
                 elif longname == '  A':
@@ -111,11 +114,16 @@ for line in lines:
                     longname = ' rC'
                 elif longname == ' DT':
                     longname = ' rU'
+                elif longname == 'GUA':
+                    longname = ' rG'
+                elif longname == 'ADE':
+                    longname = ' rA'
+                elif longname == 'CYT':
+                    longname = ' rC'
+                elif longname == 'URA':
+                    longname = ' rU'
                 else:
-                    print longname
-                    continue
-
-
+                    if longname not in goodnames:    continue
 
                 if longer_names.has_key(longname):
                     fastaid.write( longer_names[longname] );

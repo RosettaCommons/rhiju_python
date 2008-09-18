@@ -122,6 +122,6 @@ for infile in infiles:
 
     command = 'rm '+templist_name
     #    print(command)
-    #system(command)
+    system(command)
 
 
