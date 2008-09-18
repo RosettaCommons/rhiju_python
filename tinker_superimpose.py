@@ -44,11 +44,11 @@ for file in pdb_files_in:
 for file in pdb_files:
 
     command = '~rhiju/python/pdb2xyz.py '+file
-    #print( command )
+    print( command )
     system( command )
 
     xyz  = file.replace('.pdb','.xyz')
-    assert( exists( xyz) )
+    if not( exists( xyz) ): continue
 
     rms_file = xyz.replace( '.xyz', '.rms.txt' )
 
@@ -62,7 +62,7 @@ for file in pdb_files:
 
 for file in pdb_files:
     xyz  = file.replace('.pdb','.xyz')
-    command = 'rm -rf '+xyz+'*'
+    command = 'rm -rf *seq '+xyz+'*'
     #print( command )
     system( command )
 

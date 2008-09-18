@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from sys import argv
+from sys import argv,exit
 from os import system
 
 tinker_name_convert = { '  A':'  A',                        '  C':'  C',
@@ -32,6 +32,7 @@ for file in argv[1:]:
     coords_o3star = {}
     multiple_chains = 0
 
+    oldresnum = -1
     for line in lines:
         if line[:4] == 'ATOM':
             resname = line[17:20]
@@ -61,7 +62,10 @@ for file in argv[1:]:
 
                     if (dist2 > 9.0 ):
                         chain = chain+1
-                        multiple_chains = 1
+
+            if ( resnum < oldresnum ):
+                chain = chain+1
+            oldresnum = resnum
 
             line = line[:21] + chainletters[chain] + line[22:]
             fid.write( line )
@@ -69,7 +73,7 @@ for file in argv[1:]:
     fid.close()
 
     multiple_chain_tag = ''
-    if (multiple_chains): multiple_chain_tag = ' ALL '
+    if (chain>0): multiple_chain_tag = ' ALL '
 
     command = '~rhiju/src/tinker/bin/pdbxyz '+new_file+' '+multiple_chain_tag+' ~rhiju/src/tinker/params/amber99.prm > /dev/null 2> /dev/null'
     #print command

@@ -77,7 +77,7 @@ for outfile in outfiles:
 
     count = 0
     start = 0
-    globfiles = glob( 'S_*OUT/*pdb' )
+    globfiles = glob( 'S_*OUT/S*pdb' )
     for file in globfiles:
         if ( (count % NUM_JOBS_PER_NODE) == 0):
             if ( start == 1 ):
@@ -114,7 +114,9 @@ fid.write('\n')
 fid.write('for file in pdbfiles:\n')
 fid.write('    chdir( dirname( file ) )\n')
 fid.write('\n')
-fid.write('    if exists( \"min_\"+basename(file) ): continue\n')
+fid.write('    if exists( \"minimize_\"+basename(file) ):\n')
+fid.write('        chdir( CWD )\n')
+fid.write('        continue\n')
 fid.write('\n')
 fid.write('    command = \" '+TINKER_MINIMIZE_PY+'  \"+ basename( file ) \n')
 fid.write('    print( command )\n')

@@ -18,7 +18,9 @@ longer_names={'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
               'XI1': '1', 'XI2': '2',
               'PY3': '3', 'PY2': '2',
               'NAP': 'B',
-              ' rA': 'a', ' rC': 'c', ' rG': 'g', ' rU': 'u'}
+              ' rA': 'a', ' rC': 'c', ' rG': 'g', ' rU': 'u',
+              'ADE': 'a', 'CYT': 'c', 'GUA': 'g', 'URA': 'u'
+              }
 
 short_to_long = {}
 for rsd in longer_names.keys():short_to_long[longer_names[rsd]] = rsd

@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
 from sys import argv,exit
-from os.path import exists
-from os import system, popen
+from os.path import exists,basename,dirname,abspath
+from os import system, popen, chdir, getcwd
 import string
+from random import random
 
 ##########################################################
 TINKER_BIN = '~rhiju/src/tinker/bin/'
@@ -16,18 +17,55 @@ if (argv.count( '-constrain' ) ):
     del( argv[ pos ] )
     CONSTRAIN = 1
 
-pdbfile = argv[1]
+pdbfile = abspath( argv[1] )
 
-min_pdbfile = param_file + '_' + pdbfile
+WORKDIR = dirname( pdbfile )
+if exists( '/scratch/USERS' ):
+    WORKDIR = '/scratch/USERS/rhiju/'
+    system( 'mkdir -p '+WORKDIR )
+    assert( exists( WORKDIR) )
+
+random_tag = '%06d' % int( 1000000 * random() )
+
+min_pdbfile = param_file + '_' + random_tag + '_' + basename(pdbfile)
 tag = min_pdbfile.replace('.pdb','')
 xyzfile = min_pdbfile.replace('.pdb','.xyz')
 
+CWD = getcwd()
+
+# Let's get over to our working directory...
+system( 'cp '+pdbfile+' '+WORKDIR+min_pdbfile )
+chdir( WORKDIR )
+system( 'cp '+TINKER_PARAMS+param_file+'.prm .' )
+
 ###########################################################
 # Convert pdb to xyz -- this will figure out chainbreaks too.
-system( 'rm -rf %s*' % tag  ) # Get rid of anything from before
-system( 'cp '+pdbfile+' '+min_pdbfile )
-system( 'cp '+TINKER_PARAMS+param_file+'.prm .' )
-system( '~rhiju/python/pdb2xyz.py '+min_pdbfile )
+PDBXYZ = '~rhiju/python/pdb2xyz.py'
+#assert( exists( PDBXYZ ) )
+system( PDBXYZ+' '+min_pdbfile )
+
+############################################################
+# How about superimposing?
+#Is there an obvious native?
+found_native = 0
+pos = pdbfile.index( 'chunk' )
+if (pos > 0 ):
+    rna_name = pdbfile[pos:(pos+13)]
+    native_pdb = '/work/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+    if exists( native_pdb ):
+        found_native = 1
+        native_xyz = native_pdb.replace('.pdb','.xyz')
+        if not exists( native_xyz ):
+            system( '~rhiju/python/pdb2xyz.py '+native_pdb )
+
+if found_native:
+    rms_file = pdbfile.replace( '.pdb', '.rms.txt' )
+    command = TINKER_BIN+'superpose '+native_xyz+' '+TINKER_PARAMS+param_file+'.prm'+' '+tag+' '+TINKER_PARAMS+param_file+' 1,0,0 n u n 0.0 > '+rms_file+' 2> /dev/null'
+    print( command )
+    system( command )
+
+    rms_line = popen( 'tail -n 1 '+rms_file ).readlines()[0]
+    print string.split(rms_line)[-1], ' ==> ', file
 
 ###########################################################
 # Minimize it.
@@ -74,11 +112,22 @@ command = '%s/analyze %s E -k test.key' % ( TINKER_BIN, tag )
 print( command )
 lines = popen( command ).readlines()
 
-scorefile = 'minimize_'+pdbfile.replace('.pdb','.sc')
+scorefile = dirname(abspath(pdbfile))+'/minimize_'+basename(pdbfile).replace('.pdb','.sc')
 fid = open( scorefile, 'w' )
 for line in lines:
     if ( len( line ) > 2 and not line[1]=='#' ): fid.write( line )
 fid.close()
+
+# superimpose minimized pdb
+if found_native:
+    rms_file = dirname( pdbfile ) +  '/' + 'minimize_'+ basename(pdbfile).replace( '.pdb', '.rms.txt' )
+    command = TINKER_BIN+'superpose '+native_xyz+' '+TINKER_PARAMS+param_file+'.prm'+' '+tag+' '+TINKER_PARAMS+param_file+' 1,0,0 n u n 0.0 > '+rms_file+' 2> /dev/null'
+    print( command )
+    system( command )
+
+    rms_line = popen( 'tail -n 1 '+rms_file ).readlines()[0]
+    print string.split(rms_line)[-1], ' ==> ', file
+
 
 ############################################################
 # Convert back to PDB
@@ -86,5 +135,8 @@ system( '%s/xyzpdb %s %s.prm' % ( TINKER_BIN, tag, param_file ) )
 
 ############################################################
 # Cleanup
-system( 'mv %s.pdb_2 %s.pdb'  % (tag,tag.replace(param_file + '_','minimize_') ) )
-system( 'rm -rf test.key %s* ' % (param_file ) )
+system( 'mv %s.pdb_2 %s/%s'  % (tag,dirname(pdbfile),'minimize_'+basename( pdbfile ) ) )
+system( 'rm -rf test.key %s* ' % ( random_tag ) )
+
+chdir( CWD )
+
