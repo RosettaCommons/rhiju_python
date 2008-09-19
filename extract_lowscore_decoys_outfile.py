@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from sys import argv,exit
+from sys import argv,exit,stderr
 from os import popen, system
 from os.path import basename
 import string

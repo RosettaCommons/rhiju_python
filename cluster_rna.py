@@ -7,7 +7,7 @@ import string
 
 outfiles = argv[1:]
 
-num_models = 20
+num_models = '0.01'
 
 RMS_THRESHOLD = 2.0
 
@@ -16,15 +16,21 @@ for outfile in outfiles:
         print "Cannot find", outfile
         continue
 
-    outfile_scorecut = outfile.replace('.out','.low%d.out' % num_models )
+    outfile_scorecut = outfile.replace('.out','.low%s.out' % num_models )
+
     if not exists( outfile_scorecut ):
-        command = '~rhiju/python/extract_lowscore_decoys_outfile.py %s %d > %s '% (outfile, num_models, outfile_scorecut)
+        command = '~rhiju/python/extract_lowscore_decoys_outfile.py %s %s > %s '% (outfile, num_models, outfile_scorecut)
         #print( command )
         system( command )
 
+    CLUSTER_EXE = '/users/rhiju/src/mini/bin/cluster.macosgccrelease'
+    if not( exists( CLUSTER_EXE ) ):
+        CLUSTER_EXE = '/work/rhiju/src/mini/bin/cluster.linuxgccrelease'
+    assert( exists( CLUSTER_EXE) )
+
     cluster_logfile = outfile.replace('.out','.cluster.log' )
     if not exists( cluster_logfile ):
-        command = 'cluster.macosgccrelease -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts -rescore:output_only  -radius %f > %s' % ( outfile_scorecut, RMS_THRESHOLD, cluster_logfile )
+        command = '%s -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts -rescore:output_only  -radius %f > %s' % ( CLUSTER_EXE, outfile_scorecut, RMS_THRESHOLD, cluster_logfile )
         #print( command )
         system( command )
 
