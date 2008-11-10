@@ -3,7 +3,7 @@
 import string
 from sys import argv,stderr
 from os import popen,system
-from os.path import exists
+from os.path import exists,dirname,basename
 from amino_acids import longer_names
 
 #assert( len(argv)>2)
@@ -49,7 +49,7 @@ for pdbname in pdbnames:
         lines = open(netpdbname,'r').readlines()
 
     outfile = pdbname
-    outfile = string.lower( outfile )
+    outfile = dirname( outfile ) + '/' + string.lower( basename(outfile) )
     outfile = outfile.replace( '.pdb', '_RNA.pdb').replace('.gz','');
     outid = open( outfile, 'w')
 

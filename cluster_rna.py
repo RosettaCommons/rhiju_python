@@ -38,18 +38,26 @@ for outfile in outfiles:
             cols = string.split( line[:-1] )
             score_and_tag.append( ( float(cols[1]), cols[-1] ) )
         score_and_tag.sort()
-        NUM_TAGS = len( score_and_tag ) * float( num_models )
+        NUM_TAGS = int( len( score_and_tag ) * float( num_models ) + 0.5 )
         print NUM_TAGS
         listfile_scorecut = outfile.replace('.sc','.list' )
         fid = open( listfile_scorecut,'w')
         for i in range( NUM_TAGS ):
             tag = score_and_tag[i][-1]
             pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
-                tag.replace('minimize_','')+'_OUT/'+tag + '.pdb'
+                      tag.replace('minimize_','')+'_OUT/'+tag + '.pdb'
+            if not exists( pdbname ):
+                pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
+                          tag.replace('minimize_','')+'.min_pdb'
+                #print pdbname
             assert( exists( pdbname ) )
-            pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb')
+
+            pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb').replace('S_','s_')
+            #print pdbname_RNA
+
             if not exists( pdbname_RNA ):
                 system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
+            #print pdbname_RNA
             assert( exists( pdbname_RNA ) )
             fid.write( pdbname_RNA+'\n' )
         fid.close()
