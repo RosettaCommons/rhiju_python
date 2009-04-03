@@ -8,6 +8,12 @@ from os.path import exists
 from os import system, popen
 import string
 
+CLEANUP = 1
+if (argv.count( '-noclean' ) ):
+    pos = argv.index( '-noclean' )
+    del( argv[ pos ] )
+    CLEANUP = 0
+
 native_file = argv[1]
 pdb_files_in = argv[2:]
 
@@ -18,10 +24,11 @@ param_file = 'amber99'
 #Get xyz of native file.
 assert( exists( native_file ))
 
-command = '~rhiju/python/pdb2xyz.py '+native_file
-#print( command )
-system( command )
 native_xyz  = native_file.replace('.pdb','.xyz')
+if not exists( native_xyz ):
+    command = '~rhiju/python/pdb2xyz.py '+native_file
+    #print( command )
+    system( command )
 assert( exists( native_xyz) )
 
 pdb_files = []
@@ -60,13 +67,14 @@ for file in pdb_files:
     print string.split(rms_line)[-1], ' ==> ', file
 
 
-for file in pdb_files:
-    xyz  = file.replace('.pdb','.xyz')
-    command = 'rm -rf *seq '+xyz+'*'
-    #print( command )
+if CLEANUP:
+
+    for file in pdb_files:
+        xyz  = file.replace('.pdb','.xyz')
+        command = 'rm -rf *seq '+xyz+'*'
+        #print( command )
+        system( command )
+
+    command = 'rm -rf '+native_xyz+'*'
+    # print( command )
     system( command )
-
-
-command = 'rm -rf '+native_xyz+'*'
-#print( command )
-system( command )

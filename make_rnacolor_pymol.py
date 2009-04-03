@@ -30,7 +30,7 @@ if len(pdbfiles) > 1:
 #        for i in highlight_residues:
 #            command += " %d " % i
 
-    command += " -R 10.0 > "+ prefix+"_superposition.pdb"
+    command += " -R 1.0 > "+ prefix+"_superposition.pdb"
 #    command += " > "+ prefix+"_superposition.pdb"
 
     print( command )
@@ -99,7 +99,9 @@ fid.write('color lightorange,a\n')
 fid.write('color salmon,u\n')
 fid.write('\n')
 fid.write('select highlight, resi ')
-for res in highlight_residues: fid.write('%d+' % res)
+
+#for res in highlight_residues: fid.write('%d+' % res)
+fid.write('1-1000')
 fid.write('\n')
 
 

@@ -11,10 +11,9 @@ dirs = ['.'] #Current directory
 extra_args = argv[1:]
 
 for dir in dirs:
-    work_prefix = 'dig29:/work/'
+    work_prefix = 'dig26:/work/'
 
     whipdir = abspath(dir).replace('/Users/',work_prefix)
-
 
     command = 'rsync -avz '+whipdir+'/'+string.join(extra_args)+' . '
     print(command)

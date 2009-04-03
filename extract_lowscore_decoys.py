@@ -197,17 +197,22 @@ for infile in infiles:
 
     # Hey this could be a new mini RNA file
     if (scoretags.count('rna_torsion') or scoretags.count('rna_base_axis') ):
-        MINI_EXE = '/work/rhiju/src/mini/bin/rna_test.linuxgccrelease'
+        MINI_EXE = '/work/rhiju/src/mini/bin/rna_extract.linuxgccrelease'
         if not exists( MINI_EXE ):
-            MINI_EXE = '~rhiju/src/mini/bin/rna_test.macosgccrelease'
-        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
-                  ( MINI_EXE, outfilename, string.join( tags ) )
+            MINI_EXE = '~rhiju/src/mini/bin/rna_extract.macosgccrelease'
+        if binary_silentfile:
+            silent_struct_type = 'binary_rna'
+        else:
+            silent_struct_type = 'rna'
 
-    if ( binary_silentfile ):
+        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -in:file:tags %s -in::file::silent_struct_type %s  ' % \
+                  ( MINI_EXE, outfilename, string.join( tags ), silent_struct_type )
+
+    elif ( binary_silentfile ):
         MINI_EXE = '/work/rhiju/src/mini/bin/score.linuxgccrelease'
         if not exists( MINI_EXE):
             MINI_EXE = '~rhiju/src/mini/bin/score.macosgccrelease'
-        command = '%s -in:file:silent  %s  -rescore:output_only -in::file::binary_silentfile  -tags %s -database ~/minirosetta_database/ -in::file::fullatom' % \
+        command = '%s -in:file:silent  %s  -rescore:output_only -in::file::binary_silentfile  -in:file:tags %s -database ~/minirosetta_database/ -in::file::fullatom' % \
                   ( MINI_EXE, outfilename, string.join( tags ) )
 
 

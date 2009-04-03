@@ -7,7 +7,7 @@ import string
 from os import system,popen,chdir
 from os.path import exists
 from glob import glob
-from whrandom import random
+from random import random
 import sys
 from math import floor
 

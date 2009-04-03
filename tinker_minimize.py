@@ -19,7 +19,7 @@ if (argv.count( '-constrain' ) ):
 
 pdbfile = abspath( argv[1] )
 
-WORKDIR = dirname( pdbfile )
+WORKDIR = dirname( pdbfile )+'/'
 if exists( '/scratch/USERS' ):
     WORKDIR = '/scratch/USERS/rhiju/'
     system( 'mkdir -p '+WORKDIR )

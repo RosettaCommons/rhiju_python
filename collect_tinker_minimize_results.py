@@ -92,9 +92,8 @@ for outdir in outdirs:
                 files_to_calc_rms.append( rmsfile.replace('.rms.txt','.pdb' ) )
 
             rmsfile = rmsfile.replace('min_','').replace('minimize_','')
-            if  exists( rmsfile.replace('.rms.txt','.pdb') ):# and not exists( rmsfile ):
+            if  exists( rmsfile.replace('.rms.txt','.pdb') ) and not exists( rmsfile ):
                 files_to_calc_rms.append( rmsfile.replace('.rms.txt','.pdb' ) )
-
 
     #print score_terms
 

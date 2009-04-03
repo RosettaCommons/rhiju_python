@@ -15,10 +15,12 @@ if len(argv)<2:
     Help()
 
 cluster = argv[1]
-clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin' ];
+clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','biox2','biox2.stanford.edu' ];
 if cluster not in clusterlist:
     print 'Hey, '+cluster+' is not a known cluster.'
     Help()
+
+if cluster == 'biox2': cluster = 'biox2.stanford.edu'
 
 extra_args = argv[2:]
 

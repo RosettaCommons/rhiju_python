@@ -14,12 +14,6 @@ chainletters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 chain = 0
 
-#CLEANUP = 1
-#if (argv.count( '-noclean' ) ):
-#    pos = argv.index( '-noclean' )
-#    del( argv[ pos ] )
-#    CLEANUP = 0
-
 
 for file in argv[1:]:
     lines = open( file ).readlines()

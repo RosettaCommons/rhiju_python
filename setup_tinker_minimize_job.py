@@ -12,7 +12,7 @@ try:
     NUM_JOBS_PER_NODE = int( outfiles[-1] )
     del( outfiles[ -1 ] )
 except:
-    NUM_JOBS_PER_NODE = 20
+    NUM_JOBS_PER_NODE = 100
 
 
 ####################################################
@@ -27,6 +27,10 @@ condor_file.write('Executable   = ./run_tinker_minimize.py\n')
 condor_file.write('\n')
 condor_file.write('GetEnv       = True\n')
 condor_file.write('\n')
+
+EXE = './run_tinker_minimize.py'
+
+bsub_file = open( 'bsubTINKER','w' )
 
 CWD = getcwd()
 
@@ -48,11 +52,11 @@ for outfile in outfiles:
         print( command )
         system( command )
 
-        MINI_EXE = '/work/rhiju/src/mini/bin/rna_test.linuxgccrelease'
+        MINI_EXE = '/work/rhiju/src/mini/bin/rna_extract.linuxgccrelease'
         if not exists( MINI_EXE ):
-            MINI_EXE = '~rhiju/src/mini/bin/rna_test.macosgccrelease'
+            MINI_EXE = '~rhiju/src/mini/bin/rna_extract.macosgccrelease'
 
-        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -extract' % \
+        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -in::file::silent_struct_type binary_rna' % \
                   ( MINI_EXE, outfile )
         print( command )
         system( command )
@@ -82,13 +86,18 @@ for outfile in outfiles:
         if ( (count % NUM_JOBS_PER_NODE) == 0):
             if ( start == 1 ):
                 condor_file.write( '\nQueue 1\n')
+                bsub_file.write( '\n' )
             else:
                 start = 1
             condor_file.write( '\narguments = ' )
+            bsub_file.write( '\nbsub -W 4:0 %s ' % EXE )
         count += 1
         condor_file.write( '  '+outdir+'/'+file )
+        bsub_file.write( '  '+outdir+'/'+file )
 
-    if (not count % NUM_JOBS_PER_NODE == 0): condor_file.write( '\nQueue 1\n')
+    if (not count % NUM_JOBS_PER_NODE == 0):
+        condor_file.write( '\nQueue 1\n')
+        bsub_file.write( '\n')
 
     chdir( CWD )
 
@@ -99,31 +108,34 @@ condor_file.close()
 # will serially process say, 10 PDBs.
 chdir( CWD )
 system( 'cp -rf ~rhiju/python/tinker_minimize.py .' )
-TINKER_MINIMIZE_PY = abspath( 'tinker_minimize.py' )
-fid = open( 'run_tinker_minimize.py','w')
+system( 'cp -rf ~rhiju/python/run_tinker_minimize.py .' )
 
-fid.write('#!/usr/bin/python\n')
-fid.write('\n')
-fid.write('from sys import argv\n')
-fid.write('from os import getcwd, chdir, system\n')
-fid.write('from os.path import basename, dirname, exists\n')
-fid.write('\n')
-fid.write('CWD = getcwd()\n')
-fid.write('pdbfiles = argv[1:]\n')
-fid.write('\n')
-fid.write('for file in pdbfiles:\n')
-fid.write('    chdir( dirname( file ) )\n')
-fid.write('\n')
-fid.write('    if exists( \"minimize_\"+basename(file) ):\n')
-fid.write('        chdir( CWD )\n')
-fid.write('        continue\n')
-fid.write('\n')
-fid.write('    command = \" '+TINKER_MINIMIZE_PY+'  \"+ basename( file ) \n')
-fid.write('    print( command )\n')
-fid.write('    system( command )\n')
-fid.write('\n')
-fid.write('    chdir( CWD )\n')
-fid.close()
+#TINKER_MINIMIZE_PY = abspath( 'tinker_minimize.py' ).replace('Users','home')
+#fid = open( 'run_tinker_minimize.py','w')
 
-system( 'chmod 777 run_tinker_minimize.py' )
-
+#fid.write('#!/usr/bin/python\n')
+#fid.write('\n')
+#fid.write('from sys import argv\n')
+#fid.write('from os import getcwd, chdir, system\n')
+#fid.write('from os.path import basename, dirname, exists\n')
+#fid.write('\n')
+#fid.write('CWD = getcwd()\n')
+#fid.write('pdbfiles = argv[1:]\n')
+#fid.write('\n')
+#fid.write('for file in pdbfiles:\n')
+#fid.write('    chdir( dirname( file ) )\n')
+#fid.write('\n')
+#fid.write('    if exists( \"minimize_\"+basename(file) ):\n')
+#fid.write('        chdir( CWD )\n')
+#fid.write('        continue\n')
+#fid.write('\n')
+#fid.write('    command = \" '+TINKER_MINIMIZE_PY+'  \"+ basename( file ) \n')
+#fid.write('    print( command )\n')
+#fid.write('    system( command )\n')
+#fid.write('\n')
+#fid.write('    chdir( CWD )\n')
+#fid.close()
+#
+#system( 'chmod 777 run_tinker_minimize.py' )
+#
+#

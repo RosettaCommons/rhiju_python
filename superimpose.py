@@ -99,8 +99,8 @@ if args.count('-subset'):
             subset_residue = int(args[pos])
             del args[pos]
             subset_residues.append( subset_residue )
-            subset_residues.append( subset_residue - 1 )
-            subset_residues.append( subset_residue + 1)
+            #subset_residues.append( subset_residue - 1 )
+            #subset_residues.append( subset_residue + 1)
             stderr.write('%d ' % subset_residue )
         except:
             goodint = 0
@@ -176,7 +176,7 @@ for pdb in pdb_list[1:]:
 
     if use_subset:
         command = 'rm blah_'+pdb1
-#        system(command)
+        system(command)
 
     if not lines:
         stderr.write('empty file? %s\n'%pdb)

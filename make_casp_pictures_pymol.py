@@ -122,7 +122,7 @@ if 1:
 
     R = float(argv[3])
 
-    system('/work/pbradley/maxsub/maxsub -e %s -p %s -R %f -o %s'\
+    system('~/mammoth2/mammoth_rna -e %s -p %s -R %f -o %s'\
            %(e_file,p_file,R,
              p_file+'.mammoth'))
 

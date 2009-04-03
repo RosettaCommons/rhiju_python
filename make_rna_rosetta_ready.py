@@ -3,7 +3,7 @@
 import string
 from sys import argv,stderr
 from os import popen,system
-from os.path import exists,dirname,basename
+from os.path import exists,dirname,basename,abspath
 from amino_acids import longer_names
 
 #assert( len(argv)>2)
@@ -49,7 +49,7 @@ for pdbname in pdbnames:
         lines = open(netpdbname,'r').readlines()
 
     outfile = pdbname
-    outfile = dirname( outfile ) + '/' + string.lower( basename(outfile) )
+    outfile = dirname( abspath(outfile) ) + '/' + string.lower( basename(outfile) )
     outfile = outfile.replace( '.pdb', '_RNA.pdb').replace('.gz','');
     outid = open( outfile, 'w')
 
@@ -87,12 +87,32 @@ for pdbname in pdbnames:
                 line_edit = 'ATOM  '+line[6:17]+'  U'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='OMC'): #Selenomethionine
                 line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='5MC'):
+                line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]==' DC'): #Selenomethionine
                 line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='CBR'): #Selenomethionine
                 line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='CB2'):
                 line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='2MG'):
+                line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='H2U'):
+                line_edit = 'ATOM  '+line[6:17]+'  U'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='PSU'):
+                line_edit = 'ATOM  '+line[6:17]+'  U'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='5MU'):
+                line_edit = 'ATOM  '+line[6:17]+'  U'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='OMG'):
+                line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='7MG'):
+                line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='1MG'):
+                line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]==' YG'):
+                line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='1MA'):
+                line_edit = 'ATOM  '+line[6:17]+'  A'+line[20:]
 
             #Don't save alternative conformations.
             if line[16] == 'B': continue;

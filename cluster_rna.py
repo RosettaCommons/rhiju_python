@@ -32,58 +32,89 @@ for outfile in outfiles:
     TINKER_SCOREFILE = 0
     if outfile[-3:] == '.sc': # TINKER output?
         TINKER_SCOREFILE = 1
-        lines = open( outfile ).readlines()
-        score_and_tag = []
-        for line in lines[1:]:
-            cols = string.split( line[:-1] )
-            score_and_tag.append( ( float(cols[1]), cols[-1] ) )
-        score_and_tag.sort()
-        NUM_TAGS = int( len( score_and_tag ) * float( num_models ) + 0.5 )
-        print NUM_TAGS
+
+    cluster_logfile = outfile.replace('.out','.cluster.log' )
+    if TINKER_SCOREFILE:
+        cluster_logfile = outfile.replace('.sc','.cluster.log' )
+
+    if TINKER_SCOREFILE:
         listfile_scorecut = outfile.replace('.sc','.list' )
-        fid = open( listfile_scorecut,'w')
-        for i in range( NUM_TAGS ):
-            tag = score_and_tag[i][-1]
-            pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
-                      tag.replace('minimize_','')+'_OUT/'+tag + '.pdb'
-            if not exists( pdbname ):
+
+        if not exists ( cluster_logfile ):
+            lines = open( outfile ).readlines()
+            score_and_tag = []
+            for line in lines[1:]:
+                cols = string.split( line[:-1] )
+                score_and_tag.append( ( float(cols[1]), cols[-1] ) )
+            score_and_tag.sort()
+            NUM_TAGS = int( len( score_and_tag ) * float( num_models ) + 0.5 )
+            print NUM_TAGS
+            fid = open( listfile_scorecut,'w')
+            for i in range( NUM_TAGS ):
+                tag = score_and_tag[i][-1]
                 pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
-                          tag.replace('minimize_','')+'.min_pdb'
+                    tag.replace('minimize_','')+'_OUT/'+tag + '.pdb'
+                if not exists( pdbname ):
+                    pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
+                        tag.replace('minimize_','')+'.min_pdb'
                 #print pdbname
-            assert( exists( pdbname ) )
+                assert( exists( pdbname ) )
 
-            pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb').replace('S_','s_')
-            #print pdbname_RNA
+                pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb').replace('S_','s_')
+                print pdbname_RNA
 
-            if not exists( pdbname_RNA ):
-                system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
-            #print pdbname_RNA
-            assert( exists( pdbname_RNA ) )
-            fid.write( pdbname_RNA+'\n' )
-        fid.close()
+                if not exists( pdbname_RNA ):
+                    system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
+                #print pdbname_RNA
+                assert( exists( pdbname_RNA ) )
+                fid.write( pdbname_RNA+'\n' )
+                fid.close()
     else:
         outfile_scorecut = outfile.replace('.out','.low%s.out' % num_models )
 
-        if not exists( outfile_scorecut ):
-            command = '~rhiju/python/extract_lowscore_decoys_outfile.py %s %s > %s '% (outfile, num_models, outfile_scorecut)
-            print( command )
-            system( command )
+    if not( exists( cluster_logfile ) ):
+        if TINKER_SCOREFILE:
+            lines = open( outfile ).readlines()
+            score_and_tag = []
+            for line in lines[1:]:
+                cols = string.split( line[:-1] )
+                score_and_tag.append( ( float(cols[1]), cols[-1] ) )
+                score_and_tag.sort()
+            NUM_TAGS = int( len( score_and_tag ) * float( num_models ) )
+            listfile_scorecut = outfile.replace('.sc','.list' )
+            fid = open( listfile_scorecut,'w')
+            for i in range( NUM_TAGS ):
+                tag = score_and_tag[i][-1]
+                pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
+                    tag.replace('minimize_','')+'_OUT/'+tag + '.pdb'
+                assert( exists( pdbname ) )
+                pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb')
+                if not exists( pdbname_RNA ):
+                    system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
+                assert( exists( pdbname_RNA ) )
+                fid.write( pdbname_RNA+'\n' )
+            fid.close()
+        else:
+            outfile_scorecut = outfile.replace('.out','.low%s.out' % num_models )
 
-        if verbose: print 'Extracting low energy decoys into ', outfile_scorecut,
-        numdecoys = int(popen( 'grep SCORE '+outfile_scorecut+' | wc ' ).readlines()[-1].split()[0]) - 1
-        if verbose: print " ==> ", numdecoys, " decoys"
+            if not exists( outfile_scorecut ):
+                command = '~rhiju/python/extract_lowscore_decoys_outfile.py %s %s > %s '% (outfile, num_models, outfile_scorecut)
+                print( command )
+                system( command )
 
-    ##################################################################################
-    # Cluster
-    ##################################################################################
-    CLUSTER_EXE = '/users/rhiju/src/mini/bin/cluster.macosgccrelease'
-    if not( exists( CLUSTER_EXE ) ):
-        CLUSTER_EXE = '/work/rhiju/src/mini/bin/cluster.linuxgccrelease'
-    assert( exists( CLUSTER_EXE) )
+            if verbose: print 'Extracting low energy decoys into ', outfile_scorecut,
+            numdecoys = int(popen( 'grep SCORE '+outfile_scorecut+' | wc ' ).readlines()[-1].split()[0]) - 1
+            if verbose: print " ==> ", numdecoys, " decoys"
 
-    if TINKER_SCOREFILE:
-        cluster_logfile = outfile.replace('.sc','.cluster.log' )
-        if not exists( cluster_logfile ):
+        ##################################################################################
+        # Cluster
+        ##################################################################################
+        CLUSTER_EXE = '/users/rhiju/src/mini/bin/cluster.macosgccrelease'
+        if not( exists( CLUSTER_EXE ) ):
+            CLUSTER_EXE = '/work/rhiju/src/mini/bin/cluster.linuxgccrelease'
+        assert( exists( CLUSTER_EXE) )
+
+        if TINKER_SCOREFILE:
             native_tag = ''
 
             pos = outfile.index( 'chunk' )
@@ -95,9 +126,7 @@ for outfile in outfiles:
             command = '%s -database ~/minirosetta_database  -l %s -in:file:fullatom -score:weights rna_hires.wts -rescore:output_only  -radius %f %s > %s' % ( CLUSTER_EXE, listfile_scorecut, RMS_THRESHOLD, native_tag, cluster_logfile )
             print( command )
             system( command )
-    else:
-        cluster_logfile = outfile.replace('.out','.cluster.log' )
-        if not exists( cluster_logfile ):
+        else:
             command = '%s -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts -rescore:output_only  -radius %f > %s' % ( CLUSTER_EXE, outfile_scorecut, RMS_THRESHOLD, cluster_logfile )
             # print( command )
             system( command )
