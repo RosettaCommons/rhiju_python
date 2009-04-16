@@ -61,7 +61,8 @@ infiles = argv[1:]
 for infile in infiles:
     tags = []
 
-    scoretags = string.split( popen('head -n 2 '+infile).readlines()[1] )
+    firstlines = popen('head -n 3 '+infile).readlines();
+    scoretags = string.split( firstlines[1] )
     scoretag=''
     if scorecol_defined:
         scoretag = scoretags[ abs(SCORECOL) ]
@@ -101,8 +102,12 @@ for infile in infiles:
     fid.close()
 
 
-    command = 'head -n 2 '+infile
-    system(command)
+    if (firstlines[2][:6] == 'REMARK' ):
+        command = 'head -n 3 '+infile
+        system(command)
+    else:
+        command = 'head -n 2 '+infile
+        system(command)
 
     count = 1
     fid = open( infile )
