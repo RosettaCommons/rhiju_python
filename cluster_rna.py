@@ -29,15 +29,18 @@ for outfile in outfiles:
     # Lowscore decoys.
     ##################################################################################
 
-    TINKER_SCOREFILE = 0
+    TINKER_CHARMM_SCOREFILE = 0
+    CHARM_SCOREFILE = 0
     if outfile[-3:] == '.sc': # TINKER output?
-        TINKER_SCOREFILE = 1
+        TINKER_CHARMM_SCOREFILE = 1
+    if outfile.count( 'CHARMM' ):
+        CHARMM_SCOREFILE = 1
 
     cluster_logfile = outfile.replace('.out','.cluster.log' )
-    if TINKER_SCOREFILE:
+    if TINKER_CHARMM_SCOREFILE:
         cluster_logfile = outfile.replace('.sc','.cluster.log' )
 
-    if TINKER_SCOREFILE:
+    if TINKER_CHARMM_SCOREFILE:
         listfile_scorecut = outfile.replace('.sc','.list' )
 
         if not exists ( cluster_logfile ):
@@ -54,26 +57,30 @@ for outfile in outfiles:
                 tag = score_and_tag[i][-1]
                 pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
                     tag.replace('minimize_','')+'_OUT/'+tag + '.pdb'
+                print pdbname
                 if not exists( pdbname ):
                     pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
                         tag.replace('minimize_','')+'.min_pdb'
-                #print pdbname
+                    pdbname = pdbname.replace( '_CHARMM','')
+                    if not exists( pdbname ):
+                        pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
+                            tag.replace('minimize_','').replace('.pdb','')+'_OUT/'+tag + '.min_pdb'
+                        pdbname = pdbname.replace( '_CHARMM','')
                 assert( exists( pdbname ) )
 
                 pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb').replace('S_','s_')
-                print pdbname_RNA
 
                 if not exists( pdbname_RNA ):
                     system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
                 #print pdbname_RNA
                 assert( exists( pdbname_RNA ) )
                 fid.write( pdbname_RNA+'\n' )
-                fid.close()
+            fid.close()
     else:
         outfile_scorecut = outfile.replace('.out','.low%s.out' % num_models )
 
     if not( exists( cluster_logfile ) ):
-        if TINKER_SCOREFILE:
+        if TINKER_CHARMM_SCOREFILE:
             lines = open( outfile ).readlines()
             score_and_tag = []
             for line in lines[1:]:
@@ -85,8 +92,8 @@ for outfile in outfiles:
             fid = open( listfile_scorecut,'w')
             for i in range( NUM_TAGS ):
                 tag = score_and_tag[i][-1]
-                pdbname =  outfile.replace('_minimize.sc','_OUT') + '/' + \
-                    tag.replace('minimize_','')+'_OUT/'+tag + '.pdb'
+                pdbname =  outfile.replace('_minimize.sc','_OUT').replace('_CHARMM','') + '/' + \
+                    tag.replace('minimize_','').replace('.pdb','')+'_OUT/'+tag.replace('.pdb','') + '.pdb'
                 assert( exists( pdbname ) )
                 pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb')
                 if not exists( pdbname_RNA ):
@@ -112,9 +119,11 @@ for outfile in outfiles:
         CLUSTER_EXE = '/users/rhiju/src/mini/bin/cluster.macosgccrelease'
         if not( exists( CLUSTER_EXE ) ):
             CLUSTER_EXE = '/work/rhiju/src/mini/bin/cluster.linuxgccrelease'
+        if not( exists( CLUSTER_EXE ) ):
+            CLUSTER_EXE = '/home/rhiju/src/mini/bin/cluster.linuxgccrelease'
         assert( exists( CLUSTER_EXE) )
 
-        if TINKER_SCOREFILE:
+        if TINKER_CHARMM_SCOREFILE:
             native_tag = ''
 
             pos = outfile.index( 'chunk' )
@@ -123,12 +132,17 @@ for outfile in outfiles:
             print native_pdb
             native_tag = '-native '+native_pdb
 
-            command = '%s -database ~/minirosetta_database  -l %s -in:file:fullatom -score:weights rna_hires.wts -rescore:output_only  -radius %f %s > %s' % ( CLUSTER_EXE, listfile_scorecut, RMS_THRESHOLD, native_tag, cluster_logfile )
+            command = '%s -database ~/minirosetta_database  -l %s -in:file:fullatom -score:weights rna_hires.wts   -radius %f %s > %s' % ( CLUSTER_EXE, listfile_scorecut, RMS_THRESHOLD, native_tag, cluster_logfile )
             print( command )
             system( command )
         else:
-            command = '%s -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts -rescore:output_only  -radius %f > %s' % ( CLUSTER_EXE, outfile_scorecut, RMS_THRESHOLD, cluster_logfile )
-            # print( command )
+            remark_line = popen( 'head -n 3  '+outfile_scorecut ).readlines()[2]
+            if ( len(remark_line.split())  > 1 and remark_line.split()[1] == 'BINARY_SILENTFILE' ) :
+                binary_tag = ' -in:file:silent_struct_type binary_rna '
+            else:
+                binary_tag = ''
+            command = '%s -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts  %s -radius %f > %s' % ( CLUSTER_EXE, outfile_scorecut, binary_tag,  RMS_THRESHOLD, cluster_logfile )
+            print( command )
             system( command )
 
     lines = open( cluster_logfile ).readlines()
