@@ -2,7 +2,7 @@
 
 from sys import argv,exit
 from os import system,popen
-from os.path import exists,basename
+from os.path import exists,basename,dirname
 import string
 
 verbose = 0
@@ -13,7 +13,7 @@ if argv.count( '-verbose'):
 
 outfiles = argv[1:]
 
-num_models = '0.01'
+num_models = '0.05'
 
 RMS_THRESHOLD = 2.0
 
@@ -68,11 +68,11 @@ for outfile in outfiles:
                         pdbname = pdbname.replace( '_CHARMM','')
                 assert( exists( pdbname ) )
 
-                pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb').replace('S_','s_')
+                pdbname_RNA = dirname(pdbname)+'/'+string.lower(basename(pdbname)).replace('.pdb','_RNA.pdb').replace('minimize_S_','minimize_s_')
 
                 if not exists( pdbname_RNA ):
                     system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
-                #print pdbname_RNA
+                print pdbname_RNA
                 assert( exists( pdbname_RNA ) )
                 fid.write( pdbname_RNA+'\n' )
             fid.close()
@@ -95,9 +95,10 @@ for outfile in outfiles:
                 pdbname =  outfile.replace('_minimize.sc','_OUT').replace('_CHARMM','') + '/' + \
                     tag.replace('minimize_','').replace('.pdb','')+'_OUT/'+tag.replace('.pdb','') + '.pdb'
                 assert( exists( pdbname ) )
-                pdbname_RNA = pdbname.replace('.pdb','_RNA.pdb')
+                pdbname_RNA = dirname(pdbname)+'/'+string.lower(basename(pdbname)).replace('.pdb','_RNA.pdb').replace( 'minimize_S','minimize_s' )
                 if not exists( pdbname_RNA ):
                     system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
+                print pdbname_RNA
                 assert( exists( pdbname_RNA ) )
                 fid.write( pdbname_RNA+'\n' )
             fid.close()
