@@ -49,9 +49,17 @@ for outdir in outdirs:
         pos = outdir.index( 'chunk')
         rna_name = outdir[pos:(pos+13)]
         native_pdb = '/work/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+        if not exists( native_pdb ):
+            native_pdb = '/home/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+            if not exists( native_pdb ):
+                native_pdb = '/Users/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+
         if exists( native_pdb ):
             native_exists = 1
 
+    if not native_exists:
+        print 'Could not find native', native_pdb
+        exit()
 
     #############################################
     # Go through scorefile from tinker minimization

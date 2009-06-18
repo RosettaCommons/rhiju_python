@@ -199,7 +199,11 @@ for infile in infiles:
     if (scoretags.count('rna_torsion') or scoretags.count('rna_base_axis') ):
         MINI_EXE = '/work/rhiju/src/mini/bin/rna_extract.linuxgccrelease'
         if not exists( MINI_EXE ):
-            MINI_EXE = '~rhiju/src/mini/bin/rna_extract.macosgccrelease'
+            MINI_EXE = '/Users/rhiju/src/mini/bin/rna_test.macosgccrelease'
+            if not exists( MINI_EXE ):
+                MINI_EXE = '/home/rhiju/src/mini/bin/rna_test.linuxgccrelease'
+        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
+                  ( MINI_EXE, outfilename, string.join( tags ) )
         if binary_silentfile:
             silent_struct_type = 'binary_rna'
         else:

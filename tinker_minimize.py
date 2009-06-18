@@ -44,6 +44,10 @@ PDBXYZ = '~rhiju/python/pdb2xyz.py'
 #assert( exists( PDBXYZ ) )
 system( PDBXYZ+' '+min_pdbfile )
 
+if not exists( min_pdbfile.replace('.pdb','.xyz' ) ):
+    print 'Problem with xyz conversion?'
+    exit()
+
 ############################################################
 # How about superimposing?
 #Is there an obvious native?
@@ -136,7 +140,7 @@ system( '%s/xyzpdb %s %s.prm' % ( TINKER_BIN, tag, param_file ) )
 ############################################################
 # Cleanup
 system( 'mv %s.pdb_2 %s/%s'  % (tag,dirname(pdbfile),'minimize_'+basename( pdbfile ) ) )
-system( 'rm -rf test.key %s* ' % ( random_tag ) )
+system( 'rm -rf test.key %s* amber99* ' % ( random_tag ) )
 
 chdir( CWD )
 

@@ -22,6 +22,11 @@ for outfile in outfiles:
     else: #New style -- look inside a directory!
 
         globfiles = glob( outfile+'/*/*out' )
+
+        #print globfiles
+        if len( globfiles ) == 0: globfiles = glob( outfile + '/*out'  )
+        #print globfiles
+
         for file in globfiles:
             tag = basename( file ).replace('.out','')
             if tag not in which_files_to_cat.keys():
@@ -30,6 +35,8 @@ for outfile in outfiles:
 
 
 for tag in which_files_to_cat.keys():
+    if (len( which_files_to_cat[tag] ) == 1) : continue
+
     cat_file = "cat_"+tag+".out"
     print "Catting into: ",cat_file,
     command = '~rhiju/python/cat_outfiles.py %s >  %s ' % \
@@ -43,5 +50,6 @@ for tag in which_files_to_cat.keys():
 
 for outfile in outfiles:
     command = 'rm -rf '+outfile
-    print command
-    system( command )
+    #print command
+    #system( command )
+

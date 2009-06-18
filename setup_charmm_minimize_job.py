@@ -11,7 +11,7 @@ try:
     NUM_JOBS_PER_NODE = int( outfiles[-1] )
     del( outfiles[ -1 ] )
 except:
-    NUM_JOBS_PER_NODE = 50
+    NUM_JOBS_PER_NODE = 20
 
 
 EXE = './run_charmm_minimize.py'
@@ -75,14 +75,15 @@ for outfile in outfiles:
     start = 0
     globfiles = glob( 'S_*OUT/S*.pdb' )
     globfiles.sort()
-    print len( globfiles )
+    print len( globfiles ),
     if outfile.count( '_native' ) and len( globfiles ) > 1000   : globfiles = globfiles[:1000]
     if outfile.count( '_ideal' ) and len( globfiles ) > 1000    : globfiles = globfiles[:1000]
     if outfile.count( '_nonative' ) and len( globfiles ) > 2000 :   globfiles = globfiles[:2000]
+    print len( globfiles )
 
     for file in globfiles:
-        scores_file = file+'.scores'
-        if exists( scores_file ):
+        min_pdb_file = file+'.min_pdb'
+        if exists( min_pdb_file ):
             continue
 
         if ( (count % NUM_JOBS_PER_NODE) == 0):

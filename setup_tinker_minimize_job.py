@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from sys import argv
+from sys import argv,exit
 from os import system, getcwd, chdir
 from os.path import exists,abspath
 from glob import glob
@@ -12,7 +12,7 @@ try:
     NUM_JOBS_PER_NODE = int( outfiles[-1] )
     del( outfiles[ -1 ] )
 except:
-    NUM_JOBS_PER_NODE = 100
+    NUM_JOBS_PER_NODE = 20
 
 
 ####################################################
@@ -34,10 +34,15 @@ bsub_file = open( 'bsubTINKER','w' )
 
 CWD = getcwd()
 
+total_count = 0
+
 for outfile in outfiles:
+
+    print outfile
 
     # Create a directory for extraction
     outdir = outfile.replace( '.out','_OUT')
+
     if not exists( outdir ):
         command = 'mkdir -p '+outdir
         print( command )
@@ -55,6 +60,8 @@ for outfile in outfiles:
         MINI_EXE = '/work/rhiju/src/mini/bin/rna_extract.linuxgccrelease'
         if not exists( MINI_EXE ):
             MINI_EXE = '~rhiju/src/mini/bin/rna_extract.macosgccrelease'
+            if not exists( MINI_EXE ):
+                MINI_EXE = '~rhiju/src/mini/bin/rna_extract.linuxgccrelease'
 
         command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -in::file::silent_struct_type binary_rna' % \
                   ( MINI_EXE, outfile )
@@ -68,7 +75,7 @@ for outfile in outfiles:
     ####################################################
     # Make subdirectories for each job, and copy in the PDBs, and add line to condor script
     if ( len(glob( 'S*OUT' )) == 0 ) :
-        globfiles = glob( 'S_*pdb' )
+        globfiles = glob( 'S_*.pdb' )
         for file in globfiles:
             workdir = file.replace( '.pdb', '_OUT' )
             command = 'mkdir -p '+workdir
@@ -81,8 +88,20 @@ for outfile in outfiles:
 
     count = 0
     start = 0
-    globfiles = glob( 'S_*OUT/S*pdb' )
+    globfiles = glob( 'S_*OUT/S*.pdb' )
+    globfiles.sort()
+    print len( globfiles ),
+    if outfile.count( '_native' ) and len( globfiles ) > 1000   : globfiles = globfiles[:1000]
+    if outfile.count( '_ideal' ) and len( globfiles ) > 1000    : globfiles = globfiles[:1000]
+    if outfile.count( '_nonative' ) and len( globfiles ) > 2000 :   globfiles = globfiles[:2000]
+    print len( globfiles )
+
     for file in globfiles:
+        minimize_file = file.replace( '/S','/minimize_S')
+        rms_file = minimize_file.replace( '.pdb','.rms.txt' )
+        if exists( minimize_file ):
+            continue
+
         if ( (count % NUM_JOBS_PER_NODE) == 0):
             if ( start == 1 ):
                 condor_file.write( '\nQueue 1\n')
@@ -90,7 +109,7 @@ for outfile in outfiles:
             else:
                 start = 1
             condor_file.write( '\narguments = ' )
-            bsub_file.write( '\nbsub -W 4:0 %s ' % EXE )
+            bsub_file.write( '\nbsub -W 16:0 %s ' % EXE )
         count += 1
         condor_file.write( '  '+outdir+'/'+file )
         bsub_file.write( '  '+outdir+'/'+file )
@@ -100,6 +119,10 @@ for outfile in outfiles:
         bsub_file.write( '\n')
 
     chdir( CWD )
+
+    total_count += count
+
+print 'Total number of PDBs to minimize: ', total_count
 
 condor_file.close()
 

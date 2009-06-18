@@ -54,7 +54,7 @@ for file in argv[1:]:
                         (c1[1]-c2[1])*(c1[1]-c2[1]) + \
                         (c1[2]-c2[2])*(c1[2]-c2[2])
 
-                    if (dist2 > 9.0 ):
+                    if (dist2 > 4.0 ):
                         chain = chain+1
 
             if ( resnum < oldresnum ):
