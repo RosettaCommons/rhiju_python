@@ -81,8 +81,8 @@ for infile in infiles:
         NUMDECOYS = int( string.split(popen('grep SCORE '+infile+' | wc').readlines()[0])[0] ) - 1
         NSTRUCT = round( NSTRUCT_IN * NUMDECOYS )
 
-    lines = popen('grep SCORE '+infile+' | grep -v NATIVE | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
 
+    lines = popen('grep SCORE: '+infile+' | grep -v NATIVE | grep -v rms | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
 
     templist_name = 'temp.%s.list'% basename(infile)
 
@@ -101,13 +101,13 @@ for infile in infiles:
 
     fid.close()
 
-
     if (firstlines[2][:6] == 'REMARK' ):
         command = 'head -n 3 '+infile
         system(command)
     else:
         command = 'head -n 2 '+infile
         system(command)
+
 
     count = 1
     fid = open( infile )

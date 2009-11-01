@@ -35,8 +35,8 @@ for pdbname in pdbnames:
 			count = count + 1
 		    oldresnum = resnum
 
-		    newnum = '%3d' % count
-		    line_edit = '%s%4d%s%s%s' % (line_edit[0:7],atomnum,line[11:23], newnum, line_edit[26:] )
+		    newnum = '%4d' % count
+		    line_edit = '%s%5d%s%s%s' % (line_edit[0:6],atomnum,line[11:22], newnum, line_edit[26:] )
 
 		    outid.write(line_edit)
 

@@ -16,7 +16,7 @@ outfiles = argv[1:]
 
 num_models = '0.01'
 
-RMS_THRESHOLD = 2.0
+RMS_THRESHOLD = 2.5
 
 numfiles = len( outfiles )
 
@@ -31,6 +31,7 @@ assert( exists( CLUSTER_EXE) )
 RNA_TEST_EXE = CLUSTER_EXE.replace( 'cluster','rna_test' )
 assert( exists( RNA_TEST_EXE) )
 
+all_cluster_info_lines = []
 
 for outfile in outfiles:
     if not exists( outfile ):
@@ -147,8 +148,8 @@ for outfile in outfiles:
             if ( len(remark_line.split())  > 1 and remark_line.split()[1] == 'BINARY_SILENTFILE' ) :
                 binary_tag = ' -in:file:silent_struct_type binary_rna '
             else:
-                binary_tag = ''
-            command = '%s -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts  %s -radius %f > %s' % ( CLUSTER_EXE, outfile_scorecut, binary_tag,  RMS_THRESHOLD, cluster_logfile )
+                binary_tag = ' -in:file:silent_struct_type rna'
+            command = '%s -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts  -mute all %s -radius %f -sort_groups_by_energy -remove_singletons > %s' % ( CLUSTER_EXE, outfile_scorecut, binary_tag,  RMS_THRESHOLD, cluster_logfile )
             print( command )
             system( command )
 
@@ -186,13 +187,13 @@ for outfile in outfiles:
                 print best_cluster_file, '==>', rmsds[i][0], "    [ N =",num_members[i],"]"
         print
 
-    rmsds.sort()
-    best_cluster_file = '%s.cluster%s.pdb' % ( outfile.replace('.out',''),rmsds[0][1])
+    rmsds_to_sort = rmsds
+    rmsds_to_sort.sort()
+    best_cluster_file = '%s.cluster%s.pdb' % ( outfile.replace('.out',''),rmsds_to_sort[0][1])
     #print best_cluster_file, '==>', rmsds[0][0], "    [ N =",num_members[0],"]"
 
     ##################################
     # New ... actually do a rescore.
-
     globfiles = glob( outfile.replace('.out','')+'.cluster*pdb' )
     globfiles.sort()
 
@@ -209,12 +210,12 @@ for outfile in outfiles:
     f_natNWC_index = cols.index( 'f_natNWC' )
 
 
-    cluster_info = []
     find_tags = []
     for line in lines[2:]:
         cols = line.split()
         tag = cols[-1]
-        if ( tag.count( '.1.pdb' ) or tag.count( '.0.pdb' ) ) :
+        #if ( tag.count( '.1.pdb' ) or tag.count( '.0.pdb' ) ) :
+        if ( tag.count( '.0.pdb' ) ) :
             find_tags.append( tag )
 
     filter_tags = []
@@ -223,14 +224,19 @@ for outfile in outfiles:
         filter_tags.append( tag )
 
 
+    cluster_info = []
+    filter_cluster_info = []
     for line in lines[2:]:
         cols = line.split()
         tag = cols[-1]
+        f_natNWC = float( cols[ f_natNWC_index ]  )
+        f_rms    = float( cols[ rms_index ] )
+
         if tag in filter_tags:
-            f_natNWC = float( cols[ f_natNWC_index ]  )
-            f_rms    = float( cols[ rms_index ] )
-            cluster_info.append( (-1 * f_natNWC, f_rms, tag ) )
-    cluster_info.sort()
+            filter_cluster_info.append( ( f_rms, -1 * f_natNWC, tag ) )
+        cluster_info.append( ( f_rms, -1 * f_natNWC, tag ) )
+
+    filter_cluster_info.sort()
 
     #####################################
     # How many NWC base pairs were there anyway?
@@ -245,5 +251,63 @@ for outfile in outfiles:
     n_nwc_col = cols.index( 'N_NWC' )
     N_NWC = float( string.split( lines[2] )[ n_nwc_col ] )
 
-    best_cluster_info = cluster_info[ 0 ]
-    print "%s ==> frac_NWC: %6.3f  [%2d out of  %2d ]   rms: %5.2f " % ( best_cluster_info[2], -1 * best_cluster_info[0],  round( N_NWC * -1 * best_cluster_info[0]), N_NWC, best_cluster_info[1] )
+    best_cluster_info = filter_cluster_info[ 0 ]
+
+    #Need cluster size info
+    best_cluster_name = best_cluster_info[2]
+    pos = best_cluster_name.index('.cluster')
+    cluster_num = int( best_cluster_name[ pos+8 ] ) - 1
+    cluster_size = num_members[ cluster_num ]
+
+    cluster_center_rms = -999
+    cluster_center_fNWC = -0.99
+    cluster_lowE_rms = -999
+    cluster_lowE_fNWC = -0.99
+
+    for info in cluster_info:
+        if info[-1] == best_cluster_name.replace('.1.','.0.'):
+            cluster_center_rms = info[0]
+            cluster_center_fNWC = -1 * info[1]
+        if info[-1] == best_cluster_name.replace('.0.','.1.'):
+            cluster_lowE_rms = info[0]
+            cluster_lowE_fNWC = -1 * info[1]
+
+    all_cluster_info_lines.append( [ max( cluster_center_fNWC, cluster_lowE_fNWC ), N_NWC, cluster_center_rms, best_cluster_name] )
+
+    print "Cluster %1d [Size %3d]. CENTER: fNWC %6.3f  rms %5.2f ; LOWEST_ENERGY: fNWC %6.3f  rms %5.2f. [max fNWC %2d ] %s " % \
+        ( cluster_num+1,
+          cluster_size,
+          cluster_center_fNWC,
+          cluster_center_rms,
+          cluster_lowE_fNWC,
+          cluster_lowE_rms,
+          N_NWC, best_cluster_name )
+
+
+N_NWC_TOT = 0
+recovered_NWC_TOT = 0
+N_motifs = 0
+
+N_rmsd2 = 0
+#N_rmsd2_5 = 0
+N_good = 0
+for info_line in all_cluster_info_lines:
+    N_motifs += 1
+    N_NWC_TOT += info_line[ 1 ]
+    recovered_NWC_TOT += info_line[ 0 ] * info_line[ 1 ]
+    if info_line[2] < 2.00:
+        N_rmsd2 += 1
+        N_good += 1
+        print info_line[-1]
+    elif info_line[ 0 ] > 0.99:
+        N_good += 1
+        print info_line[-1]
+print
+
+frac_NWC_TOT = 0
+if N_NWC_TOT > 0: frac_NWC_TOT = float( recovered_NWC_TOT)/N_NWC_TOT
+
+print 'Frac. NWC recovered: %6.3f  (total = %3d)' % ( frac_NWC_TOT, N_NWC_TOT )
+print 'N (rmsd < 2.0 )             :  %2d out of %2d' % ( N_rmsd2, N_motifs )
+print 'N (rmsd < 2.0 or f_NWC = 1) :  %2d out of %2d' % ( N_good, N_motifs )
+

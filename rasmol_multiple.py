@@ -15,9 +15,9 @@ for filename in filenames:
         fid.write("pause\n");
 fid.close()
 
-RASMOL_EXE = '/net/local/bin/rasmol'
+RASMOL_EXE = '/Applications/rasmol_32BIT'
 if not exists( RASMOL_EXE ):
-    RASMOL_EXE = '/Applications/rasmol_32BIT'
+    RASMOL_EXE = '/net/local/bin/rasmol'
 if not exists( RASMOL_EXE ):
     print
     print 'Cannot find rasmol executable. Edit %s to point to the path!' % sys.argv[0]

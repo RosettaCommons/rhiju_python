@@ -19,7 +19,7 @@ for i in range( len(inputfiles) ):
 pdbfiles.reverse()
 
 #superimpose first!
-prefix = pdbfiles[0][0:4]
+prefix = pdbfiles[0].replace('.pdb','')
 
 if len(pdbfiles) > 1:
     command = "python ~rhiju/python/superimpose.py "
@@ -30,7 +30,7 @@ if len(pdbfiles) > 1:
 #        for i in highlight_residues:
 #            command += " %d " % i
 
-    command += " -R 1.0 > "+ prefix+"_superposition.pdb"
+    command += " -R 4.0 > "+ prefix+"_superposition.pdb"
 #    command += " > "+ prefix+"_superposition.pdb"
 
     print( command )
@@ -123,12 +123,54 @@ fid.write('bg_color white\n')
 fid.write('\n')
 
 
-
+######
+#Color backbone
+BLACK_AND_WHITE = 0
 count = 0
 for pdbfile in pdbfiles:
     count += 1
     fid.write('select model%d_backbone, model%d and backbone\n' % (count,count))
-    fid.write('cmd.spectrum(selection = "model%d_backbone")\n' % count)
+    if not BLACK_AND_WHITE:
+        fid.write('cmd.spectrum(selection = "model%d_backbone")\n' % count)
+
+
+if  BLACK_AND_WHITE:
+    # New idea ... black/white backbones...
+    lines = open( pdbfiles[0] ).readlines()
+    chain_ends = []
+
+    coords_p = {}
+    coords_o3star = {}
+
+    for line in lines:
+        if line[:4] == 'ATOM':
+            # need to be very smart about chainbreaks...
+            resnum = int( line[22:26] )
+            atomname = line[12:16]
+            x = float( line[30:38] )
+            y = float( line[38:46] )
+            z = float( line[46:54] )
+            if (atomname == ' O3*'): coords_o3star[resnum] = [x,y,z]
+            if (atomname == ' P  '):
+                coords_p[resnum] = [x,y,z]
+                if (resnum-1) in coords_o3star.keys():
+                    c1 = coords_o3star[resnum-1]
+                    c2 = coords_p[ resnum ]
+                    dist2 = \
+                        (c1[0]-c2[0])*(c1[0]-c2[0]) + \
+                        (c1[1]-c2[1])*(c1[1]-c2[1]) + \
+                        (c1[2]-c2[2])*(c1[2]-c2[2])
+
+                    if (dist2 > 25.0 ):
+                        chain_ends.append( resnum-1 )
+
+    fid.write('color gray80,backbone\n')
+
+
+    if len( chain_ends ) > 0:
+        fid.write( 'color gray20, backbone and resi 1-%d\n' % chain_ends[0] )
+    if len( chain_ends ) > 1:
+        fid.write( 'color gray50, backbone and resi %d-%d\n' % (chain_ends[0]+1,chain_ends[1] ) )
 
 
 
@@ -143,7 +185,7 @@ for pdbfile in pdbfiles:
     count += 1
     fid.write('disable all\n')
     fid.write('enable model%d\n' % count)
-    fid.write('ray 400,400\n')
+    fid.write('ray 1200,1200\n')
 #    fid.write('ray 1200,1200\n')
     fid.write('save '+pdbfile+'.png\n')
 

@@ -52,15 +52,16 @@ if not exists( min_pdbfile.replace('.pdb','.xyz' ) ):
 # How about superimposing?
 #Is there an obvious native?
 found_native = 0
-pos = pdbfile.index( 'chunk' )
-if (pos > 0 ):
-    rna_name = pdbfile[pos:(pos+13)]
-    native_pdb = '/work/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
-    if exists( native_pdb ):
-        found_native = 1
-        native_xyz = native_pdb.replace('.pdb','.xyz')
-        if not exists( native_xyz ):
-            system( '~rhiju/python/pdb2xyz.py '+native_pdb )
+if pdbfile.count( 'chunk' ):
+    pos = pdbfile.index( 'chunk' )
+    if (pos > 0 ):
+        rna_name = pdbfile[pos:(pos+13)]
+        native_pdb = '/work/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+        if exists( native_pdb ):
+            found_native = 1
+            native_xyz = native_pdb.replace('.pdb','.xyz')
+            if not exists( native_xyz ):
+                system( '~rhiju/python/pdb2xyz.py '+native_pdb )
 
 if found_native:
     rms_file = pdbfile.replace( '.pdb', '.rms.txt' )

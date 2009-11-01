@@ -37,7 +37,7 @@ if args.count('-R'):
     rmsd_threshold = float(args[pos+1])
     del args[pos]
     del args[pos]
-    distance_threshold = rmsd_threshold # + 3
+    distance_threshold = rmsd_threshold  #+ 3
     R_DEFINED = 1
 else:
 #    rmsd_threshold = 0.0

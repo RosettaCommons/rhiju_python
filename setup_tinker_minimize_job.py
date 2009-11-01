@@ -96,6 +96,12 @@ for outfile in outfiles:
     if outfile.count( '_nonative' ) and len( globfiles ) > 2000 :   globfiles = globfiles[:2000]
     print len( globfiles )
 
+    globfiles.sort()
+    print len( globfiles )
+    if outfile.count( '_native' ) and len( globfiles ) > 1000 : globfile = globfiles[:1000]
+    if outfile.count( '_ideal' ) and len( globfiles ) > 1000 : globfile = globfiles[:1000]
+    if outfile.count( '_nonative' ) and len( globfiles ) > 2000 :   globfiles = globfiles[:2000]
+
     for file in globfiles:
         minimize_file = file.replace( '/S','/minimize_S')
         rms_file = minimize_file.replace( '.pdb','.rms.txt' )

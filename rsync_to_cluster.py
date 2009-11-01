@@ -15,7 +15,7 @@ if len(argv)<2:
     Help()
 
 cluster = argv[1]
-clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','ade' ];
+clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','ade','ade.stanford.edu' ];
 if cluster not in clusterlist:
     print 'Hey, '+cluster+' is not a known cluster.'
     Help()
