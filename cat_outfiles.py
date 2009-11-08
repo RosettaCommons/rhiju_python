@@ -17,9 +17,21 @@ def Help():
 
 outfiles = argv[1:]
 
-command = 'cat '+outfiles[0]
-#print(command)
-system(command)
+final_outfile = ""
+if outfiles.count( "-o" ) > 0:
+    pos = outfiles.index( "-o" )
+    del( outfiles[ pos ] )
+    final_outfile = outfiles[ pos ]
+    del( outfiles[ pos ] )
+
+if final_outfile == "":
+    fid = stdout
+else:
+    fid = open( final_outfile, "w" )
+
+data = open( outfiles[ 0 ] ).readlines()
+for line in data:
+    fid.write( line )
 
 
 for i in range(1, len(outfiles)):
@@ -42,7 +54,7 @@ for i in range(1, len(outfiles)):
             tagcols = string.split(tag,'_')
             try:
                 tagnum = int( tagcols[-1] )
-                tagcols[-1] = '%06d' %  (tagnum + 10000*i)
+                tagcols[-1] = '%03d_%06d' %  ( i, tagnum )
                 newtag = string.join( tagcols,'_')
 
                 line = line[:description_index] + newtag
@@ -51,4 +63,6 @@ for i in range(1, len(outfiles)):
 
         if len(line) < 1: continue
 
-        print line
+        fid.write( line+'\n' )
+
+if not final_outfile == "": fid.close()
