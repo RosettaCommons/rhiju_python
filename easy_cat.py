@@ -35,18 +35,24 @@ for outfile in outfiles:
 
 
 for tag in which_files_to_cat.keys():
-    if (len( which_files_to_cat[tag] ) == 1) : continue
+    #if (len( which_files_to_cat[tag] ) == 1) : continue
 
-    cat_file = "cat_"+tag+".out"
+    cat_file = tag+".out"
+    #    cat_file = "cat_"+tag+".out"
     print "Catting into: ",cat_file,
     command = '~rhiju/python/cat_outfiles.py %s >  %s ' % \
-                                   (string.join( which_files_to_cat[tag] ) ,
+              (string.join( which_files_to_cat[tag] ) ,
                                     cat_file )
     #print command
     system( command )
 
     lines = popen( 'grep SCORE '+cat_file).readlines()
-    print '... Will remove %d primary files. Found %d  decoys.' % (len( which_files_to_cat[tag] ),len(lines)-1)
+    print '... from %d primary files. Found %d  decoys.' % (len( which_files_to_cat[tag] ),len(lines)-1)
+
+    fid_sc = open( cat_file.replace('.out','.sc'),'w' )
+    for line in lines:
+        fid_sc.write( line )
+    fid_sc.close()
 
 for outfile in outfiles:
     command = 'rm -rf '+outfile
