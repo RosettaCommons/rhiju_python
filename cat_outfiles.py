@@ -65,4 +65,6 @@ for i in range(1, len(outfiles)):
 
         fid.write( line+'\n' )
 
+    data.close()
+
 if not final_outfile == "": fid.close()
