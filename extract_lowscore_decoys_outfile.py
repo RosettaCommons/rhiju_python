@@ -31,14 +31,14 @@ except:
 
 scorecol_defined = 0
 try:
-    SCORECOL = int(argv[-1])
+    scorecol = int(argv[-1])
     del(argv[-1])
     scorecol_defined = 1
 except:
-    SCORECOL = -1
+    scorecol = -1
 
 REVERSE = ''
-if SCORECOL > 0:
+if scorecol > 0:
     REVERSE = ' --reverse '
 
 #Another possibility... user supplies -rms or +rms
@@ -53,26 +53,31 @@ if not scorecol_defined:
     if scorecol_name[0] == '+':
         scorecol_name_defined = 1
         scorecol_name = scorecol_name[1:]
-        REVERSE = '--reverse'
+        REVERSE = '-r'
         del( argv[-1] )
+
 
 infiles = argv[1:]
 
 for infile in infiles:
     tags = []
 
-    firstlines = popen('head -n 3 '+infile).readlines();
+    firstlines = popen('head -n 3 '+infile).readlines()
     scoretags = string.split( firstlines[1] )
     scoretag=''
     if scorecol_defined:
-        scoretag = scoretags[ abs(SCORECOL) ]
+        scoretag = scoretags[ abs(scorecol) ]
 
     if scorecol_name_defined:
-        assert( scoretags.count( scorecol_name ))
-        SCORECOL = scoretags.index( scorecol_name )
+        scorecol_names = string.split( scorecol_name,',' )
+        scorecols = []
+        for s in scorecol_names:
+            assert( scoretags.count( s ))
+            scorecol = scoretags.index( s )
+            scorecols.append( scorecol )
         scoretag = scorecol_name
-
-    assert(infile[-3:] == 'out')
+    else:
+        scorecols  = [scorecol]
 
     #   print 'grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1)
 
@@ -81,8 +86,34 @@ for infile in infiles:
         NUMDECOYS = int( string.split(popen('grep SCORE '+infile+' | wc').readlines()[0])[0] ) - 1
         NSTRUCT = round( NSTRUCT_IN * NUMDECOYS )
 
+    #lines = popen('grep SCORE '+infile+' | grep -v NATIVE | grep -v RT | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
 
-    lines = popen('grep SCORE: '+infile+' | grep -v NATIVE | grep -v rms | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
+    # Make the list of decoys to extract
+    command = 'grep SCORE '+infile+' | grep -v NATIVE'
+    lines = popen( command ).readlines()
+    #stderr.write( '%s %d\n' % ( command, len( lines ) ) )
+
+    score_plus_lines = []
+    for line in lines:
+        cols = string.split( line )
+        score = 0.0
+        try:
+            for scorecol in scorecols: score += float( cols[ abs(scorecol) ] )
+        except:
+            continue
+        if REVERSE: score *= -1
+        score_plus_lines.append( ( score, line ))
+
+    score_plus_lines.sort()
+
+    #stderr.write( '%d' % len(score_plus_lines[:NSTRUCT]) )
+
+    #stderr.write( '%d %d %d \n' % (NSTRUCT,int( NSTRUCT),len(lines) ) )
+
+    lines = map( lambda x:x[-1], score_plus_lines[:int(NSTRUCT)] )
+
+
+    #lines = popen('grep SCORE: '+infile+' | grep -v NATIVE | grep -v rms | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
 
     templist_name = 'temp.%s.list'% basename(infile)
 
@@ -98,8 +129,8 @@ for infile in infiles:
         if count >= NSTRUCT:
             break
     outfilename = infile
-
     fid.close()
+
 
     if (firstlines[2][:6] == 'REMARK' ):
         command = 'head -n 3 '+infile
