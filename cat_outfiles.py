@@ -2,6 +2,7 @@
 
 from sys import argv,exit,stdout
 from os import popen,system
+from os.path import exists
 import string
 
 def Help():
@@ -35,6 +36,11 @@ for line in data:
 
 
 for i in range(1, len(outfiles)):
+
+    if not exists( outfiles[i] ):
+        stderr.write( 'Does not exist! ',outfiles[i] )
+        continue
+    
     data = open(outfiles[i],'r')
 
     line = data.readline() # Skip first two lines
