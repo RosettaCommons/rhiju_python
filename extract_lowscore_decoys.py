@@ -35,6 +35,12 @@ if argv.count('-extract_first_chain'):
     del( argv[pos] )
     extract_first_chain = 1
 
+start_at_zero = 0
+if argv.count('-start_at_zero'):
+    pos = argv.index('-start_at_zero')
+    del( argv[pos] )
+    start_at_zero = 1
+
 use_start_pdb = 0
 if argv.count('-start_pdb'):
     pos = argv.index('-start_pdb')
@@ -230,6 +236,8 @@ for infile in infiles:
 
 
     count = 1
+    if start_at_zero: count = 0
+
     if replace_names:
         for tag in tags:
             if scorecol_defined or scorecol_name_defined:
