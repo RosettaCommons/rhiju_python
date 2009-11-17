@@ -2,7 +2,7 @@
 
 from sys import argv,exit
 from os import popen, system
-from os.path import basename,exists
+from os.path import basename,exists,expanduser
 import string
 import commands
 from glob import glob
@@ -85,6 +85,7 @@ if not scorecol_defined:
 
 infiles = argv[1:]
 
+HOMEDIR = expanduser('~')
 
 for infile in infiles:
     tags = []
@@ -179,11 +180,11 @@ for infile in infiles:
                     +' '+wanted_rot_templates_file )
 
 
-    EXE = '/work/rhiju/rosetta++/rosetta.gcc'
+    EXE = HOMEDIR+'/rosetta++/rosetta.gcc'
     if not exists( EXE ):
-        EXE = 'rm boinc* ros*txt; ~rhiju/rosetta++/rosetta.mactelboincgraphics '
+        EXE = 'rm boinc* ros*txt; '+HOMEDIR+'/rosetta++/rosetta.mactelboincgraphics '
 
-    command = '%s -extract -l %s -paths ~rhiju/paths.txt -s %s %s %s '% (EXE, templist_name,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
+    command = '%s -extract -l %s -paths %s/paths.txt -s %s %s %s '% (EXE, templist_name, HOMEDIR,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
 
 
 
@@ -203,25 +204,28 @@ for infile in infiles:
 
     # Hey this could be a new mini RNA file
     if (scoretags.count('rna_torsion') or scoretags.count('rna_base_axis') or scoretags.count('rna_vdw') ):
-        MINI_EXE = '/work/rhiju/src/mini/bin/rna_extract.linuxgccrelease'
+        MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.linuxgccrelease'
         if not exists( MINI_EXE ):
-            MINI_EXE = '~rhiju/src/mini/bin/rna_extract.linuxgccrelease'
+            MINI_EXE = HOMEDIR+'/src/mini/bin/rna_test.macosgccrelease'
+            if not exists( MINI_EXE ):
+                MINI_EXE = HOMEDIR+'/src/mini/bin/rna_test.linuxgccrelease'
+        command = '%s -database %s/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
+                  ( MINI_EXE, HOMEDIR, outfilename, string.join( tags ) )
+
         if binary_silentfile:
             silent_struct_type = 'binary_rna'
         else:
             silent_struct_type = 'rna'
 
-        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -in:file:tags %s -in::file::silent_struct_type %s  ' % \
-                  ( MINI_EXE, outfilename, string.join( tags ), silent_struct_type )
+        command = '%s -database %s/minirosetta_database/ -in::file::silent %s -in:file:tags %s -in::file::silent_struct_type %s  ' % \
+                  ( MINI_EXE, HOMEDIR,outfilename, string.join( tags ), silent_struct_type )
 
     elif ( binary_silentfile ):
-        MINI_EXE = '/work/rhiju/src/mini/bin/extract_pdbs.linuxgccrelease'
+        MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
         if not exists( MINI_EXE):
-            MINI_EXE = '~rhiju/src/mini/bin/extract_pdbs.macosgccrelease'
-        if not exists( MINI_EXE):
-            MINI_EXE = '/home/rhiju/src/mini/bin/extract_pdbs.linuxgccrelease'
-        command = '%s -in:file:silent  %s  -in::file::silent_struct_type binary  -in:file:tags %s -database ~/minirosetta_database/ ' % \
-                  ( MINI_EXE, outfilename, string.join( tags ) )
+            MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
+        command = '%s -in:file:silent  %s  -in::file::silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/ ' % \
+                  ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
 
 
     print(command)
@@ -229,7 +233,7 @@ for infile in infiles:
 
 
     if outfilename.find('t343')>0:
-        command = '/work/rhiju/python/extract_t343.py %s %s' % (outfilename,
+        command = HOMEDIR+'/python/extract_t343.py %s %s' % (outfilename,
                                                                  string.join(tags,' '))
         print(command)
         system(command)
