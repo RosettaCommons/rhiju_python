@@ -11,6 +11,8 @@ native_pdb = '1shf.pdb'
 fasta_file = '1shf.fasta'
 
 
+ZIGZAG = 1
+
 FILTER_RMSD = 999.99
 N_MINIMIZE = 100
 CLUSTER_RADIUS = 1.5
@@ -20,11 +22,11 @@ FINAL_NUMBER = 40
 
 sequence = open( fasta_file  ).readlines()[1][:-1]
 
-#MIN_RES = 38
-#MAX_RES = 40
-
 MIN_RES = 38
 MAX_RES = 49
+
+#MIN_RES = 43
+#MAX_RES = 44
 
 ###############################################################
 # Where's the executable?
@@ -39,19 +41,23 @@ assert( exists( EXE ) )
 DB = HOMEDIR+'/minirosetta_database'
 assert( exists( DB ) )
 
-PRE_PROCESS_SETUP_SCRIPT = "./stepwise_pre_process_setup_dirs.py"
+PYDIR = HOMEDIR+'/python'
+assert( exists( PYDIR ) )
+
+
+PRE_PROCESS_SETUP_SCRIPT = PYDIR+"/stepwise_pre_process_setup_dirs.py"
 assert( exists( PRE_PROCESS_SETUP_SCRIPT ) )
 
-POST_PROCESS_FILTER_SCRIPT = "./stepwise_post_process_combine_and_filter_outfiles.py"
+POST_PROCESS_FILTER_SCRIPT = PYDIR+"/stepwise_post_process_combine_and_filter_outfiles.py"
 assert( exists( POST_PROCESS_FILTER_SCRIPT ) )
 
-POST_PROCESS_CLUSTER_SCRIPT = "./stepwise_post_process_cluster.py"
+POST_PROCESS_CLUSTER_SCRIPT = PYDIR+"/stepwise_post_process_cluster.py"
 assert( exists( POST_PROCESS_CLUSTER_SCRIPT ) )
 
 
 fid_dag = open( "full_build.dag", 'w' )
 fid_dag.write("DOT dag.dot\n")
-    
+
 ###############################################################
 # MAIN LOOP
 ###############################################################
@@ -89,6 +95,9 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
         j = i + chunk_length - 1
 
         if ( i < MIN_RES or j > MAX_RES ): continue
+
+        #ZIGZAG!!
+        if ( ZIGZAG and abs( ( 43 - i ) - (j - 44 ) ) > 1 ) : continue
 
         print 'DO_CHUNK',i,j
 
@@ -157,6 +166,10 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
                 j_prev = start_region[1]
 
                 dir_prev = 'REGION_%d_%d' % (i_prev, j_prev )
+                prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
+
+                if ZIGZAG and (prev_job_tag not in all_job_tags): #Note previous job may have been accomplished in a prior run -- not in the current DAG.
+                    continue
 
                 pdbfile = '%s/region_%d_%d_sample.cluster.out.$(Process).pdb' % (dir_prev,i_prev,j_prev)
                 tag = basename( pdbfile ).replace( '.pdb' ,'' )
@@ -172,7 +185,6 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
 
                 make_condor_submit_file( condor_submit_file, args2, FINAL_NUMBER )
 
-                prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
                 if prev_job_tag in all_job_tags: #Note previous job may have been accomplished in a prior run -- not in the current DAG.
                     fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, job_tag) )
 
