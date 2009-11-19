@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from os import system
 from sys import argv
-
+from os.path import exists
 
 for file in argv[1:]:
 

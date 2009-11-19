@@ -5,16 +5,22 @@ from glob import glob
 import string
 from os import system
 from os.path import basename, dirname, exists, expanduser
+from time import sleep
 
 indir_prefix = argv[1]
 
 globstring = indir_prefix+'*/*minimize.out'
-print globstring
+#print globstring
 
 globfiles = glob( globstring )
+if len( globfiles ) == 0:
+    sleep( 5 )
+    globfiles = glob( globstring )
+
+
 globfiles.sort()
 
-print globfiles
+#print globfiles
 
 cat_outfile = dirname( indir_prefix) + '/' + basename(indir_prefix).lower() + '_sample_minimize.out'
 
@@ -38,6 +44,8 @@ for globfile in globfiles:
 # We don't need to whole file -- just
 #  some small fraction (here 4000).
 filter_outfile = cat_outfile.replace('.out','.low4000.out')
+
+#wait_for_file( cat_outfile )
 
 command = PYDIR+'/extract_lowscore_decoys_outfile.py '+cat_outfile+' 4000 > '+filter_outfile
 print( command )

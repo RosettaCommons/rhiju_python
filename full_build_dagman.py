@@ -2,31 +2,47 @@
 
 from os import system,popen
 from os.path import exists,dirname,basename,expanduser
-from sys import exit
+from sys import exit, argv
 import string
 from time import sleep
 
-# JOB SETTINGS.
-native_pdb = '1shf.pdb'
-fasta_file = '1shf.fasta'
 
+################################################################
+def parse_options( argv, tag, default):
+    value = default
+    if argv.count( "-"+tag ):
+        pos = argv.index( "-"+tag )
+        try:
+            if isinstance( default, int ):
+                value = int( argv[ pos + 1 ] )
+            elif isinstance( default, float ):
+                value = float( argv[ pos + 1 ] )
+            else:
+                value = argv[ pos + 1 ]
+        except:
+            value = 1
+    return value
 
-ZIGZAG = 1
-
-FILTER_RMSD = 999.99
-N_MINIMIZE = 100
-CLUSTER_RADIUS = 1.5
-N_SAMPLE = 18
-FINAL_NUMBER = 40
-#N_JOBS = 1
-
+fasta_file = parse_options( argv, "fasta", "1shf.fasta" )
+assert( exists( fasta_file ) )
 sequence = open( fasta_file  ).readlines()[1][:-1]
 
-MIN_RES = 38
-MAX_RES = 49
+MIN_RES = parse_options( argv, "min_res", 38 )
+MAX_RES = parse_options( argv, "max_res", 49 )
+ZIGZAG = parse_options( argv, "zigzag", 0 )
+N_SAMPLE = parse_options( argv, "n_sample", 18 )
+FINAL_NUMBER = parse_options( argv, "final_number", 40 )
+SCORE_WEIGHTS = parse_options( argv, "weights", "score12.wts" )
+PACK_WEIGHTS = parse_options( argv, "pack_weights", "pack.wts" )
+N_MINIMIZE = parse_options( argv, "n_minimize", 100 )
+FILTER_RMSD = parse_options( argv, "filter_rmsd", 999.999 )
+CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 2.0 )
+N_MINIMIZE = parse_options( argv, "n_minimize", 100 )
+native_pdb = parse_options( argv, "n", "1shf.pdb" )
 
-#MIN_RES = 43
-#MAX_RES = 44
+assert( exists( SCORE_WEIGHTS ) )
+assert( exists( PACK_WEIGHTS ) )
+assert( exists( native_pdb ) ) # Get rid of this later...
 
 ###############################################################
 # Where's the executable?
@@ -76,9 +92,13 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number ):
     fid.write('arguments = %s\n' % arguments)
 
     job_tag = basename(condor_submit_file).replace('.condor','')
-    fid.write('output = CONDOR/%s.$(Process).out\n' % job_tag )
+
+    subdir = 'CONDOR/'+job_tag
+    if not exists( subdir ): system( 'mkdir -p '+subdir )
+
+    fid.write('output = CONDOR/%s/$(Process).out\n' % job_tag )
     fid.write('log = CONDOR/%s.log\n' % job_tag )
-    fid.write('error = CONDOR/%s.$(Process).err\n' % job_tag)
+    fid.write('error = CONDOR/%s/$(Process).err\n' % job_tag)
     fid.write('notification = never\n')
     fid.write('Queue %d\n' % queue_number )
     fid.close()
@@ -116,7 +136,7 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
             system( command )
 
         # BASIC COMMAND
-        extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights score12.wts -pack_weights pack.wts'
+        extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
         args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -n_sample %d -n_minimize %d -minimize  -fullatom %s  -filter_rmsd %8.3f  ' % ( DB, native_pdb_for_step, N_SAMPLE, N_MINIMIZE, extraflags, FILTER_RMSD )
 
         ###########################################
