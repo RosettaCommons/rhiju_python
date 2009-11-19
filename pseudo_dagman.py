@@ -138,11 +138,10 @@ def biox2_condor_submit( condor_submit_file_ ):
         err_new = err.replace('$(Process)',q_string).replace('$(PROCESS)',q_string)
         output_new = output.replace('$(Process)',q_string).replace('$(PROCESS)',q_string)
 
-        command = "bsub -W 4:0 -o %s -e %s -J %s    %s %s " % \
-                  (output_new,err_new,job_tag_,   exe,args_new)
-
         wait_for_pending_jobs_to_clear()
 
+        #command = "bsub -W 4:0 -o %s -e %s -J %s    %s %s " % \
+        # (output_new,err_new,job_tag_,   exe,args_new)
         print command
         system( command )
 
@@ -151,6 +150,8 @@ def biox2_condor_submit( condor_submit_file_ ):
 
         #Need to wait until jobs actually appear in the queue...
         #check_for_job_tags( job_tags_ )
+
+    command = "condor_submit "+condor_submit_file
 
     #print "Sleeping to let queue update... "
     #sleep( 5 )

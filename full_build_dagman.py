@@ -39,6 +39,7 @@ FILTER_RMSD = parse_options( argv, "filter_rmsd", 999.999 )
 CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 2.0 )
 N_MINIMIZE = parse_options( argv, "n_minimize", 100 )
 native_pdb = parse_options( argv, "n", "1shf.pdb" )
+cst_file = parse_options( argv, "cst_file", "" )
 
 assert( exists( SCORE_WEIGHTS ) )
 assert( exists( PACK_WEIGHTS ) )
@@ -103,6 +104,36 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number ):
     fid.write('Queue %d\n' % queue_number )
     fid.close()
 
+
+def  parse_cst_file( cst_file, i, j, cst_file_for_step):
+    assert( exists( cst_file ) )
+    lines = open( cst_file ).readlines()
+    fid = open( cst_file_for_step, 'w' )
+    fid.write( '[ atompairs ]\n' )
+    num_cst = 0
+    for line in lines[1:]:
+        if len( line ) > 10:
+            cols = string.split( line )
+            atom_name1 = cols[0]
+            res_num1 = int( cols[1] )
+            atom_name2 = cols[2]
+            res_num2 = int( cols[3] )
+            if ( res_num1 in range(i,j+1)  ) and \
+               ( res_num2 in range(i,j+1)  ):
+                res_num1 -= (i-1)
+                res_num2 -= (i-1)
+                fid.write('%s %d %s %d %s\n' % (atom_name1, res_num1, atom_name2, res_num2, string.join( cols[4:]) ) )
+                num_cst += 1
+    fid.close()
+    return num_cst
+
+def parse_fasta_file( fasta_file, i, j, fasta_for_step):
+    lines = open( fasta_file ).readlines()
+    fid = open( fasta_for_step, 'w' )
+    fid.write( lines[0] )
+    fid.write( lines[1][(i-1):j] + '\n' )
+    fid.close()
+
 all_job_tags = []
 
 for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
@@ -135,15 +166,26 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
             print( command )
             system( command )
 
-        # BASIC COMMAND
-        extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
-        args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -n_sample %d -n_minimize %d -minimize  -fullatom %s  -filter_rmsd %8.3f  ' % ( DB, native_pdb_for_step, N_SAMPLE, N_MINIMIZE, extraflags, FILTER_RMSD )
-
         ###########################################
         # OUTPUT DIRECTORY
         outdir = 'REGION_%d_%d' % (i,j)
         if not( exists( outdir) ):
             system( 'mkdir -p ' + outdir )
+
+        fasta_for_step = outdir + '/' + prefix + fasta_file
+        if not exists( fasta_for_step ):
+            parse_fasta_file( fasta_file, i, j, fasta_for_step)
+
+
+        # BASIC COMMAND
+        extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
+        args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -fasta %s -n_sample %d -n_minimize %d -minimize  -fullatom %s  -filter_rmsd %8.3f  ' % ( DB, native_pdb_for_step, fasta_for_step, N_SAMPLE, N_MINIMIZE, extraflags, FILTER_RMSD )
+
+        if len( cst_file ) > 0:
+            cst_file_for_step = outdir + '/' + prefix + cst_file
+            num_cst = parse_cst_file( cst_file, i, j, cst_file_for_step)
+            if (num_cst > 0 ): args += ' -cst_file %s ' % cst_file_for_step
+
 
         overall_job_tag = 'REGION_%d_%d' % (i,j)
 
