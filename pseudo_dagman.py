@@ -7,6 +7,10 @@ from os.path import basename,exists
 from random import randrange
 from time import sleep
 
+#from dagman_LSF import *
+from dagman_condor import *
+
+
 #########################################
 # Parse dagman file
 #########################################
@@ -42,119 +46,6 @@ for line in lines:
             if child_job not in parents.keys():
                 parents[ child_job ] = []
             for parent_job in parent_jobs: parents[ child_job ].append( parent_job )
-
-
-##############################################
-# This doesn't seem to be very robust...
-# Some issues with file server synchronization with bjobs queue listing
-def check_for_job_tags( job_tags_ ):
-    lines = popen( "bjobs -w" ).readlines()
-    still_running = 0
-    for job_tag in job_tags_:
-        for line in lines:
-            cols = string.split( line )
-            if ( cols.count( job_tag ) ):
-                still_running += 1
-                break
-    return still_running
-
-
-##############################################
-def check_output_files( output_files_ ):
-
-    still_running = 0
-    done_running = 0
-
-    for output_file in output_files_:
-        still_running += 1
-        #print "CHECKING ", output_file
-
-        if not exists( output_file ): continue
-        lines = popen( "tail -n 20 "+output_file ).readlines()
-
-        for line in lines:
-            if ( len( line ) > 22 and  line[:23] == "Successfully completed." ):
-                #print "completed!"
-                done_running += 1
-                break
-    #print "checkaroo: ", still_running, done_running
-    still_running = still_running - done_running
-    return still_running
-
-def wait_for_pending_jobs_to_clear():
-    too_many_pending_jobs = 1
-    PEND_LIMIT = 199
-    while too_many_pending_jobs:
-        too_many_pending_jobs = 0
-        lines = popen( "bjobs -w | grep PEND " ).readlines()
-        if len( lines ) >= PEND_LIMIT:
-            too_many_pending_jobs = 1
-            print "Waiting for pending job number ", len(lines), " to fall below ", PEND_LIMIT
-            sleep( 10 )
-
-##############################################
-def biox2_condor_submit( condor_submit_file_ ):
-    print 'Run: ', condor_submit_file_
-    lines = open( condor_submit_file_ ).readlines()
-    log = "/dev/null"
-    output = ""
-    err = "/dev/null"
-    exe = ""
-    args = ""
-    queue_num = 0
-    for line in lines:
-        if len( line ) > 2:
-            cols = string.split( line )
-            if cols[0] ==  "executable":
-                assert( cols[1] == "=" )
-                exe = cols[2]
-            elif cols[0] == "arguments":
-                assert( cols[1] == "=" )
-                args = string.join(cols[2:])
-            elif cols[0] == "log":
-                assert( cols[1] == "=" )
-                log = cols[2]
-            elif cols[0] == "output":
-                assert( cols[1] == "=" )
-                output = cols[2]
-            elif cols[0] == "error":
-                assert( cols[1] == "=" )
-                err = cols[2]
-            elif (cols[0]).lower() == "queue":
-                if len( cols ) > 1: queue_num = int( cols[1] )
-
-    if ( exe == "" ) or  ( args == "" ) or (output == "") or (queue_num == 0):
-        print "PROBLEM!!!"
-        exit()
-
-    job_tags_ = []
-    output_files_ = []
-    actually_queued = 0
-
-    for q in range( queue_num ):
-        job_tag_ = basename( condor_submit_file_.replace('.condor','') ).upper()
-        job_tag_ += "_%d_%d" % ( q, randrange(0,1000000) )
-
-        q_string = '%d' % q
-        args_new = args.replace('$(Process)',q_string).replace('$(PROCESS)',q_string)
-        err_new = err.replace('$(Process)',q_string).replace('$(PROCESS)',q_string)
-        output_new = output.replace('$(Process)',q_string).replace('$(PROCESS)',q_string)
-
-        if exists( output_new ) and not check_output_files( [ output_new ] ):
-            print "Already done", output_new
-        else:
-            actually_queued = 1
-            command = "bsub -W 4:0 -o %s -e %s -J %s    %s %s " % \
-                      (output_new,err_new,job_tag_,   exe,args_new)
-
-            wait_for_pending_jobs_to_clear()
-            print command
-            system( command )
-
-        job_tags_.append( job_tag_ )
-        output_files_.append( output_new )
-
-    return ( output_files_, actually_queued )
 
 done = {}
 queued = {}
@@ -194,7 +85,7 @@ while not all_done:
                             command =  pre_command + ' > '+pre_command_log_file
                             system( command )
 
-                    ( output_files[ job ], actually_queued ) = biox2_condor_submit( condor_submit_file[ job ] )
+                    ( output_files[ job ], actually_queued ) = condor_submit( condor_submit_file[ job ] )
 
                     queued[ job ] = actually_queued
                     if not actually_queued:
