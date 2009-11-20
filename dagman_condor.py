@@ -28,9 +28,10 @@ def check_output_files( output_files_ ):
 
         jobs_running = []
         for line in lines:
-            if line.find( 'Job executing' ) > 0:
+            if line.find( 'Job submitted' ) > 0:
                 job_tag = string.split( line, '(')[1].split(')')[0]
                 jobs_running.append( job_tag )
+                print 'EXECUTED', job_tag
 
         if len( jobs_running) == 0: # logfile not filled out yet.
             still_running += 999
@@ -49,9 +50,10 @@ def check_output_files( output_files_ ):
             if  terminated[ job ]: done_running += 1
 
     still_running = still_running - done_running
+    print 'Checkaroo: ',still_running, done_running
 
     command = 'condor_reschedule > /dev/null 2> /dev/null '
-    print( command )
+    #print( command )
     system( command )
 
     return still_running

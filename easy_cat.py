@@ -40,9 +40,9 @@ for tag in which_files_to_cat.keys():
     cat_file = tag+".out"
     #    cat_file = "cat_"+tag+".out"
     print "Catting into: ",cat_file,
-    command = '~rhiju/python/cat_outfiles.py %s >  %s ' % \
+    command = '~/python/cat_outfiles.py %s >  %s ' % \
               (string.join( which_files_to_cat[tag] ) ,
-                                    cat_file )
+               cat_file )
     #print command
     system( command )
 
