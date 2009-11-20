@@ -27,8 +27,8 @@ fasta_file = parse_options( argv, "fasta", "1shf.fasta" )
 assert( exists( fasta_file ) )
 sequence = open( fasta_file  ).readlines()[1][:-1]
 
-MIN_RES = parse_options( argv, "min_res", 38 )
-MAX_RES = parse_options( argv, "max_res", 49 )
+MIN_RES = parse_options( argv, "min_res", 1 )
+MAX_RES = parse_options( argv, "max_res", len( sequence ) )
 ZIGZAG = parse_options( argv, "zigzag", 0 )
 N_SAMPLE = parse_options( argv, "n_sample", 18 )
 FINAL_NUMBER = parse_options( argv, "final_number", 40 )
@@ -37,7 +37,6 @@ PACK_WEIGHTS = parse_options( argv, "pack_weights", "pack.wts" )
 N_MINIMIZE = parse_options( argv, "n_minimize", 100 )
 FILTER_RMSD = parse_options( argv, "filter_rmsd", 999.999 )
 CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 2.0 )
-N_MINIMIZE = parse_options( argv, "n_minimize", 100 )
 native_pdb = parse_options( argv, "n", "1shf.pdb" )
 cst_file = parse_options( argv, "cst_file", "" )
 

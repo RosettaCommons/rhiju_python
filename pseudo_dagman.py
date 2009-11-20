@@ -129,6 +129,8 @@ def biox2_condor_submit( condor_submit_file_ ):
 
     job_tags_ = []
     output_files_ = []
+    actually_queued = 0
+
     for q in range( queue_num ):
         job_tag_ = basename( condor_submit_file_.replace('.condor','') ).upper()
         job_tag_ += "_%d_%d" % ( q, randrange(0,1000000) )
@@ -138,25 +140,21 @@ def biox2_condor_submit( condor_submit_file_ ):
         err_new = err.replace('$(Process)',q_string).replace('$(PROCESS)',q_string)
         output_new = output.replace('$(Process)',q_string).replace('$(PROCESS)',q_string)
 
-        wait_for_pending_jobs_to_clear()
+        if exists( output_new ) and not check_output_files( [ output_new ] ):
+            print "Already done", output_new
+        else:
+            actually_queued = 1
+            command = "bsub -W 4:0 -o %s -e %s -J %s    %s %s " % \
+                      (output_new,err_new,job_tag_,   exe,args_new)
 
-        #command = "bsub -W 4:0 -o %s -e %s -J %s    %s %s " % \
-        # (output_new,err_new,job_tag_,   exe,args_new)
-        print command
-        system( command )
+            wait_for_pending_jobs_to_clear()
+            print command
+            system( command )
 
         job_tags_.append( job_tag_ )
         output_files_.append( output_new )
 
-        #Need to wait until jobs actually appear in the queue...
-        #check_for_job_tags( job_tags_ )
-
-    command = "condor_submit "+condor_submit_file
-
-    #print "Sleeping to let queue update... "
-    #sleep( 5 )
-    #return log_files_
-    return output_files_
+    return ( output_files_, actually_queued )
 
 done = {}
 queued = {}
@@ -190,12 +188,17 @@ while not all_done:
 
                 if ready_to_queue:
                     if job in pre_script.keys():
-                        command = pre_script[ job ]
-                        print( command )
-                        system( command )
+                        pre_command = pre_script[ job ]
+                        pre_command_log_file = condor_submit_file[job] +'.pre_script.log'
+                        if not exists( pre_command_log_file  ):
+                            command =  pre_command + ' > '+pre_command_log_file
+                            system( command )
 
-                    output_files[ job ] = biox2_condor_submit( condor_submit_file[ job ] )
-                    queued[ job ] = 1
+                    ( output_files[ job ], actually_queued ) = biox2_condor_submit( condor_submit_file[ job ] )
+
+                    queued[ job ] = actually_queued
+                    if not actually_queued:
+                        done[ job ] = 1
 
     if not all_done:
         sleep(1)
