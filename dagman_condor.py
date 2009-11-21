@@ -122,7 +122,7 @@ def condor_submit( condor_submit_file_ ):
     output_files_ = []
     actually_queued = 0
 
-    if exists( log ) and check_output_files( [ log ] ):
+    if exists( log ) and (not check_output_files( [ log ] )):
         print "Already done", log
     else:
         command = "condor_submit "+condor_submit_file_
