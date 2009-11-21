@@ -28,10 +28,10 @@ def check_output_files( output_files_ ):
 
         jobs_running = []
         for line in lines:
-            if line.find( 'Job executing' ) > 0:
+            if line.find( 'Job submit' ) > 0:
                 job_tag = string.split( line, '(')[1].split(')')[0]
                 jobs_running.append( job_tag )
-                print 'EXECUTED', job_tag
+                #print 'EXECUTED', job_tag
 
         if len( jobs_running) == 0: # logfile not filled out yet.
             still_running += 999
