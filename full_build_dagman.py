@@ -37,6 +37,7 @@ PACK_WEIGHTS = parse_options( argv, "pack_weights", "pack.wts" )
 N_MINIMIZE = parse_options( argv, "n_minimize", 100 )
 FILTER_RMSD = parse_options( argv, "filter_rmsd", 999.999 )
 CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 2.0 )
+filter_native_big_bins = parse_options( argv, "filter_native_big_bins", 0 )
 native_pdb = parse_options( argv, "n", "1shf.pdb" )
 cst_file = parse_options( argv, "cst_file", "" )
 
@@ -147,7 +148,7 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
         if ( i < MIN_RES or j > MAX_RES ): continue
 
         #ZIGZAG!!
-        if ( ZIGZAG and abs( ( 43 - i ) - (j - 44 ) ) > 1 ) : continue
+        if ( ZIGZAG and abs( ( i - MIN_RES ) - ( MAX_RES - j ) ) > 1 ) : continue
 
         print 'DO_CHUNK',i,j
 
@@ -156,8 +157,8 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
 
         # This jobs is maybe already done...
         outfile_cluster = prefix+'sample.cluster.out'
-        if exists( outfile_cluster ):
-            continue
+        #if exists( outfile_cluster ):
+        #    continue
 
         native_pdb_for_step = prefix + native_pdb
         if not exists( native_pdb_for_step ):
@@ -179,6 +180,8 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
         # BASIC COMMAND
         extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
         args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -fasta %s -n_sample %d -n_minimize %d -minimize  -fullatom %s  -filter_rmsd %8.3f  ' % ( DB, native_pdb_for_step, fasta_for_step, N_SAMPLE, N_MINIMIZE, extraflags, FILTER_RMSD )
+
+        if filter_native_big_bins:  args+= " -filter_native_big_bins "
 
         if len( cst_file ) > 0:
             cst_file_for_step = outdir + '/' + prefix + cst_file
