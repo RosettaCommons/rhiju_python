@@ -4,30 +4,29 @@
 
 
 from sys import argv,exit
-from os.path import exists
+from os.path import exists,expanduser
 from os import system, popen
 import string
 
 native_file = argv[1]
 pdb_files_in = argv[2:]
 
-pdb_files_convert = []
+HOMEDIR = expanduser('~')
 
+pdb_files_convert = []
 for pdb_file in pdb_files_in:
     pdb_file_convert = string.lower(pdb_file).replace( '.pdb', '_RNA.pdb' )
 
     if not exists( pdb_file_convert ):
-        command = 'python ~rhiju/python/make_rna_rosetta_ready.py '+pdb_file
+        command = 'python "+HOMEDIR+"/python/make_rna_rosetta_ready.py '+pdb_file
         system( command )
 
     pdb_files_convert.append( pdb_file_convert )
 
 
-MINI_ROSETTA_EXE = '/users/rhiju/src/mini/bin/rna_test.macosgccrelease'
+MINI_ROSETTA_EXE = HOMEDIR+'/src/mini/bin/rna_test.macosgccrelease'
 if not exists( MINI_ROSETTA_EXE ):
-    MINI_ROSETTA_EXE = '/work/rhiju/src/mini/bin/rna_test.macosgccrelease'
-if not exists( MINI_ROSETTA_EXE ):
-    MINI_ROSETTA_EXE = '/home/rhiju/src/mini/bin/rna_test.linuxgccrelease'
+    MINI_ROSETTA_EXE = HOMEDIR+'/src/mini/bin/rna_test.linuxgccrelease'
 assert( exists( MINI_ROSETTA_EXE ) )
 
 command = MINI_ROSETTA_EXE+ ' -calc_rmsd -mute all -database ~/minirosetta_database -native '+native_file + ' -s '+string.join( pdb_files_convert )

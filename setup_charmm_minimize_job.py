@@ -2,7 +2,7 @@
 
 from sys import argv
 from os import system, getcwd, chdir
-from os.path import exists,abspath
+from os.path import exists,abspath,expanduser
 from glob import glob
 
 outfiles = argv[1:]
@@ -15,9 +15,14 @@ except:
 
 
 EXE = './run_charmm_minimize.py'
+HOMEDIR = expanduser('~')
 
 bsub_file = open( 'bsubCHARMM','w' )
-
+condor_file = open( 'CHARMM.condor','w' )
+condor_file.write('+TGProject = TG-MCB090153\n')
+condor_file.write('universe = vanilla\n')
+condor_file.write('executable = %s\n' % EXE )
+    
 CWD = getcwd()
 
 total_count = 0
@@ -42,14 +47,12 @@ for outfile in outfiles:
         print( command )
         system( command )
 
-        MINI_EXE = '/work/rhiju/src/mini/bin/rna_extract.linuxgccrelease'
+        MINI_EXE = HOMEDIR + '/src/mini/bin/rna_extract.linuxgccrelease'
         if not exists( MINI_EXE ):
-            MINI_EXE = '~rhiju/src/mini/bin/rna_extract.macosgccrelease'
-            if not exists( MINI_EXE ):
-                MINI_EXE = '~rhiju/src/mini/bin/rna_extract.linuxgccrelease'
+            MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.macosgccrelease'
 
-        command = '%s -database ~rhiju/minirosetta_database/ -in::file::silent %s -in::file::silent_struct_type binary_rna' % \
-                  ( MINI_EXE, outfile )
+        command = '%s -database %s/minirosetta_database/ -in::file::silent %s -in::file::silent_struct_type binary_rna' % \
+                  ( MINI_EXE, HOMEDIR, outfile )
         print( command )
         system( command )
 
@@ -89,14 +92,18 @@ for outfile in outfiles:
         if ( (count % NUM_JOBS_PER_NODE) == 0):
             if ( start == 1 ):
                 bsub_file.write( '\n' )
+                condor_file.write( '\nQueue 1\n' )
             else:
                 start = 1
             bsub_file.write( '\nbsub -W 16:0 %s ' % EXE )
+            condor_file.write( '\narguments = ' )
         count += 1
         bsub_file.write( '  '+outdir+'/'+file )
-
+        condor_file.write( '  '+outdir+'/'+file )
+        
     if (not count % NUM_JOBS_PER_NODE == 0):
         bsub_file.write( '\n')
+        condor_file.write( '\nQueue 1\n')
 
     chdir( CWD )
 
@@ -109,6 +116,6 @@ print 'Total number of PDBs to minimize: ', total_count
 # Create a master script as an "executable" for condor that
 # will serially process say, 10 PDBs.
 chdir( CWD )
-system( 'cp -rf ~rhiju/python/charmm_minimize.py .' )
-system( 'cp -rf ~rhiju/python/run_charmm_minimize.py .' )
+system( 'cp -rf '+HOMEDIR+'/python/charmm_minimize.py .' )
+system( 'cp -rf '+HOMEDIR+'/python/run_charmm_minimize.py .' )
 

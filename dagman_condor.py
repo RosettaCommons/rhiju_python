@@ -50,7 +50,7 @@ def check_output_files( output_files_ ):
             if  terminated[ job ]: done_running += 1
 
     still_running = still_running - done_running
-    print 'Checkaroo: ',still_running, done_running
+    #print 'Checkaroo: ',still_running, done_running
 
     command = 'condor_reschedule > /dev/null 2> /dev/null '
     #print( command )
