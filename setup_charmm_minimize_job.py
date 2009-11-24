@@ -86,8 +86,8 @@ for outfile in outfiles:
 
     for file in globfiles:
         min_pdb_file = file+'.min_pdb'
-        if exists( min_pdb_file ):
-            continue
+        #if exists( min_pdb_file ):
+        #continue
 
         if ( (count % NUM_JOBS_PER_NODE) == 0):
             if ( start == 1 ):

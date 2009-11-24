@@ -4,11 +4,13 @@ from sys import argv,exit
 
 
 from glob import glob
-from os.path import basename,exists,dirname,abspath
+from os.path import basename,exists,dirname,abspath,expanduser
 from os import popen,system
 import string
 
 outdirs = argv[1:]
+
+HOMEDIR = expanduser('~')
 
 native_supplied = 0
 if (outdirs[0][-4:] == '.pdb' ): # Native specified
@@ -29,7 +31,7 @@ for outdir in outdirs:
         # Still look for native in rhiju's directory.
         pos = outdir.index( 'chunk')
         rna_name = outdir[pos:(pos+13)]
-        native_pdb = '/home/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+        native_pdb = HOMEDIR+'/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
         if exists( native_pdb ):
             native_exists = 1
 
@@ -85,7 +87,7 @@ for outdir in outdirs:
     if native_exists and num_files > 0 :
         #This is stupid, there's a limit to how many can go into a command line
         for x in range(  int( num_files/N_DECOYS ) + 1 ):
-            command = '~rhiju/python/charmm_superimpose.py '+native_pdb+' '+string.join( \
+            command = HOMEDIR+'/python/charmm_superimpose.py '+native_pdb+' '+string.join( \
                 files_to_calc_rms[ (N_DECOYS*x): (N_DECOYS*x+N_DECOYS)] )
             print( command )
             system( command )
@@ -155,7 +157,7 @@ for outdir in outdirs:
 
         if native_exists:
             #tag = basename( file ).replace('min_','').replace('.sc','').replace('minimize_','')
-            #fid.write( ' %8.4f' % rms_vals_init[ file ] )
+            fid.write( ' %8.4f' % rms_vals_init[ file ] )
             fid.write( ' %8.4f' % rms_vals[ file ] )
 
         fid.write( ' '+basename(file).replace('.scores','') + '\n' )

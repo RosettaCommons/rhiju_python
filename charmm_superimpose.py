@@ -18,7 +18,7 @@ for pdb_file in pdb_files_in:
     pdb_file_convert = string.lower(pdb_file).replace( '.pdb', '_RNA.pdb' )
 
     if not exists( pdb_file_convert ):
-        command = 'python "+HOMEDIR+"/python/make_rna_rosetta_ready.py '+pdb_file
+        command = 'python '+HOMEDIR+'/python/make_rna_rosetta_ready.py '+pdb_file
         system( command )
 
     pdb_files_convert.append( pdb_file_convert )
