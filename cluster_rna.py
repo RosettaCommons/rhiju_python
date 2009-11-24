@@ -2,7 +2,7 @@
 
 from sys import argv,exit
 from os import system,popen
-from os.path import exists,basename,dirname
+from os.path import exists,basename,dirname,expanduser
 from glob import glob
 import string
 
@@ -12,6 +12,16 @@ if argv.count( '-verbose'):
     del( argv[ pos ] )
     verbose = 1
 
+native_defined = 0
+native_exists = 0
+if argv.count( '-native'):
+    pos = argv.index( '-native' )
+    del( argv[ pos ] )
+    native_pdb = argv[ pos ]
+    del( argv[ pos ] )
+    native_defined = 1
+    native_exists = 1
+
 outfiles = argv[1:]
 
 num_models = '0.01'
@@ -20,12 +30,10 @@ RMS_THRESHOLD = 2.5
 
 numfiles = len( outfiles )
 
-
-CLUSTER_EXE = '/users/rhiju/src/mini/bin/cluster.macosgccrelease'
+HOMEDIR = expanduser('~')
+CLUSTER_EXE = HOMEDIR+'/src/mini/bin/cluster.macosgccrelease'
 if not( exists( CLUSTER_EXE ) ):
-    CLUSTER_EXE = '/work/rhiju/src/mini/bin/cluster.linuxgccrelease'
-if not( exists( CLUSTER_EXE ) ):
-    CLUSTER_EXE = '/home/rhiju/src/mini/bin/cluster.linuxgccrelease'
+    CLUSTER_EXE = HOMEDIR+'/src/mini/bin/cluster.linuxgccrelease'
 assert( exists( CLUSTER_EXE) )
 
 RNA_TEST_EXE = CLUSTER_EXE.replace( 'cluster','rna_test' )
@@ -38,10 +46,17 @@ for outfile in outfiles:
         print "Cannot find", outfile
         continue
 
-    pos = outfile.index( 'chunk' )
-    rna_name = outfile[pos:(pos+13)]
-    native_pdb = '/Users/rhiju/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+    if not native_defined:
+        native_exists = 0
+        if outfile.find( 'chunk' ) >= 0:
+            pos = outfile.index( 'chunk' )
+            rna_name = outfile[pos:(pos+13)]
+            native_pdb = HOMEDIR+'/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+            native_exists = 1
+
     #print native_pdb
+    native_tag = ''
+    if native_exists or native_defined: native_tag = '-native '+native_pdb
 
     ##################################################################################
     # Lowscore decoys.
@@ -89,7 +104,7 @@ for outfile in outfiles:
                 pdbname_RNA = dirname(pdbname)+'/'+string.lower(basename(pdbname)).replace('.pdb','_RNA.pdb').replace('minimize_S_','minimize_s_')
 
                 if not exists( pdbname_RNA ):
-                    system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
+                    system( HOMEDIR+'/python/make_rna_rosetta_ready.py '+pdbname )
                 print pdbname_RNA
                 assert( exists( pdbname_RNA ) )
                 fid.write( pdbname_RNA+'\n' )
@@ -115,7 +130,7 @@ for outfile in outfiles:
                 assert( exists( pdbname ) )
                 pdbname_RNA = dirname(pdbname)+'/'+string.lower(basename(pdbname)).replace('.pdb','_RNA.pdb').replace( 'minimize_S','minimize_s' )
                 if not exists( pdbname_RNA ):
-                    system( '~rhiju/python/make_rna_rosetta_ready.py '+pdbname )
+                    system( HOMEDIR+'/python/make_rna_rosetta_ready.py '+pdbname )
                 print pdbname_RNA
                 assert( exists( pdbname_RNA ) )
                 fid.write( pdbname_RNA+'\n' )
@@ -124,7 +139,7 @@ for outfile in outfiles:
             outfile_scorecut = outfile.replace('.out','.low%s.out' % num_models )
 
             if not exists( outfile_scorecut ):
-                command = '~rhiju/python/extract_lowscore_decoys_outfile.py %s %s > %s '% (outfile, num_models, outfile_scorecut)
+                command = HOMEDIR+'/python/extract_lowscore_decoys_outfile.py %s %s > %s '% (outfile, num_models, outfile_scorecut)
                 print( command )
                 system( command )
 
@@ -136,9 +151,6 @@ for outfile in outfiles:
         # Cluster
         ##################################################################################
         if TINKER_CHARMM_SCOREFILE:
-            native_tag = ''
-
-            native_tag = '-native '+native_pdb
 
             command = '%s -database ~/minirosetta_database  -l %s -in:file:fullatom -score:weights rna_hires.wts   -radius %f %s > %s' % ( CLUSTER_EXE, listfile_scorecut, RMS_THRESHOLD, native_tag, cluster_logfile )
             print( command )
@@ -199,7 +211,7 @@ for outfile in outfiles:
 
     cluster_scorefile = outfile+'.cluster_rms.out'
     if not exists( cluster_scorefile ):
-        command = '%s -rna_stats -database ~/minirosetta_database  -s %s -in:file:fullatom -native %s -out:file:silent %s' % ( RNA_TEST_EXE, string.join( globfiles ), native_pdb, cluster_scorefile )
+        command = '%s -rna_stats -database ~/minirosetta_database  -s %s -in:file:fullatom %s -out:file:silent %s' % ( RNA_TEST_EXE, string.join( globfiles ), native_tag, cluster_scorefile )
         print( command )
         system( command )
 

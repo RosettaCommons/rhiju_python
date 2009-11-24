@@ -4,6 +4,7 @@ from sys import argv,exit
 import string
 from os import system
 from os.path import basename,dirname,abspath,exists
+from cluster_info import *
 
 def Help():
     print
@@ -14,19 +15,19 @@ def Help():
 if len(argv)<2:
     Help()
 
-cluster = argv[1]
-clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','ade','ade.stanford.edu' ];
-if cluster not in clusterlist:
-    print 'Hey, '+cluster+' is not a known cluster.'
-    Help()
+cluster_in = argv[1]
+(cluster,remotedir) = cluster_check( cluster_in )
 
-if cluster == 'biox2': cluster = 'biox2.stanford.edu'
+if len( cluster ) == 0:
+    Help()
 
 extra_args = argv[2:]
 
 dir = '.'
 clusterdir = abspath(dir).replace('/Users/rhiju/','')
 clusterdir = clusterdir.replace('/work/rhiju/','')
+
+clusterdir = remotedir + clusterdir
 
 #if cluster[:3]=='syd':
 #    n = cluster[3]

@@ -206,9 +206,8 @@ for infile in infiles:
     if (scoretags.count('rna_torsion') or scoretags.count('rna_base_axis') or scoretags.count('rna_vdw') ):
         MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.linuxgccrelease'
         if not exists( MINI_EXE ):
-            MINI_EXE = HOMEDIR+'/src/mini/bin/rna_test.macosgccrelease'
-            if not exists( MINI_EXE ):
-                MINI_EXE = HOMEDIR+'/src/mini/bin/rna_test.linuxgccrelease'
+            MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.macosgccrelease'
+
         command = '%s -database %s/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
                   ( MINI_EXE, HOMEDIR, outfilename, string.join( tags ) )
 
