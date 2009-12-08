@@ -5,8 +5,8 @@ import string
 
 sequence = string.join(argv[1:],'')
 
-complement = { 'A':'T', 'T':'A', 'U':'A', 'C':'G', 'G':'C' }
-make_DNA = { 'A':'A', 'T':'T', 'U':'T', 'C':'C', 'G':'G' }
+complement = { 'A':'T', 'T':'A', 'U':'A', 'C':'G', 'G':'C', 'N':'N' }
+make_DNA = { 'A':'A', 'T':'T', 'U':'T', 'C':'C', 'G':'G', 'N':'N' }
 
 seq1 = ''
 seq2 = ''

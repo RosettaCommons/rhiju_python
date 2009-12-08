@@ -180,13 +180,19 @@ for infile in infiles:
                     +' '+wanted_rot_templates_file )
 
 
-    EXE = HOMEDIR+'/rosetta++/rosetta.gcc'
-    if not exists( EXE ):
-        EXE = 'rm boinc* ros*txt; '+HOMEDIR+'/rosetta++/rosetta.mactelboincgraphics '
+    #EXE = HOMEDIR+'/rosetta++/rosetta.gcc'
+    #if not exists( EXE ):
+    #    EXE = 'rm boinc* ros*txt; '+HOMEDIR+'/rosetta++/rosetta.mactelboincgraphics '
+    #command = '%s -extract -l %s -paths %s/paths.txt -s %s %s %s '% (EXE, templist_name, HOMEDIR,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
 
-    command = '%s -extract -l %s -paths %s/paths.txt -s %s %s %s '% (EXE, templist_name, HOMEDIR,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
 
+    # Centroid readout?
+    MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
+    if not exists( MINI_EXE):
+        MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
 
+        command = '%s -in:file:silent  %s   -in:file:tags %s -database %s/minirosetta_database/ -out:file:residue_type_set centroid ' % \
+                  ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
 
     # Check if this is an RNA run.
     fid = open( infile, 'r')
@@ -216,14 +222,14 @@ for infile in infiles:
         else:
             silent_struct_type = 'rna'
 
-        command = '%s -database %s/minirosetta_database/ -in::file::silent %s -in:file:tags %s -in::file::silent_struct_type %s  ' % \
+        command = '%s -database %s/minirosetta_database/ -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  ' % \
                   ( MINI_EXE, HOMEDIR,outfilename, string.join( tags ), silent_struct_type )
 
     elif ( binary_silentfile ):
         MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
         if not exists( MINI_EXE):
             MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
-        command = '%s -in:file:silent  %s  -in::file::silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/ ' % \
+        command = '%s -in:file:silent  %s  -in:file:silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/ ' % \
                   ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
 
 

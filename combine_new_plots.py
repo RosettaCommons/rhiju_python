@@ -27,12 +27,7 @@ if len(sys.argv) == 1:
 
 args = sys.argv[1:]
 
-by_width = 1
-
-if '-l' in args:
-    by_width = 0
-    pos = args.index('-l')
-    del args[pos]
+by_width = 0
 if '-w' in args:
     by_width = 1
     pos = args.index('-w')
@@ -55,6 +50,12 @@ try:
 except:
     W = N
     plots = args[2:]
+
+SIDEWAYS = 1
+if SIDEWAYS:
+    W_OLD = W
+    W = L
+    L = W_OLD
 
 for plot in plots:
     if not exists(plot):
@@ -82,11 +83,13 @@ def MakePage(out,old_plots,L,W,size,by_width):
     out.write('\\begin{tabular}{'+'c'*W+'}\n')
     for i in range(L):
         for j in range(W):
+            if SIDEWAYS: out.write('\\begin{sideways}\n')
             if plots[W*i+j]:
                 if by_width:
                     out.write('\\epsfxsize='+size+'\n\\epsfbox{'+plots[W*i+j]+'}\n')
                 else:
                     out.write('\\epsfysize='+size+'\n\\epsfbox{'+plots[W*i+j]+'}\n')
+            if SIDEWAYS: out.write('\\end{sideways}\n')
 
             if (j+1)%W: out.write('&\n')
 
@@ -100,6 +103,7 @@ out = open(base_name+'.tex','w')
 out.write('\\documentclass{article}\n')
 
 out.write('\\usepackage{epsf}\n')
+out.write('\\usepackage{rotating}\n')
 
 
 out.write('\\textwidth=8.5in\n')

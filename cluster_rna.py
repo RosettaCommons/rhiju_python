@@ -61,6 +61,10 @@ for outfile in outfiles:
     ##################################################################################
     # Lowscore decoys.
     ##################################################################################
+    gzip = 0
+    if outfile[-3:] == '.gz':
+        gzip = 1
+        outfile = outfile.replace('.gz','')
 
     TINKER_CHARMM_SCOREFILE = 0
     CHARM_SCOREFILE = 0
@@ -111,6 +115,7 @@ for outfile in outfiles:
             fid.close()
     else:
         outfile_scorecut = outfile.replace('.out','.low%s.out' % num_models )
+        if gzip: outfile_scorecut += '.gz'
 
     if not( exists( cluster_logfile ) ):
         if TINKER_CHARMM_SCOREFILE:
@@ -211,9 +216,12 @@ for outfile in outfiles:
 
     cluster_scorefile = outfile+'.cluster_rms.out'
     if not exists( cluster_scorefile ):
-        command = '%s -rna_stats -database ~/minirosetta_database  -s %s -in:file:fullatom %s -out:file:silent %s' % ( RNA_TEST_EXE, string.join( globfiles ), native_tag, cluster_scorefile )
-        print( command )
-        system( command )
+        if exists( cluster_scorefile+'.gz'):
+            system( 'gunzip '+cluster_scorefile+'.gz' )
+        else:
+            command = '%s -rna_stats -database ~/minirosetta_database  -s %s -in:file:fullatom %s -out:file:silent %s' % ( RNA_TEST_EXE, string.join( globfiles ), native_tag, cluster_scorefile )
+            print( command )
+            system( command )
 
     assert( exists( cluster_scorefile ) )
     lines = open(cluster_scorefile).readlines()
