@@ -32,10 +32,11 @@ for i in range( len( endpoints ) - 1 ):
     point_start = endpoints[ i ]
     point_end = endpoints[ i+1 ]
 
+    if ( bound_start == -1 ):
+        bound_start = point_start
+        bound_end = point_start
+
     if ( point_end - point_start  ) > 0:
-        if ( bound_start == -1 ):
-            bound_start = point_start
-            bound_end = point_start
 
         bound_end_current = bound_end
         for i in range( point_end - bound_end_current ):
@@ -43,9 +44,6 @@ for i in range( len( endpoints ) - 1 ):
             print_sequence( stdout, fasta, bound_start, bound_end )
 
     else:
-        if ( bound_start == -1 ):
-            bound_start = point_end
-            bound_end = point_end
 
         bound_start_current = bound_start
         for i in range( bound_start_current - point_end ):

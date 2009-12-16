@@ -226,11 +226,16 @@ for infile in infiles:
                   ( MINI_EXE, HOMEDIR,outfilename, string.join( tags ), silent_struct_type )
 
     elif ( binary_silentfile ):
+
         MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
         if not exists( MINI_EXE):
             MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
-        command = '%s -in:file:silent  %s  -in:file:silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/ ' % \
+
+
+        command = '%s -in:file:silent  %s  -in:file:silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/  ' % \
                   ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
+
+        if (scoretags.count('cenpack')): command += ' -out:file:residue_type_set centroid '
 
 
     print(command)

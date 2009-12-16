@@ -38,7 +38,7 @@ N_MINIMIZE = parse_options( argv, "n_minimize", 100 )
 FILTER_RMSD = parse_options( argv, "filter_rmsd", 999.999 )
 CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 2.0 )
 filter_native_big_bins = parse_options( argv, "filter_native_big_bins", 0 )
-native_pdb = parse_options( argv, "n", "1shf.pdb" )
+native_pdb = parse_options( argv, "native", "1shf.pdb" )
 cst_file = parse_options( argv, "cst_file", "" )
 
 assert( exists( SCORE_WEIGHTS ) )

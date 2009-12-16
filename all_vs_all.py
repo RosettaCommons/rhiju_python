@@ -68,5 +68,5 @@ for line1 in lines:
         print '%5.3f' % fit_threshold_save[line1][line2],
     print
 
-command = 'rm maxsub*pdb blah*pdb'
+command = 'rm -rf maxsub*pdb blah*pdb'
 system(command)
