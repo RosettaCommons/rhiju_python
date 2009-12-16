@@ -8,9 +8,9 @@ from os.path import basename,exists,dirname,abspath,expanduser
 from os import popen,system
 import string
 
-outdirs = argv[1:]
-
 HOMEDIR = expanduser('~')
+
+outdirs = argv[1:]
 
 native_supplied = 0
 if (outdirs[0][-4:] == '.pdb' ): # Native specified
@@ -31,7 +31,7 @@ for outdir in outdirs:
         # Still look for native in rhiju's directory.
         pos = outdir.index( 'chunk')
         rna_name = outdir[pos:(pos+13)]
-        native_pdb = HOMEDIR+'/projects/rna_new_benchmark/bench_final/%s_RNA.pdb' % rna_name
+        native_pdb = '../bench_final/%s_RNA.pdb' % rna_name
         if exists( native_pdb ):
             native_exists = 1
 
@@ -98,7 +98,6 @@ for outdir in outdirs:
     rms_vals = {}
     rms_vals_init = {}
 
-
     for file in globfiles:
 
         rmsfile = file.replace('.scores','') +'.min_pdb.rms.txt'
@@ -119,6 +118,28 @@ for outdir in outdirs:
         rms_vals_init[ file ] = float( string.split( rmsline )[-1] )
         #print rmsfile
 
+    ##########################################################################
+    # PB energies...
+    pb_vals = {}
+    pb_tags = []
+    pb_tags_done = 0
+    for file in globfiles:
+
+        PBfile = file.replace('.scores','') +'.min_pdb.PB.txt'
+        if not exists( PBfile): continue
+        lines = open( PBfile ).readlines()
+
+        for line in lines:
+            cols = string.split( line )
+            tag = cols[0]
+            val = float( cols[1] )
+
+            if file not in pb_vals: pb_vals[ file ] = {}
+            pb_vals[ file ][ tag ] = val
+
+            if not pb_tags_done: pb_tags.append( tag )
+
+        pb_tags_done = 1
 
 
     ######################################################
@@ -135,13 +156,15 @@ for outdir in outdirs:
         fid.write( ' %8s' % 'rms_init' )
         fid.write( ' %8s' % 'rms' )
 
+    for tag in pb_tags:
+      fid.write( ' %8s' % tag )
+
     fid.write( ' description\n' )
 
     for file in globfiles:
 
         if not file in rms_vals.keys(): continue
         #if not file in rms_vals_init.keys(): continue
-
 
         score_term_present = 1
         for score_term in score_terms:
@@ -159,6 +182,11 @@ for outdir in outdirs:
             #tag = basename( file ).replace('min_','').replace('.sc','').replace('minimize_','')
             fid.write( ' %8.4f' % rms_vals_init[ file ] )
             fid.write( ' %8.4f' % rms_vals[ file ] )
+
+        for tag in pb_tags:
+            val = 0.0
+            if file in pb_vals.keys() and tag in pb_vals[ file ].keys(): val = pb_vals[ file ][ tag ]
+            fid.write( ' %8s' % val )
 
         fid.write( ' '+basename(file).replace('.scores','') + '\n' )
 

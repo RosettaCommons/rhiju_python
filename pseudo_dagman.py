@@ -7,8 +7,8 @@ from os.path import basename,exists
 from random import randrange
 from time import sleep
 
-#from dagman_LSF import *
-from dagman_condor import *
+from dagman_LSF import *
+#from dagman_condor import *
 
 
 #########################################

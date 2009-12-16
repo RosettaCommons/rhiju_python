@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from sys import argv
+from sys import argv,exit
 from glob import glob
 import string
 from os import system,chdir,getcwd
@@ -24,6 +24,17 @@ PYDIR = expanduser('~')+'/python'
 assert( exists( PYDIR ) )
 
 wait_for_file( outfile_cluster )
+
+#####################
+#####################
+#####################
+# early return --
+#  no longer extracting
+#  PDBs.
+#####################
+#####################
+exit()
+
 
 command = 'mv '+outfile_cluster+' '+outdir
 print( command )

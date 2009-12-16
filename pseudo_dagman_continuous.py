@@ -1,22 +1,32 @@
 #!/usr/bin/python
 
-from sys import argv,exit
+from sys import argv,exit,stdout
 import string
 from os import system,popen
 from os.path import basename,exists
 from random import randrange
 from time import sleep
 
-#from dagman_LSF import *
-from dagman_condor_continuous import *
+from dagman_LSF_continuous import *
+#from dagman_condor_continuous import *
 
 
 # In this implementation, kick off a certain number
 #  of long-running scripts -- they will carry out communication
 #  this master script based on files that show up in
 #  job-specific directories.
-N_JOBS = 20
-job_cluster_number = kick_off_slave_jobs( N_JOBS )
+N_JOBS = 100
+if argv.count( '-j' ):
+    pos = argv.index( '-j' )
+    del( argv[pos] )
+    N_JOBS = int( argv[ pos] )
+    del( argv[pos] )
+
+finalize = 1
+if argv.count( '-no_finalize' ):
+    pos = argv.index( '-no_finalize' )
+    del( argv[pos] )
+    finalize = 0
 
 
 #########################################
@@ -31,6 +41,8 @@ post_script = {}
 pre_script = {}
 parents = {}
 for line in lines:
+    print line[:-1]
+    stdout.flush()
     if len( line ) > 4 and line[:3] == "JOB":
         cols = string.split( line )
         job = cols[1]
@@ -54,6 +66,9 @@ for line in lines:
             if child_job not in parents.keys():
                 parents[ child_job ] = []
             for parent_job in parent_jobs: parents[ child_job ].append( parent_job )
+
+# Kick off jobs!
+job_cluster_number = kick_off_slave_jobs( N_JOBS )
 
 done = {}
 queued = {}
@@ -110,6 +125,7 @@ while not all_done:
         if not done[ job ] and queued[ job ]:
             still_running = check_output_files( output_files[ job ] )
             print "Jobs still running: ",output_files[job][-1],still_running
+            stdout.flush()
 
             if not still_running:
                 if job in post_script.keys():
@@ -120,5 +136,5 @@ while not all_done:
                 queued[ job ] = 0
 
 
-finish_jobs()
+if finalize: finish_jobs()
 

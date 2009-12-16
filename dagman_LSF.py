@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-
 from sys import argv,exit
 import string
 from os import system,popen
@@ -92,7 +91,7 @@ def condor_submit( condor_submit_file_ ):
             print "Already done", output_new
             already_done += 1
         else:
-            command = "bsub -W 4:0 -o %s -e %s  %s %s " % \
+            command = "bsub -W 2:0 -o %s -e %s  %s %s " % \
                       (output_new,err_new, exe,args_new)
 
             commands.append( command )

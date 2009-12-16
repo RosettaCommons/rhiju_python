@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
+import string
 from sys import argv
-from os import system
+from os import system,popen
 from os.path import exists,basename
- 
+
 outdir = argv[1]
 dir_prev = argv[2]
 condor_submit_file = argv[3]
@@ -11,11 +12,15 @@ condor_submit_file = argv[3]
 # Need directories to be setup. Could do this with a preprocessing script? That would also allow
 # for convenient setup of Queue number in the condor script.
 MAX_JOBS = 4000
+lines = popen( 'grep SCORE %s_sample.cluster.out' % ( dir_prev.lower() ) ).readlines()
+
+tags = map( lambda x: string.split( x )[-1], lines )
+
 for q in range( MAX_JOBS ):
-    pdbfile = '%s/%s_sample.cluster.out.%d.pdb' % (dir_prev,dir_prev.lower(),q)
-    if exists( pdbfile ):
-        tag = basename( pdbfile ).replace( '.pdb' ,'' )
-        newdir = outdir+'/START_FROM_'+tag.upper()
+    tag = 'S_%d' % q
+
+    if tag in tags:
+        newdir = outdir+'/START_FROM_%s_%s' % ( dir_prev.upper(), tag )
         if not exists( newdir ):  system( 'mkdir -p '+newdir )
     else:
         break
@@ -34,5 +39,4 @@ for line in lines:
         fid.write( line )
 
 fid.close()
-
 

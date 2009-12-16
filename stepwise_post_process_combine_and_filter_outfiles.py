@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from sys import argv
+from sys import argv,exit
 from glob import glob
 import string
 from os import system
@@ -9,20 +9,19 @@ from time import sleep
 
 indir_prefix = argv[1]
 
-globstring = indir_prefix+'*/*minimize.out'
-#print globstring
+globstring = indir_prefix+'*/*sample.out'
+print globstring
 
 globfiles = glob( globstring )
 if len( globfiles ) == 0:
     sleep( 5 )
     globfiles = glob( globstring )
 
-
 globfiles.sort()
 
 #print globfiles
 
-cat_outfile = dirname( indir_prefix) + '/' + basename(indir_prefix).lower() + '_sample_minimize.out'
+cat_outfile = dirname( indir_prefix) + '/' + basename(indir_prefix).lower() + '_sample.out'
 
 PYDIR = expanduser('~')+'/python'
 assert( exists( PYDIR ) )
@@ -30,6 +29,7 @@ assert( exists( PYDIR ) )
 command = PYDIR+'/cat_outfiles.py '+string.join( globfiles ) + ' -o ' + cat_outfile
 print( command )
 system( command )
+
 
 globstring = indir_prefix+'*'
 globfiles = glob( globstring )
