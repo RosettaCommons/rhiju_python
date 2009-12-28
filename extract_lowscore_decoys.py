@@ -197,9 +197,11 @@ for infile in infiles:
     # Check if this is an RNA run.
     fid = open( infile, 'r')
     line = fid.readline(); # Should be the sequence.
+    rna = 0
     if (line.count('a') or line.count('c') or
         line.count('g') or line.count('u')):
         command  += ' -enable_dna -enable_rna '
+        rna = 1
 #        command = command.replace('rosetta++','rosetta_rna')
 
     # Check if this is full atom.
@@ -209,10 +211,10 @@ for infile in infiles:
 
 
     # Hey this could be a new mini RNA file
-    if (scoretags.count('rna_torsion') or scoretags.count('rna_base_axis') or scoretags.count('rna_vdw') ):
-        MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.linuxgccrelease'
-        if not exists( MINI_EXE ):
-            MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.macosgccrelease'
+    if rna:
+        #MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.linuxgccrelease'
+        #if not exists( MINI_EXE ):
+        #    MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.macosgccrelease'
 
         command = '%s -database %s/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
                   ( MINI_EXE, HOMEDIR, outfilename, string.join( tags ) )
@@ -222,8 +224,10 @@ for infile in infiles:
         else:
             silent_struct_type = 'rna'
 
-        command = '%s -database %s/minirosetta_database/ -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  ' % \
+        command = '%s -database %s/minirosetta_database/ -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  -output_virtual ' % \
                   ( MINI_EXE, HOMEDIR,outfilename, string.join( tags ), silent_struct_type )
+
+        command += " -out:file:residue_type_set rna "
 
     elif ( binary_silentfile ):
 
