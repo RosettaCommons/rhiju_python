@@ -37,30 +37,27 @@ MAX_RES = parse_options( argv, "max_res", len( sequence ) )
 FINAL_NUMBER = 108
 
 # Starting PDB files.
-input_pdb = parse_options( argv "s", "1shf.pdb" )
+input_pdb = parse_options( argv, "s", "1shf.pdb" )
 native_pdb = parse_options( argv, "native", "1shf.pdb" )
-
 score_diff_cut = parse_options( argv, "score_diff_cut", 1000000.0 )
+CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 0.25 )
+cutpoint_open = parse_options( argv, "cutpoint_open", 0 )
+
+cutpoints_open = []
+if (cutpoint_open > 0 ): cutpoints_open.append( cutpoint_open )
 
 assert( exists( native_pdb ) ) # Get rid of this later...
 assert( exists( input_pdb ) ) # Get rid of this later...
 
-#############################################
-# Should probably put in a check to make sure
-# that starting pdb ("input_pdb") has the correct
-# sequence!
-starting_sequence = sequence[:MIN_RES] + sequence[(MAX_RES+1):]
-input_pdb_sequence = popen( '%d/pdb2fasta.py %d ' % (PYDIR,input_pdb) ).readlines()[1][:-1]
-assert( startig_sequence == input_pdb_sequence )
 
 ###############################################################
 # Where's the executable?
 ###############################################################
 HOMEDIR = expanduser('~')
 
-EXE = HOMEDIR+'/src/mini/bin/stepwise_rna_test.macosgccrelease'
+EXE = HOMEDIR+'/src/mini_swa_rna/bin/rna_swa_test.macosgccrelease'
 if not( exists( EXE )):
-    EXE = HOMEDIR+'/src/mini/bin/stepwise_rna_test.linuxgccrelease'
+    EXE = HOMEDIR+'/src/mini_swa_rna/bin/rna_swa_test.linuxgccrelease'
 assert( exists( EXE ) )
 
 DB = HOMEDIR+'/minirosetta_database'
@@ -81,6 +78,14 @@ assert( exists( POST_PROCESS_CLUSTER_SCRIPT ) )
 
 fid_dag = open( "rna_build.dag", 'w' )
 fid_dag.write("DOT dag.dot\n")
+
+#############################################
+# Should probably put in a check to make sure
+# that starting pdb ("input_pdb") has the correct
+# sequence!
+starting_sequence = sequence[:(MIN_RES-1)] + sequence[MAX_RES:]
+input_pdb_sequence = popen( '%s/pdb2fasta.py %s ' % (PYDIR,input_pdb) ).readlines()[1][:-1]
+assert( starting_sequence == input_pdb_sequence )
 
 ###############################################################
 # MAIN LOOP
@@ -124,8 +129,8 @@ for L in range( 1, loop_length+1 ):
     # k is the number of residues built from the 5' side. Goes from 0 to L.
     for k in range( L+1 ) :
 
-        i = MIN_RES + k
-        j = MAX_RES - (L - k)
+        i = MIN_RES - 1 + k
+        j = MAX_RES + 1 - (L - k)
 
         # Later, we can copy/paste in a specific path.
         # Not implemented currently
@@ -133,7 +138,7 @@ for L in range( 1, loop_length+1 ):
 
         # Native PDB.
         prefix = 'region_%d_%d_' % (i,j)
-        print 'Loop boundaries --> %d-%d and %d-%d' % (MIN_RES,i,j,MAX_RES)
+        print 'Loop boundaries --> %d-%d and %d-%d' % (1,i,j,len(sequence))
 
         # This job is maybe already done...
         outfile_cluster = prefix+'sample.cluster.out'
@@ -150,7 +155,11 @@ for L in range( 1, loop_length+1 ):
             system( 'mkdir -p ' + outdir )
 
         # BASIC COMMAND
-        args = ' -database %s -fasta %s -native %s -output_virtual ' %  ( DB, fasta_file, native_pdb )
+        args = ' -algorithm rna_resample_test  -database %s -fasta %s -native %s -output_virtual ' %  ( DB, fasta_file, native_pdb )
+
+        if len( cutpoints_open ) > 0:
+            args += ' -cutpoint_open '
+            for cutpos in cutpoints_open: args += '%d ' % cutpos
 
         ###########################################
         # DO THE JOBS
@@ -159,12 +168,12 @@ for L in range( 1, loop_length+1 ):
         i_prev = i - 1
         j_prev = j
         prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
-        if prev_job_tag in all_job_tags:   start_regions.append( [i_prev, j_prev ] )
+        if (prev_job_tag in all_job_tags) and (i_prev not in cutpoints_open):   start_regions.append( [i_prev, j_prev ] )
 
         i_prev = i
         j_prev = j+1
         prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
-        if prev_job_tag in all_job_tags:   start_regions.append( [i_prev, j_prev ] )
+        if (prev_job_tag in all_job_tags) and (j not in cutpoints_open):   start_regions.append( [i_prev, j_prev ] )
 
         job_tags = []
         combine_files = []
@@ -178,27 +187,52 @@ for L in range( 1, loop_length+1 ):
             # prev_job_tag and dir_prev are currently the same, but may change directory structure in the future.
             prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
 
+            num_jobs_to_queue = FINAL_NUMBER
+
             if prev_job_tag == input_file_tag:
                 args2 = '%s -s %s ' % (args, input_pdb)
-                args2 = '%s -out:file:silent %s ' % (args2, outfile, infile, tag )
+                newdir = outdir+'/START_FROM_REGION_%d_%d' % (i_prev, j_prev )
+                if not exists( newdir ): system( 'mkdir -p '+newdir )
+                outfile = newdir + '/' + prefix + 'sample.out'
+                num_jobs_to_queue = 1
             else:
                 infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
                 tag = 'S_$(Process)'
+                args2 = '%s -in:file:silent_struct_type binary_rna -in:file:silent %s -tags %s ' % (args, infile, tag )
                 newdir = outdir+'/START_FROM_REGION_%d_%d_%s' % (i_prev, j_prev, tag.upper() )
                 outfile = newdir + '/' + prefix + 'sample.out'
-                args2 = '%s -out:file:silent %s -in:file:silent_struct_type binary_rna -in:file:silent %s -tags %s' % (args, outfile, infile, tag )
+
+            args2 += '-out:file:silent %s ' % outfile
+
+
+            # What is already built? What will move?
+            args2 += ' -input_res '
+            for m in range(1,i_prev+1): args2 += ' %d' % m
+            for m in range(j_prev, len(sequence)+1): args2 += ' %d' % m
+
+            if ( i == i_prev ):
+                moving_res = j
+            else:
+                moving_res = i
+            args2 += ' -sample_res %d ' % moving_res
+
+            # Special --> close cutpoint.
+            if ( L == loop_length ):
+                args2 += ' -cutpoint_closed %d ' % i
 
             job_tag = 'REGION_%d_%d_START_FROM_REGION_%d_%d' % (i,j,i_prev,j_prev)
             condor_submit_file = 'CONDOR/%s.condor' %  job_tag
             fid_dag.write('\nJOB %s %s\n' % (job_tag, condor_submit_file) )
 
-            if not exists( condor_submit_file ):  make_condor_submit_file( condor_submit_file, args2, FINAL_NUMBER )
+            if not exists( condor_submit_file ):
+                make_condor_submit_file( condor_submit_file, args2, num_jobs_to_queue )
 
             if (prev_job_tag in all_job_tags)  and   (prev_job_tag not in jobs_done): #Note previous job may have been accomplished in a prior run -- not in the current DAG.
                 fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, job_tag) )
 
             # The pre process script finds out how many jobs there actually are...
-            if ( prev_job_tag != input_file_tag ) fid_dag.write('SCRIPT PRE %s   %s %s %s %s\n' % (job_tag, PRE_PROCESS_SETUP_SCRIPT,outdir,dir_prev,condor_submit_file) )
+            if ( prev_job_tag != input_file_tag ):
+                fid_dag.write('SCRIPT PRE %s   %s %s %s %s\n' % (job_tag, PRE_PROCESS_SETUP_SCRIPT,outdir,dir_prev,condor_submit_file) )
             fid_dag.write('SCRIPT POST %s %s %s/START_FROM_REGION_%d_%d\n' % (job_tag, POST_PROCESS_FILTER_SCRIPT,outdir,i_prev,j_prev ) )
 
             job_tags.append( job_tag )
@@ -209,11 +243,10 @@ for L in range( 1, loop_length+1 ):
         # CLUSTER! And keep a small number of representatives (400)
         ##########################################
 
-        cluster_by_backbone_rmsd_tag = ''
-        if cluster_by_backbone_rmsd: cluster_by_backbone_rmsd_tag = ' -cluster_by_backbone_rmsd '
+        if len( combine_files ) == 0: continue
 
         outfile_cluster = prefix+'sample.cluster.out'
-        args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary_rna  -database %s  -radius %f -out:file:silent %s  -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  CLUSTER_RADIUS, outfile_cluster, score_diff_cut )
+        args_cluster = ' -algorithm cluster_old -in:file:silent %s  -in:file:silent_struct_type binary_rna  -database %s  -radius %f -out:file:silent %s  -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  CLUSTER_RADIUS, outfile_cluster, score_diff_cut )
         condor_submit_cluster_file = 'CONDOR/REGION_%d_%d_cluster.condor' % (i,j)
         make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1, "scheduler" )
 
