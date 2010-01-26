@@ -115,7 +115,9 @@ for pdbname in pdbnames:
                 line_edit = 'ATOM  '+line[6:17]+'  A'+line[20:]
 
             #Don't save alternative conformations.
-            if line[16] == 'B': continue;
+            if line[16] == 'A':
+                print line
+                continue;
 
             if line_edit[0:4] == 'ATOM':
                 resnum = line_edit[23:26]

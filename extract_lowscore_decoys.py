@@ -224,10 +224,11 @@ for infile in infiles:
         else:
             silent_struct_type = 'rna'
 
-        command = '%s -database %s/minirosetta_database/ -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  -output_virtual ' % \
+        command = '%s -database %s/minirosetta_database/ -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  ' % \
                   ( MINI_EXE, HOMEDIR,outfilename, string.join( tags ), silent_struct_type )
 
         command += " -out:file:residue_type_set rna "
+        command += " -output_virtual "
 
     elif ( binary_silentfile ):
 

@@ -143,6 +143,9 @@ for L in range( 1, loop_length+1 ):
         # This job is maybe already done...
         outfile_cluster = prefix+'sample.cluster.out'
         overall_job_tag = 'REGION_%d_%d' % (i,j)
+
+
+
         if exists( outfile_cluster ):
             all_job_tags.append(  overall_job_tag )
             jobs_done.append( overall_job_tag   )
@@ -247,6 +250,7 @@ for L in range( 1, loop_length+1 ):
 
         outfile_cluster = prefix+'sample.cluster.out'
         args_cluster = ' -algorithm cluster_old -in:file:silent %s  -in:file:silent_struct_type binary_rna  -database %s  -radius %f -out:file:silent %s  -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  CLUSTER_RADIUS, outfile_cluster, score_diff_cut )
+
         condor_submit_cluster_file = 'CONDOR/REGION_%d_%d_cluster.condor' % (i,j)
         make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1, "scheduler" )
 

@@ -185,7 +185,7 @@ for pdbfile in pdbfiles:
     count += 1
     fid.write('disable all\n')
     fid.write('enable model%d\n' % count)
-    fid.write('ray 1200,1200\n')
+    fid.write('ray 400,400\n')
 #    fid.write('ray 1200,1200\n')
     fid.write('save '+pdbfile+'.png\n')
 
