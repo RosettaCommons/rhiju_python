@@ -13,5 +13,6 @@ for pdb in pdbs:
         if line[:4]=='ATOM':
             print line[:-1]
 
+    print 'TER'
     print 'ENDMDL'
     count += 1
