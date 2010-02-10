@@ -16,7 +16,6 @@ globfiles = glob( globstring )
 if len( globfiles ) == 0:
     sleep( 5 )
     globfiles = glob( globstring )
-
 globfiles.sort()
 
 #print globfiles

@@ -18,7 +18,7 @@ while not exists( finished_file ):
     ran_a_job = 0
     if exists( command_file_name ):
 
-        sleep( 2 ) # stupid file locking...
+        sleep( 5 ) # stupid file locking...
 
         lines = open( command_file_name ).readlines()
         command = 'source '+lines[0]

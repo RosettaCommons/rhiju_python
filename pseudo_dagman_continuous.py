@@ -79,6 +79,7 @@ for job in jobs:
 #job_tags = {}
 output_files = {}
 all_done = 0
+early_exit = 0
 
 while not all_done:
 
@@ -87,6 +88,7 @@ while not all_done:
     ###################################################
     all_done = 1
     for job in jobs:
+        queued_a_job = 0
         if not done[ job ]:
             all_done = 0
 
@@ -110,12 +112,23 @@ while not all_done:
 
                     ( output_files[ job ], actually_queued ) = condor_submit( condor_submit_file[ job ] )
 
+                    if len( output_files[ job ] ) == 0 and not actually_queued:
+                        print "problem?"
+                        #all_done = 1
+                        #early_exit = 1
+
                     queued[ job ] = actually_queued
-                    if not actually_queued:
+                    if actually_queued:
+                        queued_a_job = 1
+                    else:
                         done[ job ] = 1
+
+            #if ( queued_a_job ): break # some other jobs may have finished while we were queuing.
 
     if not all_done:
         sleep(1)
+
+    if early_exit: break
 
     ###################################################
     # Check for any jobs that are done

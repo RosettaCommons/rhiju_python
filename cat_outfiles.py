@@ -52,6 +52,8 @@ for i in range(1, len(outfiles)):
         description_index = line.find('S_')
         if description_index < 0:
             description_index = line.find('F_')
+        if description_index < 0:
+            description_index = line.find('_')
 
 
         if description_index >= 0:

@@ -55,7 +55,7 @@ def kick_off_slave_jobs( N_JOBS ):
         output = JOBDIR + '/slave_jobs.out'
         error = JOBDIR + '/slave_jobs.err'
         job_tag = abspath(JOBDIR).replace('/','_')
-        command = 'bsub -W 24:0 -o %s -e %s -J %s %s %s ' % (output,error,job_tag,SLAVE_EXE,JOBDIR)
+        command = 'bsub -W 48:0 -o %s -e %s -J %s %s %s ' % (output,error,job_tag,SLAVE_EXE,JOBDIR)
         print( command )
         system( command )
 
@@ -113,10 +113,12 @@ def find_a_slave( qsub_script ):
                 fid.write( '%s\n' % qsub_script )
                 fid.close()
                 num_slave = int( basename( jobdir ) )
+                assert( exists( command_file_name ) )
                 break
 
         if num_slave >= 0:
             print 'assigning  %s to slave %d' % ( qsub_script, num_slave )
+            stdout.flush()
         else:
             # Did not find anything ... wait a couple seconds
             print "waiting for a slave to free up."
@@ -125,7 +127,7 @@ def find_a_slave( qsub_script ):
     return num_slave
 
 def finish_jobs():
-    jobdirs = glob( 'SLAVE_JOBS/*/slave_jobs.out' )
+    jobdirs = glob( 'SLAVE_JOBS/*/running.txt' )
     jobdirs.sort()
     jobdirs = map( lambda x:dirname( x ), jobdirs )
     for jobdir in jobdirs:
@@ -170,7 +172,7 @@ def condor_submit( condor_submit_file_ ):
 
     if ( exe == "" ) or  ( args == "" ) or (output == "") or (queue_num == 0) or ( log == "" ):
         print "PROBLEM!!!"
-        exit()
+        return ( [], 0 )
 
     # Stolen from script for PBS.
     output_files_ = []
@@ -198,6 +200,9 @@ def condor_submit( condor_submit_file_ ):
             command = "time  %s %s > %s 2> %s\n\n" % \
                       ( exe, args_new,output_new,err_new)
             fid.write( command )
+            command = "echo ' ' >> %s \n" % \
+                      ( output_new )
+            fid.write( command )
             command = "echo 'Successfully completed.' >> %s \n" % \
                       ( output_new )
             fid.write( command )
@@ -208,6 +213,7 @@ def condor_submit( condor_submit_file_ ):
             command = "source "+qsub_script
             print( command )
             system( command )
+            actually_queued = 0
             already_done = 1
 
         if not already_done:

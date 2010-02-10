@@ -16,8 +16,8 @@ endpoints = map( lambda x:int(x), argv[2:] )
 bound_start = -1
 bound_end = -1
 
-assert( 1 in endpoints )
-assert( len( fasta ) in endpoints )
+#assert( 1 in endpoints )
+#assert( len( fasta ) in endpoints )
 
 print
 def print_sequence( fid, fasta, bound_start, bound_end ):
@@ -50,5 +50,5 @@ for i in range( len( endpoints ) - 1 ):
             bound_start -= 1
             print_sequence( stdout, fasta, bound_start, bound_end )
 
-assert( bound_start == 1 )
-assert( bound_end == len( fasta ) )
+#assert( bound_start == 1 )
+#assert( bound_end == len( fasta ) )
