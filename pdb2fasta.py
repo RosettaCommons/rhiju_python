@@ -13,6 +13,8 @@ pdbnames = argv[1:]
 #if len(argv)>2:
 #    chainid = argv[2]
 
+fasta_line = ''
+
 for pdbname in pdbnames:
 #    if (pdbname[-4:] != '.pdb'):
 #        pdbname += '.pdb'
@@ -29,25 +31,13 @@ for pdbname in pdbnames:
 
     lines = open(netpdbname,'r').readlines()
 
-    #outid = open( outfile, 'w')
-    #print 'Writing ... '+pdbname
-
-    #fastafile = pdbname+'.fasta'
-    #fastaid = open( fastafile, 'w')
-    #print 'Writing ... '+fastafile
-
-    fastaid = stdout
-
-    fastaid.write('>'+basename(pdbname)+'\n');
-
     oldresnum = '   '
     count = 0;
     for line in lines:
         if (len(line)>20): # and (chainid == line[21]):
             line_edit = line
             if line[0:3] == 'TER':
-                fastaid.write('\n')
-                #    break
+                break
             elif (line[0:6] == 'HETATM') & (line[17:20]=='MSE'): #Selenomethionine
                 line_edit = 'ATOM  '+line[6:17]+'MET'+line[20:]
                 if (line_edit[12:14] == 'SE'):
@@ -62,9 +52,9 @@ for pdbname in pdbnames:
                     count = count + 1
                     longname = line_edit[17:20]
                     if longer_names.has_key(longname):
-                        fastaid.write( longer_names[longname] );
+                        fasta_line +=  longer_names[longname]
                     else:
-                        fastaid.write( 'X')
+                        fasta_line +=  'X'
                 oldresnum = resnum
 
                 newnum = '%3d' % count
@@ -73,8 +63,21 @@ for pdbname in pdbnames:
                     line_edit = line_edit[0:21]+' '+line_edit[22:]
 
                 #outid.write(line_edit)
-    fastaid.write('\n')
 
 
     #outid.close()
     #fastaid.close()
+
+
+#outid = open( outfile, 'w')
+#print 'Writing ... '+pdbname
+
+#fastafile = pdbname+'.fasta'
+#fastaid = open( fastafile, 'w')
+#print 'Writing ... '+fastafile
+
+fastaid = stdout
+
+fastaid.write( '>%s %d\n' % (basename(pdbname), len( fasta_line ) ) )
+fastaid.write( fasta_line )
+fastaid.write( '\n' )
