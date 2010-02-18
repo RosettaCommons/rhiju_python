@@ -323,7 +323,7 @@ for L in range( 2, num_elements+1 ):
             # prev_job_tag and dir_prev are currently the same, but may change directory structure in the future.
             prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
 
-            num_jobs_to_queue = FINAL_NUMBER
+            num_jobs_to_queue = NSTRUCT
 
             ######################################################
             # Start with "fixed", pre-constructed pose
@@ -451,6 +451,148 @@ for L in range( 2, num_elements+1 ):
             last_outfiles.append( outfile_cluster )
 
 
+#####################################################################################
+# New loop -- "circularize" two segments:
+#
+#     Segment 1. i+1 to j
+#     Segment 2. j+1 to i
+#
+# the combination closes to model the whole molecule.
+#  In the future, we could actually include i to k   and   k to j   (N^3)
+#  In that case, we should unify with the main loop above.
+
+# Order calculation based on number of elements modeled -- smaller fragments first.
+CLOSE_CIRCLE = 0
+if CLOSE_CIRCLE:
+
+    for i in range( num_elements ): # sample res
+        for j in range( num_elements ) : # cutpoint_closed
+
+            if ( i == j ): continue
+
+            # Native PDB.
+            prefix = 'region_%d_close_%d_' % (i,j)
+
+            modeled_elements1 = get_modeled_elements( (i+1) % num_elements, j )
+            modeled_elements2 = get_modeled_elements( (j+1) % num_elements, i )
+
+            # these cases are already covered in main loop.
+            if ( len( modeled_elements1 ) == 1 ): continue
+            if ( len( modeled_elements2 ) == 1 ): continue
+
+            print 'Modeling: circle close ',i,j
+
+            # This job is maybe already done...
+            outfile_cluster = prefix+'sample.cluster.out'
+            overall_job_tag = 'REGION_%d_CLOSE_%d' % (i,j)
+
+            if exists( outfile_cluster ):
+                all_job_tags.append(  overall_job_tag )
+                jobs_done.append( overall_job_tag   )
+
+                last_jobs.append( overall_job_tag )
+                last_outfiles.append( outfile_cluster )
+                continue
+
+            ###########################################
+            # OUTPUT DIRECTORY
+            outdir = overall_job_tag
+            combine_files = []
+            job_tags = []
+            ###########################################
+            # DO THE JOB
+            if not exists( outdir ): system( 'mkdir -p '+outdir )
+            prev_job_tag1 = 'REGION_%d_%d' % ( (i+1) % num_elements ,j)
+            prev_job_tag2 = 'REGION_%d_%d' % ( (j+1) % num_elements ,i)
+
+            num_jobs_to_queue = NSTRUCT
+
+            infile1 = 'region_%d_%d_sample.cluster.out' % ( (i+1) % num_elements, j)
+            infile2 = 'region_%d_%d_sample.cluster.out' % ( (j+1) % num_elements, i)
+
+            tag = '$(Process)'
+            args2 = '%s -in:file:silent_struct_type binary_rna -in:file:silent %s %s -combo %s ' % (args, infile1, infile2, tag )
+            newdir = outdir+'/REGION_%d_CLOSE_%d_COMBO_%s' % (i, j, tag )
+
+            #tag = 'S_$(Process)'
+            #args2 = '%s -in:file:silent_struct_type binary_rna -in:file:silent %s %s -tags %s S_0 ' % (args, infile1, infile2, tag )
+            #newdir = outdir+'/START_FROM_REGION_%d_%d_%s' % ( (i+1) % num_elements, j, tag )
+
+            outfile = newdir + '/' + prefix + 'sample.out'
+            for m in range( NSTRUCT ):
+                actual_dir = newdir.replace( tag, '%d' % m )
+                if not exists( actual_dir ): system( 'mkdir -p '+actual_dir )
+
+            # What is already built? What will move? I think the code guarantees that any silent file
+            # will have residues modeled in appropriate sequential order. I hope.
+            modeled_res1 = []
+            args2 += ' -input_res '
+            for m in modeled_elements1:
+                for k in element_definition[ m ]: modeled_res1.append( k )
+                modeled_res1.sort()
+            for k in modeled_res1: args2 += '%d ' % k
+
+            modeled_res2 = []
+            args2 += ' -input_res2 '
+            for m in modeled_elements2:
+                for k in element_definition[ m ]: modeled_res2.append( k )
+                modeled_res2.sort()
+            for k in modeled_res2: args2 += '%d ' % k
+
+            args2 += '-out:file:silent %s ' % outfile
+
+            ######################################################
+            # Then define the moving element.
+            ######################################################
+            sample_res = get_boundary_res( i, assigned_element )
+            args2 += ' -sample_res %d ' % sample_res
+
+            boundary_res = get_boundary_res( j, assigned_element )
+            if ( boundary_res not in cutpoints_open ):
+                args2 += ' -cutpoint_closed %d ' % boundary_res
+
+            job_tag = 'START_FROM_REGION_%d_CLOSE_%d' % (i,j)
+            condor_submit_file = 'CONDOR/%s.condor' %  job_tag
+            fid_dag.write('\nJOB %s %s\n' % (job_tag, condor_submit_file) )
+
+            if not exists( condor_submit_file ):
+                make_condor_submit_file( condor_submit_file, args2, num_jobs_to_queue )
+
+            if (prev_job_tag1 in all_job_tags)  and   (prev_job_tag1 not in jobs_done): #Note previous job may have been accomplished in a prior run -- not in the current DAG.
+                fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag1, job_tag) )
+            if (prev_job_tag2 in all_job_tags)  and   (prev_job_tag2 not in jobs_done): #Note previous job may have been accomplished in a prior run -- not in the current DAG.
+                fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag2, job_tag) )
+
+            #if ( prev_job_tag not in input_file_tags ):
+            #fid_dag.write('SCRIPT PRE %s   %s %s %s %s\n' % (job_tag, PRE_PROCESS_SETUP_SCRIPT,outdir,prev_job_tag1,condor_submit_file) )
+            fid_dag.write('SCRIPT POST %s %s %s/REGION_%d_CLOSE_%d\n' % (job_tag, POST_PROCESS_FILTER_SCRIPT,outdir,i,j ) )
+
+            job_tags.append( job_tag )
+            real_compute_job_tags.append( job_tag )
+            combine_files.append( '%s/region_%d_close_%d_sample.low4000.out' % ( outdir, i,j) )
+
+            ##########################################
+            # CLUSTER! And keep a small number of representatives (400)
+            ##########################################
+
+            if len( combine_files ) == 0: continue
+
+            outfile_cluster = prefix+'sample.cluster.out'
+            args_cluster = ' -algorithm cluster_old -in:file:silent %s  -in:file:silent_struct_type binary_rna  -database %s  %s -out:file:silent %s  -score_diff_cut %8.3f -silent_read_through_errors  -nstruct %d ' % (string.join( combine_files ), DB,  cluster_tag , outfile_cluster, score_diff_cut , NSTRUCT )
+
+
+            condor_submit_cluster_file = 'CONDOR/REGION_%d_CLOSE_%d_cluster.condor' % (i,j)
+            make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1 )
+
+            fid_dag.write('\nJOB %s %s\n' % (overall_job_tag,condor_submit_cluster_file) )
+            fid_dag.write('PARENT %s CHILD %s\n' % ( string.join( job_tags ),overall_job_tag) )
+            all_job_tags.append(  overall_job_tag )
+
+            last_jobs.append( overall_job_tag )
+            last_outfiles.append( outfile_cluster )
+
+
+#####################################################################################
 final_outfile = "region_FINAL.out"
 if not exists( final_outfile ):
     args_cluster = ' -algorithm cluster_old -in:file:silent %s  -in:file:silent_struct_type binary_rna  -database %s  %s -out:file:silent %s  -score_diff_cut %8.3f -silent_read_through_errors  -nstruct %d ' % (string.join( last_outfiles ), DB,  cluster_tag, final_outfile, 2 * score_diff_cut, 10000 )
