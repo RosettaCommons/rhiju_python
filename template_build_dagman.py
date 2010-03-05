@@ -112,24 +112,44 @@ def get_start_end( line ):
     if end_res == 0: end_res  = len( line )
     return ( start_res, end_res )
 
-
+#####################################################
 follow_path = 0
 if len(pathway_file) > 0:
     follow_path = 1
     lines = open( pathway_file ).readlines()
     pathway_regions = []
 
-    for i in range( len( lines ) - 1 ) :
-        line = lines[ i+1 ]
-        ( start_res, end_res ) = get_start_end( line )
-        region = [start_res, end_res]
-        pathway_regions.append( region )
+    for line in lines:
+        # don't yet know how to handle "merges" (i.e., inter-domain docking)
+        if len( line ) > 5  and line[:5] == 'MERGE': break
+        assert( line[:4] == 'PATH' )
 
+        cols = map( lambda x:int(x), string.split( line )[1:] )
+        i = cols[0]
+        j = cols[0]
+        cols = cols[1:]
+        for m in cols:
+            if ( m == i-1 ):
+                i = m
+            else:
+                assert( m == j+1 )
+                j = m
+            pathway_regions.append( [i, j] )
+
+    # old pathway file format -- way too verbose
+    #for i in range( len( lines ) - 1 ) :
+    #    line = lines[ i+1 ]
+    #    ( start_res, end_res ) = get_start_end( line )
+    #    region = [start_res, end_res]
+    #    pathway_regions.append( region )
+
+#####################################################
 if AUTO_TUNE:
     cluster_tag = ' -auto_tune '
 else:
     cluster_tag = ' -cluster:radius %s ' % CLUSTER_RADIUS
 
+#####################################################
 all_job_tags = []
 real_compute_job_tags = []
 jobs_done = []

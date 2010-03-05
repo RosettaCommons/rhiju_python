@@ -6,6 +6,7 @@ from os import system,popen
 from os.path import basename,exists
 from random import randrange
 from time import sleep
+from glob import glob
 
 from dagman_LSF_continuous import *
 #from dagman_condor_continuous import *
@@ -127,6 +128,8 @@ while not all_done:
 
     if not all_done:
         sleep(1)
+
+    if len( glob( 'core.*' ) ) > 0 : early_exit = true # totally uncool to have cores.
 
     if early_exit: break
 

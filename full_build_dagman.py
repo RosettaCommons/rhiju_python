@@ -229,7 +229,7 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
 
         # BASIC COMMAND
         extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
-        args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -fasta %s -n_sample %d -nstruct %d -minimize  -fullatom %s  -filter_rmsd %8.3f -radius 0.25  %s ' % ( DB, native_pdb_for_step, fasta_for_step, N_SAMPLE, NSTRUCT, extraflags, FILTER_RMSD, termini_tag )
+        args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -fasta %s -n_sample %d -nstruct %d -minimize  -fullatom %s  -filter_rmsd %8.3f -cluster:radius 0.25  %s ' % ( DB, native_pdb_for_step, fasta_for_step, N_SAMPLE, NSTRUCT, extraflags, FILTER_RMSD, termini_tag )
 
         if filter_native_big_bins:  args+= " -filter_native_big_bins "
 
@@ -340,7 +340,7 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
         if cluster_by_backbone_rmsd: cluster_by_backbone_rmsd_tag = ' -cluster_by_backbone_rmsd '
 
         outfile_cluster = prefix+'sample.cluster.out'
-        args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  -radius %f -out:file:silent %s -nstruct %d %s -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  CLUSTER_RADIUS, outfile_cluster, FINAL_NUMBER, cluster_by_backbone_rmsd_tag, score_diff_cut )
+        args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  -cluster:radius %f -out:file:silent %s -nstruct %d %s -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  CLUSTER_RADIUS, outfile_cluster, FINAL_NUMBER, cluster_by_backbone_rmsd_tag, score_diff_cut )
         condor_submit_cluster_file = 'CONDOR/REGION_%d_%d_cluster.condor' % (i,j)
         make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1, "scheduler" )
 

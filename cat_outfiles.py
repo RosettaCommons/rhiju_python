@@ -49,6 +49,8 @@ for i in range(1, len(outfiles)):
     while line:
         line = data.readline()[:-1]
 
+        if line[:9] == 'SEQUENCE:': continue # Should not be any more sequence lines!
+
         description_index = line.find('S_')
         if description_index < 0:
             description_index = line.find('F_')

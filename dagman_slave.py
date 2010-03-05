@@ -11,6 +11,9 @@ assert( exists( jobdir ) )
 
 finished_file = jobdir + '/finished.txt'
 
+#Prevent really big core dumps
+system( 'ulimit -c 0' )
+
 while not exists( finished_file ):
 
     command_file_name = jobdir + '/run_this_script.txt'
