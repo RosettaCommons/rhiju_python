@@ -129,7 +129,7 @@ while not all_done:
     if not all_done:
         sleep(1)
 
-    if len( glob( 'core.*' ) ) > 0 : early_exit = true # totally uncool to have cores.
+    if len( glob( 'core.*' ) ) > 0 : early_exit = 1 # totally uncool to have cores.
 
     if early_exit: break
 

@@ -60,7 +60,13 @@ for line in  lines:
         dir_actual = dir.replace( '$(Process)', '%d' % i)
         system( 'mkdir -p '+ dirname(dir_actual) )
 
-        command =  'bsub -W 16:0 -o /dev/null -e /dev/null ' + command_line.replace( '$(Process)', '%d' % i )
+        #outfile = '%d.out' % tot_jobs
+        #errfile = '%d.err' % tot_jobs
+        outfile = '/dev/null'
+        errfile = '/dev/null'
+
+        command =  'bsub -W 16:0 -o %s -e %s ' % (outfile, errfile )
+        command += command_line.replace( '$(Process)', '%d' % i )
         fid.write( command + '\n')
 
         tot_jobs += 1

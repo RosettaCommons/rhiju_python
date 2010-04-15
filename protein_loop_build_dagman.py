@@ -7,8 +7,27 @@ import string
 from time import sleep
 from parse_options import parse_options
 
+###############################################################
+# Where's the executable?
+###############################################################
+HOMEDIR = expanduser('~rhiju')
+
+EXE = HOMEDIR+'/src/mini/bin/stepwise_protein_test.macosgccrelease'
+if not( exists( EXE )):
+    EXE = HOMEDIR+'/src/mini/bin/stepwise_protein_test.linuxgccrelease'
+assert( exists( EXE ) )
+
+DB = HOMEDIR+'/minirosetta_database'
+assert( exists( DB ) )
+
+PYDIR = HOMEDIR+'/python'
+assert( exists( PYDIR ) )
+
+
 # Define sequence
+native_pdb = parse_options( argv, "native", "" )
 fasta_file = parse_options( argv, "fasta", "1shf.fasta" )
+if (not exists(fasta_file) and exists( native_pdb) ): system( "python %s/pdb2fasta.py %s > %s" % (PYDIR,native_pdb,fasta_file))
 assert( exists( fasta_file ) )
 sequence = open( fasta_file  ).readlines()[1][:-1]
 
@@ -17,7 +36,6 @@ MIN_RES = parse_options( argv, "min_res", 1 )
 MAX_RES = parse_options( argv, "max_res", len( sequence ) )
 
 # Starting PDB files.
-native_pdb = parse_options( argv, "native", "" )
 input_pdbs = parse_options( argv, "s", ["1shf.pdb"] )
 input_res_full = parse_options( argv, "input_res", [ 0 ] )
 score_diff_cut = parse_options( argv, "score_diff_cut", 1000000.0 )
@@ -39,27 +57,12 @@ internal_loop = parse_options( argv, "internal_loop", 0 )
 use_green_packer = parse_options( argv, "use_green_packer", 0 )
 use_packer = parse_options( argv, "use_packer", 0 )
 one_loop = parse_options( argv, "one_loop", 0 )
+long_loop_close = parse_options( argv, "long_loop_close", 0 )
 
 assert( len( input_pdbs ) > 0 ) # Later can create a mode that builds from scratch
 # Assert uniqueness -- not overlapping input pdbs!
 for i in range( len(input_res_full) ): assert( input_res_full[i] not in input_res_full[:i] )
 
-
-###############################################################
-# Where's the executable?
-###############################################################
-HOMEDIR = expanduser('~rhiju')
-
-EXE = HOMEDIR+'/src/mini/bin/stepwise_protein_test.macosgccrelease'
-if not( exists( EXE )):
-    EXE = HOMEDIR+'/src/mini/bin/stepwise_protein_test.linuxgccrelease'
-assert( exists( EXE ) )
-
-DB = HOMEDIR+'/minirosetta_database'
-assert( exists( DB ) )
-
-PYDIR = HOMEDIR+'/python'
-assert( exists( PYDIR ) )
 
 
 PRE_PROCESS_SETUP_SCRIPT = PYDIR+"/stepwise_pre_process_setup_dirs.py"
@@ -238,7 +241,9 @@ def get_boundary_res( i, assigned_element ):
 
 
 # BASIC COMMAND
-args = ' -database %s -rebuild -out:file:silent_struct_type binary -fasta %s -output_virtual -n_sample 18 -nstruct %d -minimize -fullatom -extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s -cluster:radius %8.4f -add_peptide_plane  ' %  ( DB, fasta_file, NSTRUCT, SCORE_WEIGHTS, PACK_WEIGHTS, CLUSTER_RADIUS_SAMPLE  )
+rama_map = 'Rama_smooth_dyn.dat_ss_6.4.EXPANDPRO'
+assert( exists( DB+'/'+rama_map ) )
+args = ' -database %s -rebuild -out:file:silent_struct_type binary -fasta %s -output_virtual -n_sample 18 -nstruct %d -minimize -fullatom -extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s -cluster:radius %8.4f -add_peptide_plane  -rama_map %s   ' %  ( DB, fasta_file, NSTRUCT, SCORE_WEIGHTS, PACK_WEIGHTS, CLUSTER_RADIUS_SAMPLE, rama_map  )
 
 if len( native_pdb ) > 0: args += '-native %s ' % native_pdb
 
@@ -520,12 +525,17 @@ CLOSE_LOOPS = 1
 if ( one_loop and CLOSE_LOOPS ):
 
     L = num_elements
-    for offset in range( num_elements - 3 ):
+    for offset in range( num_elements ):
         # Need two silent files, one defining all loop residues up to
         # some bridge_residue, and one defining all loop residues after it.
         # assume modeled element = 0, and rest are loop residues.
         j = offset + 1
         i = j + 2
+
+        if ( long_loop_close ): i = j+4
+
+        if ( i >= num_elements ): continue
+
         # so j   is N-terminal to bridge_residue and needs to come from one loop,
         #    j+1 is the bridge residue, and
         #    j+2 ( a.k.a. i )is C-terminal to the bridge residue and comes from
@@ -575,7 +585,12 @@ if ( one_loop and CLOSE_LOOPS ):
         num_jobs_to_queue = NSTRUCT
 
         cut_res = get_boundary_res( j, assigned_element )
-        args2 = args + " -bridge_loops -in:file:silent_struct_type binary -cutpoint_closed %d " % cut_res
+        bridge_res = [cut_res, cut_res+1, cut_res+2 ]
+
+        if ( long_loop_close ): bridge_res = [ cut_res+1, cut_res+2, cut_res+3 ]
+
+        args2 = args + " -bridge_res %d %d %d -in:file:silent_struct_type binary -cutpoint_closed %d " % \
+                ( bridge_res[ 0 ], bridge_res[ 1 ], bridge_res[ 2 ], cut_res )
 
         for k in range( 2 ):
             i_prev = start_regions[k][0]
