@@ -4,11 +4,33 @@ from sys import argv
 import string
 from math import sqrt
 
-pdbfile = argv[1]
+args = argv
+
+pdbfile = args[1]
+
+fade = 0
+if args.count( '-fade' ):
+    pos = args.index( '-fade' )
+    del( args[ pos ] )
+    fade = 1
+
+
+fixed_res = []
+if args.count( '-fixed_res' ):
+    pos = args.index( '-fixed_res' )
+    del( args[ pos ] )
+    goodint = 1
+    while goodint:
+        try:
+            fixed_residue = int(args[pos])
+            fixed_res.append( fixed_residue )
+            del( args[ pos ] )
+        except:
+            goodint = 0
 
 STDEV = 0.5
-if len( argv ) > 2:
-    STDEV = float( argv[2] )
+if len( args ) > 2:
+    STDEV = float( args[2] )
 
 lines = open( pdbfile ).readlines()
 
@@ -47,16 +69,24 @@ print "Generating ...  " , cst_file
 
 fid.write( "[ atompairs ]\n" )
 
-DIST_CUT = 9.0
+DIST_CUT = 12.0
 
 for i in range( 1,count+1 ):
 
     for j in range( i,count+1 ):
 
         if ( abs( i - j ) <= 3 ): continue
+
+        if len( fixed_res ) > 0 and (i in fixed_res) and (j in fixed_res): continue
+
         dist = get_dist( CA_position[ i ], CA_position[ j ] )
         #print i,j,dist
         if ( dist < DIST_CUT ):
-            fid.write( " CA %d   CA %d  HARMONIC %8.3f %8.3f \n" % (i,j,dist,STDEV) )
+            if fade:
+                fid.write( " CA %d   CA %d  FADE %8.3f %8.3f %8.3f %8.3f %8.3f\n" % \
+                               (i,j,\
+                                    (dist-2*STDEV), (dist+2*STDEV), STDEV, -10.0, 10.0  ) )
+            else:
+                fid.write( " CA %d   CA %d  HARMONIC %8.3f %8.3f \n" % (i,j,dist,STDEV) )
 
 fid.close()
