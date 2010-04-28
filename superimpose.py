@@ -113,6 +113,7 @@ if args.count('-1'):
 
 pdb_list = args
 pdb1 = pdb_list[0]
+all_per_res_dev = []
 
 for pdb in pdb_list:
     if not exists( pdb ):
@@ -167,7 +168,7 @@ for pdb in pdb_list[1:]:
 #        command = '/work/pbradley/mammoth/mastodon -p %s -e %s 2> /dev/null | grep PSI.end'\
 #                  %(pdb1,pdb)
 
-#    stderr.write(command+'\n')
+    #stderr.write(command+'\n')
     lines = popen(command).readlines()
 
     if slice:
@@ -239,7 +240,7 @@ for pdb in pdb_list[1:]:
 
                     if line[:4] == 'HETA':
                         hetatm_lines.append(line[:66])
-
+                elif line[:6] == 'CONECT': print line[:-1]
                 elif line[:6] == 'ENDMDL':break
                 line = data.readline()
             data.close()
@@ -256,6 +257,7 @@ for pdb in pdb_list[1:]:
     rescount = -1
 
     atom_count = 0
+    per_res_dev = []
     while line:
         if line[:4] in ['ATOM','HETA']:
                 atom_count = atom_count + 1
@@ -273,10 +275,9 @@ for pdb in pdb_list[1:]:
                     line = line[0:22]+new_resnum+line[26:]
 
                 if line[12:16]==' CA ' and CALC_PER_RESIDUE_DEVIATIONS:
-                    stderr.write( '%4d %8.4f\n' % (rescount+1, \
-                                                       sqrt( ( model0_xyzs[rescount][0] - pos[0] )*( model0_xyzs[rescount][0] - pos[0] ) +
-                                                             ( model0_xyzs[rescount][1] - pos[1] )*( model0_xyzs[rescount][1] - pos[1] ) +
-                                                             ( model0_xyzs[rescount][2] - pos[2] )*( model0_xyzs[rescount][2] - pos[2] ) ) ) )
+                    per_res_dev.append( sqrt( ( model0_xyzs[rescount][0] - pos[0] )*( model0_xyzs[rescount][0] - pos[0] ) + \
+                                              ( model0_xyzs[rescount][1] - pos[1] )*( model0_xyzs[rescount][1] - pos[1] ) + \
+                                              ( model0_xyzs[rescount][2] - pos[2] )*( model0_xyzs[rescount][2] - pos[2] ) ) )
 
 
                 if RENUMBER_ATOMS:
@@ -285,7 +286,7 @@ for pdb in pdb_list[1:]:
                 else:
                     print '%s%s%8.3f%8.3f%8.3f%s'\
                           %(line[:6],line[6:30],pos[0],pos[1],pos[2],line[54:-1])
-
+        elif line[:6] == 'CONECT': print line[:-1]
         elif line[:6] == 'ENDMDL':break
         line = data.readline()
 
@@ -295,11 +296,20 @@ for pdb in pdb_list[1:]:
             if RENUMBER_ATOMS:
                 print '%s%5d%s' % (line[:6],atom_count,line[11:])
             else:
-                print line
+                print line[:-1]
 
     data.close()
 
     print 'ENDMDL'
+
+    all_per_res_dev.append( per_res_dev )
+
+if CALC_PER_RESIDUE_DEVIATIONS:
+    for n in range(  len( all_per_res_dev[ 0 ]  ) ):
+        stderr.write( '%d ' % (n+1) )
+        for i in range( len( all_per_res_dev ) ) :
+            stderr.write( '%8.5f' % all_per_res_dev[ i ][ n ] )
+        stderr.write('\n')
 
 
 system('rm maxsub_sup.pdb maxsub_sup2.pdb rasmol.tcl')

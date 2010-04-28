@@ -83,7 +83,7 @@ fid.write('\n')
 for i in range( len(infiles) ):
     infile = prefix+"_superposition_%03d.pdb" % (i+1)
 
-    command = 'rna_test.macosgccrelease  -database ~rhiju/minirosetta_database -print_hbonds -s '+infile
+    command = 'rna_test.macosgccrelease   -database ~rhiju/minirosetta_database -print_hbonds -s '+infile
 
     lines = popen( command ).readlines()
 

@@ -4,7 +4,12 @@ from sys import stdout,argv
 from os import system
 
 def extractchain(actualpdbname, out, chain_to_extract):
-    lines = open(actualpdbname,'r').readlines()
+
+    if actualpdbname[-3:] =='.gz':
+        lines = popen( 'zcat '+actualpdbname).readlines()
+    else:
+        lines = open(actualpdbname,'r').readlines()
+
 #    out = open(actualpdbname_chain_to_extract,'w')
     for i in range( len(lines)):
         line = lines[i]

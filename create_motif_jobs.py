@@ -31,7 +31,7 @@ sequence = lines[1][:-1]
 print sequence
 numres = len( sequence )
 
-44# Read in data information
+# Read in data information
 data_info = []
 if data_exists:
     backbone_burial_info = []
@@ -240,6 +240,7 @@ for i in range( numres ):
 
 # Output stem definition jobs
 fid_README_STEMS = open( 'README_STEMS','w')
+print 'INPUT_RES',
 for i in range( stem_count ):
 
     # Fasta
@@ -252,8 +253,11 @@ for i in range( stem_count ):
 
     for k in range( stem_length ):
         fid.write( sequence[stem_res[k][0]] )
+        print stem_res[k][0]+1,
     for k in range( stem_length ):
         fid.write( sequence[stem_res[stem_length-k-1][1]] )
+        print stem_res[stem_length-k-1][1]+1,
+
     fid.write('\n')
     fid.close()
 
@@ -274,8 +278,9 @@ for i in range( stem_count ):
     command = 'rna_assemble_test.macosgccrelease -database  /Users/rhiju/minirosetta_database -nstruct 1 -build_helix_test -fasta %s -out:file:silent %s' % (tag, outfile)
     fid_README_STEMS.write(command+'\n')
 
-fid_README_STEMS.close()
+print
 
+fid_README_STEMS.close()
 
 # Output motif jobs
 fid_README_MOTIFS = open( 'README_MOTIFS','w')
@@ -361,7 +366,7 @@ for i in range( motif_count ):
     motif_out_file = motif_params_file.replace( '.params','.out')
     motif_out_files.append( motif_out_file )
     NSTRUCT = 40
-    command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -params_file %s -nstruct %d -out::file::silent %s -cycles 5000 -mute all -vary_geometry' % \
+    command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -params_file %s -nstruct %d -out:file:silent %s -cycles 5000 -mute all -vary_geometry' % \
         ( native_tag, motif_fasta_file, motif_params_file, NSTRUCT, motif_out_file )
 
     if data_exists: command += ' -data_file %s ' % motif_data_file

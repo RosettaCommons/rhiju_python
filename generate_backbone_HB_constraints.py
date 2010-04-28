@@ -1,16 +1,21 @@
 #!/usr/bin/python
 
-from sys import argv
+from sys import argv,stdout
 import string
 from math import sqrt
 
 pdbfile = argv[1]
 
-
 lines = open( pdbfile ).readlines()
 
 oldresnum = ''
 
+fade = 0
+args = argv
+if args.count( '-fade' ):
+    pos = args.index( '-fade' )
+    del( args[ pos ] )
+    fade = 1
 
 N_position = {}
 O_position = {}
@@ -43,12 +48,15 @@ def get_dist( pos1, pos2 ):
     return sqrt( dist2 )
 
 cst_file = pdbfile+'.cst'
-fid = open( cst_file, 'w' )
-print "Generating ...  " , cst_file
+fid = stdout
+#fid = open( cst_file, 'w' )
+#print "Generating ...  " , cst_file
 
 fid.write( "[ atompairs ]\n" )
 
-DIST_CUT = 3.1
+DIST_CUT = 3.2
+STDEV = 0.5
+SEQ_SEP_CUTOFF = 2
 for i in range( 1,count+1 ):
 
     assert( i in N_position.keys() )
@@ -57,10 +65,14 @@ for i in range( 1,count+1 ):
 
         assert( j in O_position.keys() )
 
-        if ( abs( i - j ) <= 1 ): continue
+        if ( abs( i - j ) <= SEQ_SEP_CUTOFF ): continue
         dist = get_dist( N_position[ i ], O_position[ j ] )
         #print i,j,dist
         if ( dist < DIST_CUT ):
-            fid.write( " N %d   O %d  HARMONIC %8.3f 0.5 \n" % (i,j,dist) )
-
+            if fade:
+                fid.write( " N %d   O %d  FADE %8.3f %8.3f %8.3f -10.0 10.0 \n" %
+                           (i,j, dist - 2*STDEV,
+                            dist + 2*STDEV, STDEV ) )
+            else:
+                fid.write( " N %d   O %d  HARMONIC %8.3f %8.3f \n" % (i,j,dist,STDEV) )
 fid.close()

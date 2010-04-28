@@ -96,17 +96,18 @@ if not use_excise and not use_subset:
         pdbfiles = argv[1:-2]
         startseq = int( argv[-2])
         endseq = int( argv[-1])
-        prefix = 'truncate_'
+        prefix = 'region_%d_%d_' % ( startseq, endseq )
     except:
         pdbfiles = argv[1:-3]
         startseq = int( argv[-3])
         endseq = int( argv[-2])
         prefix = argv[-1]
 
+atomnums = []
+
 for pdbfile in pdbfiles:
     gzipped = 0
     outid = open(prefix+pdbfile,'w')
-
 
     if pdbfile[-2:] == 'gz':
         lines = popen('zcat '+pdbfile).readlines()
@@ -116,22 +117,31 @@ for pdbfile in pdbfiles:
     i = 0
     oldresidue = '   '
     for line in lines:
-        currentresidue = line[22:26]
+        if len( line ) > 4  and line[:4] == 'ATOM':
+            currentresidue = line[22:26]
+            atomnum = int( line[4:11] )
 
-        if not currentresidue == oldresidue:
-            i += 1
-        oldresidue = currentresidue
+            if not currentresidue == oldresidue:
+                i += 1
+            oldresidue = currentresidue
 
-        if (use_subset and not ( i in subset_residues) ): continue
+            #if (use_subset and not ( i in subset_residues) ): continue
+            try:
+                currentresidue_val = int(currentresidue)
+                if (use_subset and not ( currentresidue_val in subset_residues) ): continue
+                if (use_excise and ( currentresidue_val in excise_residues) ): continue
+                if int(currentresidue) < startseq or int(currentresidue) > endseq: continue
+            except:
+                continue
 
-        try:
-            currentresidue_val = int(currentresidue)
-            if (use_excise and ( currentresidue_val in excise_residues) ): continue
-            if int(currentresidue) < startseq or int(currentresidue) > endseq: continue
-        except:
-            continue
+            atomnums.append( atomnum )
 
-        outid.write(line)
+            outid.write(line)
+
+        elif len( line ) > 6 and line[:6] == 'CONECT':
+            atomnum1 = int( line[6:11] )
+            atomnum2 = int( line[11:16] )
+            if (atomnum1 in atomnums) and (atomnum2 in atomnums): outid.write( line )
 
     outid.close()
 

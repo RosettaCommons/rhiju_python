@@ -35,6 +35,8 @@ else:
     ignore_chain = 1
 
 fastaid = stderr
+num_model = 0
+max_model = 60 # for virus
 
 for pdbname in pdbnames:
     #netpdbname = '/net/pdb/' + pdbname[1:3] + '/' + pdbname
@@ -69,7 +71,9 @@ for pdbname in pdbnames:
 
     goodnames = [' rA',' rC',' rG',' rU']
     for line in lines:
-        if len(line)>5 and line[:6]=='ENDMDL':break #Its an NMR model.
+        if len(line)>5 and line[:6]=='ENDMDL':
+            num_model += 1
+            if num_model > max_model:  break #Its an NMR model.
         if len(line) <= 21:  continue
         if (line[21] in chainids or ignore_chain):
             line_edit = line
@@ -116,14 +120,11 @@ for pdbname in pdbnames:
 
             #Don't save alternative conformations.
             if line[16] == 'A':
-                print line
                 continue;
 
             if line_edit[0:4] == 'ATOM':
                 resnum = line_edit[23:26]
                 if not resnum == oldresnum: #  or line_edit[12:16] == ' P  ':
-                    #print "AAH ==> " ,  resnum, oldresnum, line_edit
-                    count = count + 1
                     longname = line_edit[17:20]
                     if longname == '  G':
                         longname = ' rG'
@@ -157,6 +158,8 @@ for pdbname in pdbnames:
                         longname = ' rC'
                     elif longname == 'URA':
                         longname = ' rU'
+                    elif longname == 'URI':
+                        longname = ' rU'
                     else:
                         if longname not in goodnames:    continue
 
@@ -164,6 +167,10 @@ for pdbname in pdbnames:
                         fastaid.write( longer_names[longname] );
                     else:
                         fastaid.write( 'X')
+
+                    #print "AAH ==> " ,  resnum, oldresnum, line_edit
+                    count = count + 1
+
                 oldresnum = resnum
 
                 if not longname in goodnames:

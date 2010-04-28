@@ -17,18 +17,20 @@ for i in range( len(inputfiles) ):
         if (not inputfile.find("superposition") > 0):
             pdbfiles.append( inputfile)
 
-pdbfiles.reverse()
+#pdbfiles.reverse()
 
 #superimpose first!
-command = "python ~rhiju/python/superimpose.py "
-for pdbfile in pdbfiles: command += " "+pdbfile
-prefix = pdbfiles[0].replace( '.pdb','')
-command += " >  "+ prefix+"_superposition.pdb"
-system(command)
+prefix = 'TEST'#pdbfiles[0].replace( '.pdb','')
 
-#Extract models
-command = "python ~rhiju/python/parse_NMR_models.py "+prefix+"_superposition.pdb"
-system(command)
+if len( pdbfiles ) > 1:
+    command = "python ~rhiju/python/superimpose.py "
+    for pdbfile in pdbfiles: command += " "+pdbfile
+    command += " >  "+ prefix+"_superposition.pdb"
+    system(command)
+
+    #Extract models
+    command = "python ~rhiju/python/parse_NMR_models.py "+prefix+"_superposition.pdb"
+    system(command)
 
 fid = open(prefix+'.pml','w')
 #fid = stdout
@@ -36,10 +38,14 @@ fid = open(prefix+'.pml','w')
 
 fid.write('reinitialize\n')
 count = 0
-for pdbfile in pdbfiles:
-    count += 1
-    fid.write('load %s_superposition_%03d.pdb,model%d\n' %
-              (prefix,count, count))
+if ( len(pdbfiles) > 1 ):
+    for pdbfile in pdbfiles:
+        count += 1
+        fid.write('load %s_superposition_%03d.pdb,model%d\n' %
+                  (prefix,count, count))
+else:
+    fid.write('load %s,model%d\n' %
+              ( pdbfiles[0], 1))
 
 
 fid.write('\n')

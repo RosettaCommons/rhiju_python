@@ -49,6 +49,12 @@ if argv.count('-start_pdb'):
     del( argv[pos] )
     use_start_pdb = 1
 
+output_virtual = 1
+if argv.count('-no_virtual'):
+    pos = argv.index('-no_virtual')
+    del( argv[pos] )
+    output_virtual = 0
+
 try:
     NSTRUCT = int(argv[-1])
     del(argv[-1])
@@ -111,6 +117,9 @@ for infile in infiles:
     remark_tags = string.split( popen('head -n 3 '+infile).readlines()[-1] )
     if remark_tags.count('BINARY_SILENTFILE'):
         binary_silentfile = 1
+    coarse = 0
+    if remark_tags.count('COARSE'):
+        coarse = 1
 
     assert(infile[-3:] == 'out')
 #    lines = popen('grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
@@ -227,8 +236,12 @@ for infile in infiles:
         command = '%s -database %s/minirosetta_database/ -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  ' % \
                   ( MINI_EXE, HOMEDIR,outfilename, string.join( tags ), silent_struct_type )
 
-        command += " -out:file:residue_type_set rna "
-        command += " -output_virtual "
+        if coarse:
+            command += " -out:file:residue_type_set coarse_rna "
+        else:
+            command += " -out:file:residue_type_set rna "
+
+        if output_virtual: command += " -output_virtual "
 
     elif ( binary_silentfile ):
 
@@ -239,6 +252,7 @@ for infile in infiles:
 
         command = '%s -in:file:silent  %s  -in:file:silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/  ' % \
                   ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
+        if output_virtual: command += " -output_virtual "
 
         if (scoretags.count('cenpack')): command += ' -out:file:residue_type_set centroid '
 

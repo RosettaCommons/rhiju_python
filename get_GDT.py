@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-from os import popen, popen2,popen3
+from os import popen3
+from subprocess import *
 import string
 from sys import argv
 
@@ -15,7 +16,11 @@ for prediction in predictions:
             (native, prediction, threshold )
         #print command
 
+        #p = Popen( command, bufsize = 1000, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds = True )
+        #(w,r,e) = ( p.stdin, p.stdout, p.stderr)
+
         (w,r,e) = popen3( command )
+
         lines = r.readlines()
 
         tot_length = 0

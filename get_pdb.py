@@ -103,7 +103,7 @@ for i in range(len(lines)):
                 continue
 
             newnum = '%3d' % count
-            line_edit = line_edit[0:23] + newnum + line_edit[26:]
+            #line_edit = line_edit[0:23] + newnum + line_edit[26:]
             if removechain:
                 line_edit = line_edit[0:21]+' '+line_edit[22:]
 
