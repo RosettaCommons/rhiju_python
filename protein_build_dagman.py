@@ -96,36 +96,6 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number, univer
     fid.write('Queue %d\n' % queue_number )
     fid.close()
 
-
-def  parse_cst_file( cst_file, i, j, cst_file_for_step):
-    assert( exists( cst_file ) )
-    lines = open( cst_file ).readlines()
-    fid = open( cst_file_for_step, 'w' )
-    fid.write( '[ atompairs ]\n' )
-    num_cst = 0
-    for line in lines[1:]:
-        if len( line ) > 10:
-            cols = string.split( line )
-            atom_name1 = cols[0]
-            res_num1 = int( cols[1] )
-            atom_name2 = cols[2]
-            res_num2 = int( cols[3] )
-            if ( res_num1 in range(i,j+1)  ) and \
-               ( res_num2 in range(i,j+1)  ):
-                res_num1 -= (i-1)
-                res_num2 -= (i-1)
-                fid.write('%s %d %s %d %s\n' % (atom_name1, res_num1, atom_name2, res_num2, string.join( cols[4:]) ) )
-                num_cst += 1
-    fid.close()
-    return num_cst
-
-def parse_fasta_file( fasta_file, i, j, fasta_for_step):
-    lines = open( fasta_file ).readlines()
-    fid = open( fasta_for_step, 'w' )
-    fid.write( lines[0] )
-    fid.write( lines[1][(i-1):j] + '\n' )
-    fid.close()
-
 def get_start_end( line ):
     in_seq = 0
     start_res = 1
@@ -214,14 +184,10 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
         # BASIC COMMAND
         extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
         args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -fasta %s -n_sample %d -nstruct %d -minimize  -fullatom %s  -filter_rmsd %8.3f -cluster:radius 0.25  %s  ' % ( DB, native_pdb, fasta_file, N_SAMPLE, NSTRUCT, extraflags, FILTER_RMSD, termini_tag )
+
         if add_peptide_plane: args += ' -add_peptide_plane '
-
         if filter_native_big_bins:  args+= " -filter_native_big_bins "
-
-        if len( cst_file ) > 0:
-            cst_file_for_step = outdir + '/' + prefix + cst_file
-            num_cst = parse_cst_file( cst_file, i, j, cst_file_for_step)
-            if (num_cst > 0 ): args += ' -cst_file %s ' % cst_file_for_step
+        if len( cst_file ) > 0: args += ' -cst_file %s ' % cst_file
 
 
         #overall_job_tag = 'REGION_%d_%d' % (i,j)

@@ -3,6 +3,7 @@
 from sys import argv,stdout
 import string
 from math import sqrt
+from parse_options import parse_options
 
 pdbfile = argv[1]
 
@@ -10,12 +11,8 @@ lines = open( pdbfile ).readlines()
 
 oldresnum = ''
 
-fade = 0
-args = argv
-if args.count( '-fade' ):
-    pos = args.index( '-fade' )
-    del( args[ pos ] )
-    fade = 1
+fade = parse_options( argv, "fade", 0 )
+DIST_CUT = parse_options( argv, "dist_cut", 3.2 )
 
 N_position = {}
 O_position = {}
@@ -54,7 +51,6 @@ fid = stdout
 
 fid.write( "[ atompairs ]\n" )
 
-DIST_CUT = 3.2
 STDEV = 0.5
 SEQ_SEP_CUTOFF = 2
 for i in range( 1,count+1 ):

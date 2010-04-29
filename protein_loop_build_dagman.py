@@ -58,6 +58,8 @@ use_green_packer = parse_options( argv, "use_green_packer", 0 )
 use_packer = parse_options( argv, "use_packer", 0 )
 one_loop = parse_options( argv, "one_loop", 0 )
 long_loop_close = parse_options( argv, "long_loop_close", 0 )
+cst_file = parse_options( argv, "cst_file", "" )
+align_pdb = parse_options( argv, "align_pdb", "" )
 
 assert( len( input_pdbs ) > 0 ) # Later can create a mode that builds from scratch
 # Assert uniqueness -- not overlapping input pdbs!
@@ -284,6 +286,15 @@ if len( bulge_res ) > 0:
     args += ' -bulge_res '
     for k in bulge_res: args += '%d ' % k
 
+
+if len( cst_file ) > 0:
+    assert( exists( cst_file ) )
+    args += ' -cst_file %s ' % cst_file
+
+if len( align_pdb ) > 0:
+    assert( exists( align_pdb ) )
+    args += ' -align_pdb %s ' % align_pdb
+
 assert( not( use_green_packer and use_packer) )
 if use_green_packer: args += ' -use_green_packer '
 if use_packer: args += ' -use_packer_instead_of_rotamer_trials '
@@ -292,6 +303,36 @@ if AUTO_TUNE:
     cluster_tag = ' -auto_tune '
 else:
     cluster_tag = ' -cluster:radius %s ' % CLUSTER_RADIUS
+
+
+# New! prepack to prevent small inconsistencies between runs due to slighty different global packs.
+assert( len( input_pdbs ) == 1 )
+input_num = 0
+input_pdb = input_pdbs[ input_num ]
+input_pdb_prepack = 'prepack.pdb'
+if not exists( input_pdb_prepack ):
+
+    # hijack REGION_0_0 for prepacking jobs.
+    element_assignment_for_input_pdb = color_to_element[ input_num ]
+    job_tag = 'REGION_%d_%d' % (element_assignment_for_input_pdb, element_assignment_for_input_pdb)
+
+    pos = jobs_done.index( job_tag )
+    del( jobs_done[ pos ] )
+
+    system( 'rm -rf prepack.out' )
+    args2 = args + ' -out:file:silent prepack.out -prepack -s1 ' + input_pdb  + ' -input_res1 '
+    for k in input_res[ input_num ]: args2 += '%d ' % k
+
+
+    condor_submit_file = 'CONDOR/%s.condor' %  job_tag
+    make_condor_submit_file( condor_submit_file, args2, 1 )
+    fid_dag.write('\nJOB %s %s\n' % (job_tag, condor_submit_file) )
+    all_job_tags.append( job_tag )
+    real_compute_job_tags.append( job_tag )
+
+
+input_pdbs[ 0 ] = input_pdb_prepack
+
 
 # Order calculation based on number of elements modeled -- smaller fragments first.
 for L in range( 2, num_elements+1 ):
