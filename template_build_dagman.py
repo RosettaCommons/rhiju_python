@@ -26,8 +26,7 @@ cluster_by_backbone_rmsd = parse_options( argv, "cluster_by_backbone_rmsd", 0 )
 score_diff_cut = parse_options( argv, "score_diff_cut", 1000000.0 )
 MAX_FRAG = parse_options( argv, "max_frag", len( sequence ) )
 
-assert( exists( SCORE_WEIGHTS ) )
-assert( exists( PACK_WEIGHTS ) )
+
 assert( exists( template_pdb ) )
 assert( exists( native_pdb ) ) # Get rid of this later...
 
@@ -57,6 +56,8 @@ assert( exists( POST_PROCESS_FILTER_SCRIPT ) )
 POST_PROCESS_CLUSTER_SCRIPT = PYDIR+"/stepwise_post_process_cluster.py"
 assert( exists( POST_PROCESS_CLUSTER_SCRIPT ) )
 
+assert( exists( SCORE_WEIGHTS ) or exists( DB + "/scoring/weights/"+SCORE_WEIGHTS) )
+assert( exists( PACK_WEIGHTS ) or exists( DB + "/scoring/weights/"+PACK_WEIGHTS) )
 
 fid_dag = open( "template_build.dag", 'w' )
 fid_dag.write("DOT dag.dot\n")

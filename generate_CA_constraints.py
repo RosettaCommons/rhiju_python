@@ -1,36 +1,19 @@
 #!/usr/bin/python
 
-from sys import argv
+from sys import argv,stdout
 import string
 from math import sqrt
+from parse_options import parse_options
 
 args = argv
 
 pdbfile = args[1]
 
-fade = 0
-if args.count( '-fade' ):
-    pos = args.index( '-fade' )
-    del( args[ pos ] )
-    fade = 1
+fade = parse_options( argv, "fade", 0 )
+DIST_CUT = parse_options( argv, "dist_cut", 9.0 )
+STDEV = parse_options( argv, "stdev", 2.0 )
+fixed_res = parse_options( argv, "fixed_res", [-1] )
 
-
-fixed_res = []
-if args.count( '-fixed_res' ):
-    pos = args.index( '-fixed_res' )
-    del( args[ pos ] )
-    goodint = 1
-    while goodint:
-        try:
-            fixed_residue = int(args[pos])
-            fixed_res.append( fixed_residue )
-            del( args[ pos ] )
-        except:
-            goodint = 0
-
-STDEV = 0.5
-if len( args ) > 2:
-    STDEV = float( args[2] )
 
 lines = open( pdbfile ).readlines()
 
@@ -64,12 +47,10 @@ def get_dist( pos1, pos2 ):
     return sqrt( dist2 )
 
 cst_file = pdbfile+'.cst'
-fid = open( cst_file, 'w' )
-print "Generating ...  " , cst_file
+fid = stdout
+#print "Generating ...  " , cst_file
 
 fid.write( "[ atompairs ]\n" )
-
-DIST_CUT = 12.0
 
 for i in range( 1,count+1 ):
 

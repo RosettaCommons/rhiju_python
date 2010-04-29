@@ -3,33 +3,15 @@
 from sys import argv, stdout
 import string
 from math import sqrt
-
+from parse_options import parse_options
 args = argv
 
 pdbfile = args[1]
 
-fade = 0
-if args.count( '-fade' ):
-    pos = args.index( '-fade' )
-    del( args[ pos ] )
-    fade = 1
-
-fixed_res = []
-if args.count( '-fixed_res' ):
-    pos = args.index( '-fixed_res' )
-    del( args[ pos ] )
-    goodint = 1
-    while goodint:
-        try:
-            fixed_residue = int(args[pos])
-            fixed_res.append( fixed_residue )
-            del( args[ pos ] )
-        except:
-            goodint = 0
-
-STDEV = 0.5
-if len( args ) > 2:
-    STDEV = float( args[2] )
+anchor_resnum = parse_options( args, 'anchor_res', 1 )
+fixed_res = parse_options( args, 'fixed_res', [-1] )
+fade = parse_options( args, 'fade', 0 )
+STDEV = parse_options( args, 'stdev', 0.5 )
 
 lines = open( pdbfile ).readlines()
 
@@ -68,7 +50,6 @@ fid = stdout
 fid.write( "[ coordinates ]\n" )
 
 anchor_atom_name = " CA "
-anchor_resnum    = 1 # Anchor atom.
 
 dist = 0.0
 for i in range( len( backbone_atom_name ) ):

@@ -13,6 +13,7 @@ oldresnum = ''
 
 fade = parse_options( argv, "fade", 0 )
 DIST_CUT = parse_options( argv, "dist_cut", 3.2 )
+STDEV = parse_options( argv, "stdev", 0.5 )
 
 N_position = {}
 O_position = {}
@@ -51,7 +52,6 @@ fid = stdout
 
 fid.write( "[ atompairs ]\n" )
 
-STDEV = 0.5
 SEQ_SEP_CUTOFF = 2
 for i in range( 1,count+1 ):
 
