@@ -21,6 +21,7 @@ AUTO_TUNE = parse_options( argv, "auto_tune", 0 )
 template_pdb = parse_options( argv, "s", "1shf.pdb" )
 native_pdb = parse_options( argv, "native", "1shf.pdb" )
 cst_file = parse_options( argv, "cst_file", "" )
+align_pdb = parse_options( argv, "align_pdb", "" )
 pathway_file = parse_options( argv, "pathway_file", "" )
 cluster_by_backbone_rmsd = parse_options( argv, "cluster_by_backbone_rmsd", 0 )
 score_diff_cut = parse_options( argv, "score_diff_cut", 1000000.0 )
@@ -155,6 +156,17 @@ all_job_tags = []
 real_compute_job_tags = []
 jobs_done = []
 
+# BASIC COMMAND
+args0 = "-database %s  -s1 %s -native %s  -pack_weights %s -score:weights %s -ex1 -ex2 -extrachi_cutoff 0 -fasta %s   -constant_seed " % (DB, template_pdb, native_pdb, PACK_WEIGHTS, SCORE_WEIGHTS, fasta_file )
+
+if len( cst_file ) > 0:
+    assert( exists( cst_file ) )
+    args0 += ' -cst_file %s ' % cst_file
+
+if len( align_pdb ) > 0:
+    assert( exists( align_pdb ) )
+    args0 += ' -align_pdb %s ' % align_pdb
+
 for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
 
     chunk_length = BLOCK_SIZE * L;
@@ -185,9 +197,7 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
         if not( exists( outdir) ):
             system( 'mkdir -p ' + outdir )
 
-        # BASIC COMMAND
-        args = "-database %s  -s1 %s -native %s  -pack_weights %s -score:weights %s -ex1 -ex2 -extrachi_cutoff 0 -fasta %s   -constant_seed   -cst_file %s " % (DB, template_pdb, native_pdb, PACK_WEIGHTS, SCORE_WEIGHTS, fasta_file, cst_file )
-
+        args = args0
         args += " -input_res1 "
         for k in range( i, j+1 ): args += "%d " % k
         args = args + " -slice_res1 "
