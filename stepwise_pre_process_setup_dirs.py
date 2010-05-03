@@ -9,6 +9,11 @@ outdir = argv[1]
 dir_prev = argv[2]
 condor_submit_file = argv[3]
 
+if len( argv ) > 4:
+    sub_job_tag = argv[ 4 ]
+else:
+    sub_job_tag = 'START_FROM_'+dir_prev.upper()
+
 # Need directories to be setup. Could do this with a preprocessing script? That would also allow
 # for convenient setup of Queue number in the condor script.
 MAX_JOBS = 4000
@@ -20,7 +25,7 @@ for q in range( MAX_JOBS ):
     tag = 'S_%d' % q
 
     if tag in tags:
-        newdir = outdir+'/START_FROM_%s_%s' % ( dir_prev.upper(), tag )
+        newdir = outdir+'/%s_%s' % ( sub_job_tag, tag )
         if not exists( newdir ):  system( 'mkdir -p '+newdir )
     else:
         break

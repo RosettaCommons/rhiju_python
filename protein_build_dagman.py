@@ -30,6 +30,7 @@ cluster_by_all_atom_rmsd = parse_options( argv, "cluster_by_all_atom_rmsd", 0 )
 score_diff_cut = parse_options( argv, "score_diff_cut", 1000000.0 )
 add_peptide_plane = parse_options( argv, "add_peptide_plane", 0 )
 BUILD_BOTH_TERMINI = parse_options( argv, "build_both_termini", 0 )
+max_length = parse_options( argv, "max_length", 0 )
 
 assert( exists( native_pdb ) ) # Get rid of this later...
 
@@ -145,6 +146,8 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
 
     chunk_length = BLOCK_SIZE * L;
     num_chunks = ( len( sequence) - chunk_length) / BLOCK_SIZE + 1
+
+    if ( max_length > 0 and L > max_length ): continue
 
     for k in range( 1, num_chunks+1 ) :
         i = BLOCK_SIZE * ( k - 1 ) + 1

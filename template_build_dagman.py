@@ -269,7 +269,7 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
 
             args2 = "%s  -out:file:silent %s   -silent2 %s  -tags2 %s " % (args, outfile, infile, tag )
             args2 += " -input_res2 "
-            for k in range( i_prev, j_prev+1 ): args2 += " %d " % k
+            for k in range( i_prev, j_prev+1 ): args2 += ' %d' % k
 
             job_tag = 'REGION_%d_%d_START_FROM_REGION_%d_%d' % (i,j,i_prev,j_prev)
             condor_submit_file = 'CONDOR/%s/%s.condor' %  (overall_job_tag, job_tag)
