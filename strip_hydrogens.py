@@ -23,7 +23,12 @@ if not exists(pdbfiles[-1]):
 
 for pdbfile in pdbfiles:
     gzipped = 0
-    outfile  = basename(pdbfile).replace( '.pdb', suffix+'.pdb')
+
+    if basename(pdbfile).find( '.pdb' ) > 0 :
+        outfile  = basename(pdbfile).replace( '.pdb', suffix+'.pdb')
+    else:
+        outfile = basename( pdbfile )+'_noH'
+
     outid = open( outfile ,'w')
 
     lines = open(pdbfile).readlines()

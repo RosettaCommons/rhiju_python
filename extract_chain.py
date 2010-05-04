@@ -2,8 +2,9 @@
 
 from sys import stdout,argv
 from os import system
+import string
 
-def extractchain(actualpdbname, out, chain_to_extract):
+def extractchain(actualpdbname, out, chains_to_extract):
 
     if actualpdbname[-3:] =='.gz':
         lines = popen( 'zcat '+actualpdbname).readlines()
@@ -13,22 +14,19 @@ def extractchain(actualpdbname, out, chain_to_extract):
 #    out = open(actualpdbname_chain_to_extract,'w')
     for i in range( len(lines)):
         line = lines[i]
-        if line.count('ATOM') and (line[21:22] == chain_to_extract ):
-            line = line[0:21]+chain_to_extract+line[22:]
+        if line.count('ATOM') and (line[21:22] in chains_to_extract ):
+            #line = line[0:21]+chain_to_extract+line[22:]
             out.write(line)
     out.close()
 
+actualpdbname = argv[1]
+chains_to_extract = argv[2:]
 
-actualpdbnames = argv[1:-1]
-chain_to_extract = argv[-1]
-assert( len( chain_to_extract) == 1)
+newpdbfile = actualpdbname.replace('.pdb',string.join(chains_to_extract,'')+'.pdb')
 
-for actualpdbname in actualpdbnames:
-    newpdbfile = actualpdbname.replace('.pdb',chain_to_extract+'.pdb')
+out = open( newpdbfile, 'w' )
 
-    out = open( newpdbfile, 'w' )
+print 'Extracting to ',newpdbfile,'...'
 
-    print 'Extracting to ',newpdbfile,'...'
-
-    extractchain(actualpdbname, out, chain_to_extract)
+extractchain(actualpdbname, out, chains_to_extract)
 

@@ -12,15 +12,15 @@ print 'PATH',
 
 #assert( 1 in endpoints )
 #assert( len( fasta ) in endpoints )
+#print
 
-print
-def print_sequence( fid, fasta, bound_start, bound_end ):
-    for i in range( len( fasta ) ):
-        if ( i+1 < bound_start or i+1 > bound_end):
-            fid.write(' ')
-        else:
-            fid.write(fasta[ i ])
-    fid.write('\n')
+#def print_sequence( fid, fasta, bound_start, bound_end ):
+#    for i in range( len( fasta ) ):
+#        if ( i+1 < bound_start or i+1 > bound_end):
+#            fid.write(' ')
+#        else:
+#            fid.write(fasta[ i ])
+#    fid.write('\n')
 
 for i in range( len( endpoints ) - 1 ):
     point_start = endpoints[ i ]

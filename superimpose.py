@@ -308,7 +308,7 @@ if CALC_PER_RESIDUE_DEVIATIONS:
     for n in range(  len( all_per_res_dev[ 0 ]  ) ):
         stderr.write( '%d ' % (n+1) )
         for i in range( len( all_per_res_dev ) ) :
-            stderr.write( '%8.5f' % all_per_res_dev[ i ][ n ] )
+            stderr.write( ' %8.5f' % all_per_res_dev[ i ][ n ] )
         stderr.write('\n')
 
 
