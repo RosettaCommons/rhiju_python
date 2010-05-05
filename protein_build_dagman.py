@@ -186,7 +186,7 @@ for L in range( 2, len(sequence)/BLOCK_SIZE + 1 ):
 
         # BASIC COMMAND
         extraflags = '-extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
-        args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -fasta %s -n_sample %d -nstruct %d -minimize  -fullatom %s  -filter_rmsd %8.3f -cluster:radius 0.25  %s  ' % ( DB, native_pdb, fasta_file, N_SAMPLE, NSTRUCT, extraflags, FILTER_RMSD, termini_tag )
+        args = ' -out:file:silent_struct_type binary -database %s  -rebuild -native %s -fasta %s -n_sample %d -nstruct %d  %s  -filter_rmsd %8.3f -cluster:radius 0.25  %s  ' % ( DB, native_pdb, fasta_file, N_SAMPLE, NSTRUCT, extraflags, FILTER_RMSD, termini_tag )
 
         if add_peptide_plane: args += ' -add_peptide_plane '
         if filter_native_big_bins:  args+= " -filter_native_big_bins "

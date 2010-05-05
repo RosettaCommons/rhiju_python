@@ -28,7 +28,7 @@ score_diff_cut = parse_options( argv, "score_diff_cut", 10.0 )
 max_res_to_add_denovo = parse_options( argv, "denovo", 0 )
 
 native_pdb = parse_options( argv, "native", "" )
-template_pdb = parse_options( argv, "s", "" )
+template_pdbs = parse_options( argv, "s", [""] )
 cst_file = parse_options( argv, "cst_file", "" )
 pathway_file = parse_options( argv, "pathway_file", "" )
 cluster_by_all_atom_rmsd = parse_options( argv, "cluster_by_all_atom_rmsd", 0 )
@@ -38,10 +38,17 @@ MAX_FRAG = parse_options( argv, "max_frag", 16 )
 max_length = parse_options( argv, "max_length", 0 )
 superimpose_res = parse_options( argv, "superimpose_res", [ -1 ] )
 align_pdb = parse_options( argv, "align_pdb", "" )
+template_mapping_files = parse_options( argv, "mapping", [""] )
 
+if ( len( argv ) > 1 ): # Should remain with just the first element, the name of this script.
+    print " Unrecognized flags?"
+    print "   ",string.join(argv[1:] )
+    exit( 0 )
 
 DENOVO = ( max_res_to_add_denovo > 0 )
-TEMPLATE = len( template_pdb ) > 0
+TEMPLATE = len( template_pdbs ) > 0
+
+for template_pdb in template_pdbs: assert( exists( template_pdb ) )
 
 ###############################################################
 # Where's the executable?
@@ -89,14 +96,16 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number, univer
     fid.write('executable = %s\n' % EXE )
     fid.write('arguments = %s\n' % arguments)
 
-    job_tag = basename(condor_submit_file).replace('.condor','')
+    sub_job_tag = basename( condor_submit_file ).replace('.condor','')
+    job_dir = dirname( condor_submit_file )
+    sub_job_dir = job_dir + '/' + sub_job_tag
 
-    subdir = 'CONDOR/'+job_tag
-    if not exists( subdir ): system( 'mkdir -p '+subdir )
+    assert( exists( job_dir ) )
+    if not exists( sub_job_dir ): system( 'mkdir -p '+sub_job_dir )
 
-    fid.write('output = CONDOR/%s/$(Process).out\n' % job_tag )
-    fid.write('log = CONDOR/%s.log\n' % job_tag )
-    fid.write('error = CONDOR/%s/$(Process).err\n' % job_tag)
+    fid.write('output = %s/$(Process).out\n' % sub_job_dir )
+    fid.write('log = %s/%s.log\n' % ( job_dir,sub_job_tag) )
+    fid.write('error = %s/$(Process).err\n' % sub_job_dir )
     fid.write('notification = never\n')
     fid.write('Queue %d\n' % queue_number )
     fid.close()
@@ -110,15 +119,17 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
 
     args2 += ' -out:file:silent %s ' % outfile
 
-    job_tag = '%s_%s' % ( overall_job_tag,  sub_job_tag )
-    condor_submit_file = 'CONDOR/%s.condor' %  job_tag
+    condor_file_dir =  "CONDOR/%s/" % overall_job_tag
+    if not exists( condor_file_dir ): system( 'mkdir -p '+condor_file_dir )
+    condor_submit_file = '%s/%s.condor' %  (condor_file_dir,sub_job_tag)
 
+    job_tag = overall_job_tag+"_"+sub_job_tag
     fid_dag.write('\nJOB %s %s\n' % (job_tag, condor_submit_file) )
 
     if not exists( condor_submit_file ):
-        make_condor_submit_file( condor_submit_file, args2, FINAL_NUMBER )
+        make_condor_submit_file( condor_submit_file, args2, 1 )
 
-    if (prev_job_tag in all_job_tags)  and  (prev_job_tag not in jobs_done): #Note previous job may have been accomplished in a prior run -- not in the current DAG.
+    if (len( prev_job_tag ) > 0)  and (prev_job_tag in all_job_tags)  and  (prev_job_tag not in jobs_done): #Note previous job may have been accomplished in a prior run -- not in the current DAG.
         fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, job_tag) )
 
     # The pre process script finds out how many jobs there actually are...
@@ -135,6 +146,8 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
     combine_files.append( '%s/%s_sample.low4000.out' % ( overall_job_tag, sub_job_tag.lower() ) )
 
 
+#####################################################
+# Pathway setup
 #####################################################
 follow_path = 0
 if len(pathway_file) > 0:
@@ -158,6 +171,52 @@ if len(pathway_file) > 0:
                 assert( m == j+1 )
                 j = m
             pathway_regions.append( [i, j] )
+
+#####################################################
+# Template mapping files
+#####################################################
+if len( template_pdbs ) > 0:
+    template_mappings = {}
+    if len( template_mapping_files ) == 0:
+        # Asssume that sequences correspond perfectly.
+        template_mapping = {}
+        for m in range( 1, len(sequence)+1 ): template_mapping[ m ] = m
+        for n in range( len( template_pdbs) ):
+            template_mappings[ template_pdbs[n] ] =  template_mapping
+    else:
+        assert( len( template_mapping_files ) == len( template_pdbs ) )
+        for n in range( len( template_pdbs ) ):
+            lines = open( template_mapping_files[n] ).readlines()
+            # First line better be our target sequence
+            mapping_seq1 = lines[0][:-1]
+            #print mapping_seq1.replace('-','')
+            #print sequence
+            assert(  mapping_seq1.replace('-','') == sequence )
+
+            # Second line better be our template sequence
+            template_sequence = popen( "python "+PYDIR+"/pdb2fasta.py "+template_pdbs[n] ).readlines()[1][:-1]
+            mapping_seq2 = lines[1][:-1]
+            #print mapping_seq2.replace('-','')
+            #print sequence
+            assert( mapping_seq2.replace('-','') == template_sequence )
+            assert( len( mapping_seq1 ) == len( mapping_seq2 ) )
+
+            count1 = 0
+            count2 = 0
+            template_mapping = {}
+            for i in range( len( mapping_seq1 ) ):
+                seq1_OK = ( not mapping_seq1[i]  == '-' )
+                seq2_OK = ( not mapping_seq2[i]  == '-' )
+                if seq1_OK: count1 += 1
+                if seq2_OK: count2 += 1
+                if seq1_OK and seq2_OK: template_mapping[ count1 ] = count2
+            template_mappings[ template_pdbs[n] ] = template_mapping
+
+def template_continuous( i, j, template_mapping ):
+    for k in range( i, j+1 ):
+        if not ( k in template_mapping.keys() ): return 0
+        if ( k > i ) and ( not template_mapping[k] == template_mapping[k-1]+1 ): return 0
+    return 1
 
 ##########################
 # BASIC COMMAND
@@ -279,18 +338,27 @@ for L in range( 2, len(sequence) + 1 ):
         ########################################################
 
         if TEMPLATE:
-            # Good to just build the whole thing off template.
-            sub_job_tag = "START_FROM_TEMPLATE"
 
-            args2 = args
-            args2 += ' -prepack -s1 ' + template_pdb
-            args2 += ' -input_res1 '
-            for k in range(i,j+1): args2 += ' %d' % k
-            args2 += ' -slice_res1 '
-            for k in range(i,j+1): args2 += ' %d' % k
+            for n in range( len( template_pdbs ) ):
+                # Good to just build the whole thing off template.
+                template_pdb = template_pdbs[ n ]
+                template_mapping = template_mappings[ template_pdb ]
 
-            setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
-                                                 fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+                if ( not template_continuous( i,j,template_mapping ) ): continue
+
+                sub_job_tag = "START_FROM_TEMPLATE_%d" % n
+
+                args2 = args
+                args2 += ' -prepack -s1 ' + template_pdb
+                args2 += ' -input_res1 '
+                for k in range(i,j+1): args2 += ' %d' % k
+                args2 += ' -slice_res1 '
+                for k in range(i,j+1): args2 += ' %d' % template_mapping[ k ]
+                args2 += ' -backbone_only1'
+
+                prev_job_tag = ''
+                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
+                                                     fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
         if len( start_regions ) == 0 and DENOVO: # This happens for two-residue fragments.
 
@@ -299,8 +367,10 @@ for L in range( 2, len(sequence) + 1 ):
             args2 = args
             args2 += ' -sample_res %d %d ' % (i,j)
 
+            prev_job_tag = ''
             setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
                                                  fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
 
 
         ##########################################
@@ -310,14 +380,65 @@ for L in range( 2, len(sequence) + 1 ):
 
             i_prev = start_region[0]
             j_prev = start_region[1]
-
             prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
-
             infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
 
-            if ( DENOVO and \
-                 abs(i - i_prev ) <= max_res_to_add_denovo and \
-                 abs(j - j_prev ) <= max_res_to_add_denovo) :
+            if TEMPLATE:
+                for n in range( len( template_pdbs ) ):
+                    template_pdb = template_pdbs[ n ]
+                    template_mapping = template_mappings[ template_pdb ]
+
+                    input_res1 =  range( i_prev, j_prev+1 )
+
+                    input_res2 = []
+                    for m in range( i, j+1 ):
+                        if m not in input_res1:
+                            input_res2.append( m )
+                    if ( not template_continuous( input_res2[0],input_res2[-1],template_mapping ) ): continue
+
+
+                    sub_job_tag = 'START_FROM_REGION_%d_%d_TEMPLATE_%d' % ( i_prev, j_prev, n )
+
+                    args2 = "%s  -silent1 %s " % (args, infile )
+                    args2 += " -input_res1 "
+                    for m in input_res1: args2 += ' %d' % m
+
+                    args2 += " -s2 %s" % template_pdb
+
+                    args2 += " -input_res2 "
+                    for k in input_res2: args2 += ' %d' % k
+
+                    args2 += " -slice_res2 "
+                    for k in input_res2: args2 += ' %d' % template_mapping[ k ]
+
+                    args2 += ' -backbone_only2'
+
+                    args2 += ' -sample_res '
+                    for m in range( i, j+1 ): args2 += ' %d' % m
+
+
+                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
+                                                         fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+
+
+        do_denovo = DENOVO
+        if not DENOVO and len( combine_files ) == 0:
+            print "No template_jobs for ", overall_job_tag,
+            print " ... rescuing the run with denovo!"
+            do_denovo = 1
+            max_res_to_add_denovo = 1
+
+        for start_region in start_regions:
+
+            i_prev = start_region[0]
+            j_prev = start_region[1]
+            prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
+            infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
+
+            if ( abs(i - i_prev ) <= max_res_to_add_denovo and \
+                 abs(j - j_prev ) <= max_res_to_add_denovo and
+                 do_denovo ) :
 
                 sub_job_tag = 'START_FROM_REGION_%d_%d_DENOVO' % ( i_prev, j_prev )
 
@@ -340,32 +461,8 @@ for L in range( 2, len(sequence) + 1 ):
 
 
 
-            if TEMPLATE:
-                sub_job_tag = 'START_FROM_REGION_%d_%d_TEMPLATE' % ( i_prev, j_prev )
-
-                args2 = "%s  -silent1 %s " % (args, infile )
-                args2 += " -input_res1 "
-                input_res1 =  range( i_prev, j_prev+1 )
-                for m in input_res1: args2 += ' %d' % m
-
-                args2 += " -s2 %s" % template_pdb
-                input_string = ''
-                for m in range( i, j+1 ):
-                    if m not in input_res1:
-                        input_string += ' %d' % m
-                args2 += " -input_res2 %s -slice_res2 %s" % (input_string, input_string)
-
-                args2 += ' -sample_res '
-                for m in range( i, j+1 ): args2 += ' %d' % m
-
-                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
-                                                     fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
-
-
-
         if len( combine_files ) == 0:
-            print "No jobs for ", overall_job_tag
-            print "Something does not look right! Exiting."
+            print "No template_jobs for ", overall_job_tag,
             exit( 0 )
 
         ################################################################

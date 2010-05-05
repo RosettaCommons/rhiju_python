@@ -244,7 +244,7 @@ def get_boundary_res( i, assigned_element ):
 # BASIC COMMAND
 rama_map = 'Rama_smooth_dyn.dat_ss_6.4.EXPANDPRO'
 assert( exists( DB+'/'+rama_map ) )
-args = ' -database %s -rebuild -out:file:silent_struct_type binary -fasta %s -output_virtual -n_sample 18 -nstruct %d -minimize -fullatom -extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s -cluster:radius %8.4f -add_peptide_plane  -rama_map %s   ' %  ( DB, fasta_file, NSTRUCT, SCORE_WEIGHTS, PACK_WEIGHTS, CLUSTER_RADIUS_SAMPLE, rama_map  )
+args = ' -database %s -rebuild -out:file:silent_struct_type binary -fasta %s -output_virtual -n_sample 18 -nstruct %d -extrachi_cutoff 0 -ex1 -ex2 -score:weights %s -pack_weights %s -cluster:radius %8.4f -add_peptide_plane  -rama_map %s   ' %  ( DB, fasta_file, NSTRUCT, SCORE_WEIGHTS, PACK_WEIGHTS, CLUSTER_RADIUS_SAMPLE, rama_map  )
 
 if len( native_pdb ) > 0: args += '-native %s ' % native_pdb
 
@@ -321,7 +321,6 @@ if not exists( input_pdb_prepack ):
     system( 'rm -rf prepack.out' )
     args2 = args + ' -out:file:silent prepack.out -prepack -s1 ' + input_pdb  + ' -input_res1 '
     for k in input_res[ input_num ]: args2 += '%d ' % k
-
 
     condor_submit_file = 'CONDOR/%s.condor' %  job_tag
     make_condor_submit_file( condor_submit_file, args2, 1 )

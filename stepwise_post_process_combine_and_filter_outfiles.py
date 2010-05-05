@@ -7,6 +7,8 @@ from os import system
 from os.path import basename, dirname, exists, expanduser
 from time import sleep
 
+RM_FILES = 1
+
 indir_prefix = argv[1]
 
 globstring = indir_prefix+'*/*sample.out'
@@ -33,10 +35,12 @@ system( command )
 globstring = indir_prefix+'*'
 globfiles = glob( globstring )
 globfiles.sort()
-for globfile in globfiles:
-    command = 'rm -rf '+globfile
-    print( command )
-    system( command )
+
+if RM_FILES:
+    for globfile in globfiles:
+        command = 'rm -rf '+globfile
+        print( command )
+        system( command )
 
 ##########################################
 ##########################################
@@ -53,6 +57,7 @@ system( command )
 
 ##########################################
 # DISK SPACE!
-command = 'rm '+cat_outfile
-print( command )
-system( command )
+if RM_FILES:
+    command = 'rm '+cat_outfile
+    print( command )
+    system( command )

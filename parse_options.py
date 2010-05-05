@@ -4,30 +4,37 @@
 def parse_options( argv, tag, default):
     value = default
     if argv.count( "-"+tag ):
+
         pos = argv.index( "-"+tag )
+        del( argv[ pos ] )
 
         if ( default == 0 and
-             ( pos == (len( argv )-1) or
-               argv[ pos+1 ][0] == '-' ) ): # Just a boolean
+             ( pos == (len( argv ) ) or
+               argv[ pos ][0] == '-' ) ): # Just a boolean
             value = 1
         elif( isinstance( default, list ) ):
             value = []
-            offset = 1
-            while ( (pos + offset) < len (argv) and not (argv[ pos+offset ][0] == '-') ):
+            while ( pos < len (argv) and not (argv[ pos ][0] == '-') ):
                 if isinstance( default[0], int ):
-                    value.append( int( argv[ pos+offset ] ) )
+                    value.append( int( argv[ pos ] ) )
                 elif isinstance( default[0], float ):
-                    value.append( float( argv[ pos+offset ] ) )
+                    value.append( float( argv[ pos ] ) )
                 else:
-                    value.append( argv[ pos+offset ] )
-                offset += 1
+                    value.append( argv[ pos ] )
+                del( argv[ pos ] )
         elif isinstance( default, int ):
-            value = int( argv[ pos + 1 ] )
+            value = int( argv[ pos ] )
+            del( argv[ pos ] )
         elif isinstance( default, float ):
-            value = float( argv[ pos + 1 ] )
+            value = float( argv[ pos ] )
+            del( argv[ pos ] )
         else:
-            value = argv[ pos + 1 ]
+            value = argv[ pos ]
+            del( argv[ pos ] )
     else:
-        if isinstance( default, list ) and isinstance( default[0], int ): value = []
+        if isinstance( default, list ): value = []
+
+    #print tag, value
+
     return value
 
