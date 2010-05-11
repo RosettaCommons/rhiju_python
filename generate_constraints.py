@@ -59,6 +59,7 @@ def generate_constraints( argv, atom_names_in1, atom_names_in2, dist_cut_default
     SEQ_SEP_CUTOFF = parse_options( argv, "seq_sep_cutoff", 3 )
     loose_res = parse_options( argv, "loose_res", [-1] )
     cst_res = parse_options( argv, "cst_res", [-1] )
+    no_cst_res = parse_options( argv, "no_cst_res", [-1] )
     COORD_CST = parse_options( argv, "coord_cst", 0 )
     anchor_atom_name = parse_options( argv, "anchor_atom", " CA " )
     anchor_resnum = parse_options( argv, 'anchor_res', 0 )
@@ -87,7 +88,9 @@ def generate_constraints( argv, atom_names_in1, atom_names_in2, dist_cut_default
     fid.write('bg_color white\n' )
 
     if len( cst_res ) == 0:
-        cst_res = range( 1, totres+1 )
+        for m in range( 1, totres+1):
+            if m not in no_cst_res:
+                cst_res.append( m )
 
     if len( loose_res ) > 0:
         command = 'color gray, resi %d' % loose_res[0]
@@ -165,6 +168,11 @@ def generate_constraints( argv, atom_names_in1, atom_names_in2, dist_cut_default
         fid.write( 'hide labels, LOOSE_CST\n')
         fid.write( 'color red, CST\n')
         fid.write( 'color gray, LOOSE_CST\n')
+
+    if len( loose_res ) > 0 :
+        fid.write( 'color red, resi %d' % loose_res[0] )
+        for m in loose_res[1:]: fid.write('+%d'%m)
+        fid.write('\n')
 
     fid.close()
     stderr.write( 'Made a pymol script in TEST.pml\n' )

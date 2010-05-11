@@ -28,7 +28,7 @@ for i in range(len(lines)):
     for j in range(i, len(lines)):
         line2 = lines[j]
 
-        command = '~rhiju/python/superimpose.py %s %s  -R %d > blah.pdb 2> blah.err' % (line1,line2,rmsd_threshold)
+        command = '~rhiju/python/superimpose.py %s %s  -R %d > q 2> blah.err' % (line1,line2,rmsd_threshold)
 #        print(command)
         system(command)
 

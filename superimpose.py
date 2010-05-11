@@ -23,6 +23,7 @@ def Help():
 if len(argv) <=2:
     Help()
 
+MAMMOTH = '~rhiju/src/mammoth2/mammoth_rna'
 
 RENUMBER_ATOMS = 0
 SHOW_MODEL_0 = 1
@@ -152,12 +153,12 @@ for pdb in pdb_list[1:]:
 
 
     if R_DEFINED:
-        command = '~rhiju/mammoth2/mammoth_rna -R %f -D %f -p %s -e %s 2> /dev/null | grep PSI.end'\
-                          %(rmsd_threshold,distance_threshold,pdb1_to_superimpose,pdb_to_superimpose)
+        command = '%s -R %f -D %f -p %s -e %s 2> /dev/null | grep PSI.end'\
+                          %(MAMMOTH, rmsd_threshold,distance_threshold,pdb1_to_superimpose,pdb_to_superimpose)
 
     else:
-        command = '~rhiju/mammoth2/mammoth_rna -p %s -e %s 2> /dev/null | grep PSI.end'\
-            %(pdb1_to_superimpose,pdb_to_superimpose)
+        command = '%s -p %s -e %s 2> /dev/null | grep PSI.end'\
+             %(MAMMOTH, pdb1_to_superimpose,pdb_to_superimpose)
 #        command = '/work/pbradley/maxsub/maxsub -p %s -e %s 2> /dev/null | grep PSI.end'\
 #                  %(pdb_to_superimpose,pdb)
 

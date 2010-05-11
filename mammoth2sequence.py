@@ -10,6 +10,7 @@ seq1 = ''
 seq2 = ''
 
 for i in  range( len(lines)-4):
+
     if len( lines[i] ) < 10: continue
     if len( lines[i+1] ) < 10: continue
     if len( lines[i+3] ) < 10: continue
@@ -28,5 +29,6 @@ for i in  range( len(lines)-4):
 seq1 = seq1.replace('.','-')
 seq2 = seq2.replace('.','-')
 
-# This is really silly, but mammoth does not align last residue in sequence.
+print seq1
+print seq2
 
