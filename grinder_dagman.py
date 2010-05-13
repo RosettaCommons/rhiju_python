@@ -57,6 +57,8 @@ fixed_res = parse_options( argv, "fixed_res", [-1] )
 no_fixed_res = parse_options( argv, "no_fixed_res", 0 )
 calc_rms_res = parse_options( argv, "calc_rms_res", [-1] )
 loop_start_pdb = parse_options( argv, "loop_start_pdb", "" )
+loop_force_Nsquared = parse_options( argv, "loop_force_Nsquared", 0 )
+
 
 if ( len( argv ) > 1 ): # Should remain with just the first element, the name of this script.
     print " Unrecognized flags?"
@@ -146,7 +148,7 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number, univer
     fid.write('Queue %d\n' % queue_number )
     fid.close()
 
-def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, decoy_tag,\
+def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag,\
                                          fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files):
     newdir = overall_job_tag+'/'+sub_job_tag
     if len( decoy_tag ) > 0:
@@ -165,12 +167,17 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
     if not exists( condor_submit_file ):
         make_condor_submit_file( condor_submit_file, args2, 1 )
 
-    if (len( prev_job_tag ) > 0)  and (prev_job_tag in all_job_tags)  and  (prev_job_tag not in jobs_done): #Note previous job may have been accomplished in a prior run -- not in the current DAG.
-        fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, job_tag) )
+    if (len( prev_job_tags ) > 0):
+        for prev_job_tag in prev_job_tags:
+            assert( prev_job_tag in all_job_tags )
+            #Note previous job may have been accomplished in a prior run -- not in the current DAG.
+            if (prev_job_tag not in jobs_done):
+                fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, job_tag) )
 
     # The pre process script finds out how many jobs there actually are...
     if len( decoy_tag ) > 0:
-        fid_dag.write('SCRIPT PRE %s   %s %s %s %s %s\n' % (job_tag, PRE_PROCESS_SETUP_SCRIPT,overall_job_tag,prev_job_tag,condor_submit_file,sub_job_tag) )
+        assert( len( prev_job_tags ) > 0 )
+        fid_dag.write('SCRIPT PRE %s   %s %s %s %s %s\n' % (job_tag, PRE_PROCESS_SETUP_SCRIPT,overall_job_tag,prev_job_tags[0],condor_submit_file,sub_job_tag) )
     else:
         if not exists( newdir ): system( 'mkdir -p '+newdir )
 
@@ -379,6 +386,9 @@ if AUTO_TUNE:
 else:
     cluster_tag = ' -cluster:radius %s ' % CLUSTER_RADIUS
 
+cluster_by_all_atom_rmsd_tag = ''
+if cluster_by_all_atom_rmsd: cluster_by_all_atom_rmsd_tag = ' -cluster_by_all_atom_rmsd '
+
 
 ################################
 # MAIN LOOP
@@ -398,9 +408,14 @@ for L in range( min_length, max_length + 1 ):
 
         if ( not LOOP and ( i < MIN_RES or j > MAX_RES ) ): continue
 
-        if ( LOOP and ( i > (loop_end+1)   or i < loop_start ) ): continue
-        if ( LOOP and ( j < (loop_start-1) or j > loop_end   ) ): continue
-        if ( LOOP and not( ( i == j+1 and j <= loop_end-min_loop_gap)   or ( i - j > min_loop_gap) ) ): continue
+        if LOOP:
+            if ( i > (loop_end+1)   or i < loop_start ): continue
+            #if ( j < (loop_start-1) or j > (loop_end-min_loop_gap ) ): continue
+            if ( j < (loop_start-1) or j > (loop_end-2 ) ): continue
+            #if not( ( i == j+1 and j < (loop_end-min_loop_gap+1) )   or ( i - j >= min_loop_gap): continue
+            if not( ( i == j+1 and j < (loop_end-1) )   or ( (i - j) >= 2 ) ): continue
+            if (not loop_force_Nsquared) and  ( i != j+1 ) and not ( i == loop_end+1 or j == loop_start-1): continue
+
 
         #ZIGZAG!! special case for beta hairpins.
         if ( ZIGZAG and abs( ( i - MIN_RES ) - ( MAX_RES - j ) ) > 1 ) : continue
@@ -488,6 +503,7 @@ for L in range( min_length, max_length + 1 ):
         #  currently have: DENOVO, TEMPLATE, FRAGMENT_LIBRARY
         ########################################################
 
+        prev_job_tags = []
         if LOOP:
 
             if ( j == loop_start-1 and i == loop_end+1 ):
@@ -499,8 +515,7 @@ for L in range( min_length, max_length + 1 ):
                 for k in wrap_range(i, j+1): args2 += ' %d' % k
                 args2 += ' -use_packer_instead_of_rotamer_trials'
 
-                prev_job_tag = ''
-                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
+                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
         else:
@@ -525,8 +540,7 @@ for L in range( min_length, max_length + 1 ):
                     args2 += ' -backbone_only1'
                     args2 += ' -use_packer_instead_of_rotamer_trials'
 
-                    prev_job_tag = ''
-                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
+                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                          fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
             if FRAGMENT_LIBRARY:
@@ -546,8 +560,7 @@ for L in range( min_length, max_length + 1 ):
                     args2 += ' -sample_res'
                     for m in wrap_range(i,j+1): args2 += ' %d' % m
 
-                    prev_job_tag = ''
-                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
+                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                          fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
             if SWA_FRAGS and (outfile_cluster in silent_files_in ) and ( L in swa_frag_lengths ) :
@@ -558,8 +571,7 @@ for L in range( min_length, max_length + 1 ):
                 args2 += ' -use_packer_instead_of_rotamer_trials'
                 args2 += ' -input_res1 '
                 for k in wrap_range(i,j+1): args2 += ' %d' % k
-                prev_job_tag = ''
-                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
+                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
 
@@ -571,9 +583,48 @@ for L in range( min_length, max_length + 1 ):
                 args2 = args
                 args2 += ' -sample_res %d %d ' % (i,j)
 
-                prev_job_tag = ''
-                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
+                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+
+        ########################################################
+        # Chain closure #1 -- assume j, j+2 are sampled already,
+        #  then solve for j,j+1,j+2. Also (important!), this
+        #  assumes that the backbone outside the loop is fixed.
+        # This is meant for O(N) loop modeling -- build forward,
+        #  build backward and meet in the middle.
+        ########################################################
+        if LOOP and ( i == j+1 ) and (not no_fixed_res) and ( j >= loop_start and i <= loop_end) : # special, chain closure!
+            # old-style: close the loop
+            job_tag1 = "REGION_%d_%d" % ( i+1,     loop_start-1 )
+            job_tag2 = "REGION_%d_%d" % ( loop_end+1, j       )
+
+            if ( job_tag1 in all_job_tags ) and ( job_tag2 in all_job_tags ):
+
+                sub_job_tag = 'START_FROM_%s_%s_CLOSE_LOOP' % ( job_tag1, job_tag2 )
+
+                decoy_tag = 'S_$(Process)'
+
+                infile1 =  job_tag1.lower()+"_sample.cluster.out"
+                args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
+                args2 += " -input_res1 "
+                for m in wrap_range( i+1, loop_start ): args2 += ' %d' % m
+
+                infile2 =  job_tag2.lower()+"_sample.cluster.out"
+                args2 += ' -silent2 %s ' % ( infile2 )
+                args2 += " -input_res2 "
+                for m in wrap_range( loop_end+1, j+1 ): args2 += ' %d' % m
+
+                args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
+                args2 += " -cutpoint_closed %d " % (j+1)
+
+                args2 += " -sample_res"
+                for m in range( 1, NRES+1): args2 += " %d" % m
+
+                prev_job_tags = [ job_tag1, job_tag2 ]
+                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                     fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
 
 
         ###########################################################
@@ -584,53 +635,15 @@ for L in range( min_length, max_length + 1 ):
 
             i_prev = start_region[0]
             j_prev = start_region[1]
-            prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
+            prev_job_tags = [ 'REGION_%d_%d' % (i_prev,j_prev) ]
             infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
             input_res1 =  wrap_range( i_prev, j_prev+1 )
 
-            if TEMPLATE:
-                for n in range( len( template_pdbs ) ):
-                    template_pdb = template_pdbs[ n ]
-                    template_mapping = template_mappings[ template_pdb ]
-
-                    input_res2 = []
-                    for m in wrap_range( i, j+1 ):
-                        if m not in input_res1:
-                            input_res2.append( m )
-                    if ( not template_continuous( input_res2[0],input_res2[-1],template_mapping ) ): continue
-
-
-                    sub_job_tag = 'START_FROM_REGION_%d_%d_TEMPLATE_%d' % ( i_prev, j_prev, n )
-
-                    args2 = "%s  -silent1 %s " % (args, infile )
-                    args2 += " -input_res1 "
-                    for m in input_res1: args2 += ' %d' % m
-
-                    args2 += " -s2 %s" % template_pdb
-
-                    args2 += " -input_res2 "
-                    for k in input_res2: args2 += ' %d' % k
-
-                    args2 += " -slice_res2 "
-                    for k in input_res2: args2 += ' %d' % template_mapping[ k ]
-
-                    args2 += ' -backbone_only2'
-
-                    args2 += ' -sample_res '
-                    for m in wrap_range( i, j+1 ): args2 += ' %d' % m
-
-
-                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, '', \
-                                                         fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
-
-
-            if FRAGMENT_LIBRARY:
-                for frag_length in frag_lengths:
-
-                    ( startpos, endpos, num_overlap_residues ) = check_frag_overlap( i, j, i_prev, j_prev, frag_length )
-                    if ( num_overlap_residues < 0 or num_overlap_residues > MAX_FRAGMENT_OVERLAP ): continue
-
-                    sub_job_tag = 'START_FROM_REGION_%d_%d_FRAGMENT_LIBRARY_%dMER' % ( i_prev, j_prev, frag_length )
+            if ( i == j+1 and LOOP ):
+                if ( j == j_prev ) and (i_prev == (j + min_loop_gap) ): # close the loop
+                    #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
+                    #  believe its psi, omega.
+                    sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP' % ( i_prev, j_prev )
 
                     decoy_tag = 'S_$(Process)'
 
@@ -638,61 +651,105 @@ for L in range( min_length, max_length + 1 ):
                     args2 += " -input_res1 "
                     for m in input_res1: args2 += ' %d' % m
 
-                    frag_file = frag_files[  frag_lengths.index( frag_length) ]
-                    args2 += " -in:file:frag_files %s" % frag_file
+                    args2 += " -sample_res"
+                    if ( j not in fixed_res ): args2 += " %d" % j
+                    args2 +=" %d" % (j+1)
+                    args2 += " -bridge_res %d %d %d" % (j+2,j+3,j+4)
+                    args2 += " -cutpoint_closed %d " % (j+1)
 
-                    args2 += ' -sample_res '
-                    for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
-
-                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, decoy_tag, \
+                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                          fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
+            else:
+                if TEMPLATE:
+                    for n in range( len( template_pdbs ) ):
+                        template_pdb = template_pdbs[ n ]
+                        template_mapping = template_mappings[ template_pdb ]
+
+                        input_res2 = []
+                        for m in wrap_range( i, j+1 ):
+                            if m not in input_res1:
+                                input_res2.append( m )
+                        if ( not template_continuous( input_res2[0],input_res2[-1],template_mapping ) ): continue
 
 
-            if SWA_FRAGS:
+                        sub_job_tag = 'START_FROM_REGION_%d_%d_TEMPLATE_%d' % ( i_prev, j_prev, n )
 
-                for frag_length in swa_frag_lengths:
+                        args2 = "%s  -silent1 %s " % (args, infile )
+                        args2 += " -input_res1 "
+                        for m in input_res1: args2 += ' %d' % m
 
-                    ( startpos, endpos, num_overlap_residues ) = check_frag_overlap( i, j, i_prev, j_prev, frag_length )
-                    if ( num_overlap_residues < 0 or num_overlap_residues > MAX_FRAGMENT_OVERLAP ): continue
+                        args2 += " -s2 %s" % template_pdb
 
-                    infile_swa = "region_%d_%d_sample.cluster.out" % (startpos, endpos)
-                    if infile_swa not in silent_files_in: continue
+                        args2 += " -input_res2 "
+                        for k in input_res2: args2 += ' %d' % k
 
-                    sub_job_tag = 'START_FROM_REGION_%d_%d_SWA_FRAGMENTS_%dMER' % ( i_prev, j_prev, frag_length )
+                        args2 += " -slice_res2 "
+                        for k in input_res2: args2 += ' %d' % template_mapping[ k ]
 
-                    decoy_tag = 'S_$(Process)'
+                        args2 += ' -backbone_only2'
 
-                    args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
-                    args2 += " -input_res1 "
-                    for m in input_res1: args2 += ' %d' % m
-
-                    args2 += " -silent2 %s/%s" % (swa_silent_file_dir, infile_swa )
-                    args2 += " -input_res2 "
-                    for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
-
-                    args2 += ' -sample_res '
-                    for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
-
-                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, decoy_tag, \
-                                                         fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+                        args2 += ' -sample_res '
+                        for m in wrap_range( i, j+1 ): args2 += ' %d' % m
 
 
-            if LOOP and (i == j+1) and ( j == j_prev ) and (i_prev == (j + min_loop_gap + 1) ): # close the loop
-                sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP' % ( i_prev, j_prev )
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
-                decoy_tag = 'S_$(Process)'
 
-                args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
-                args2 += " -input_res1 "
-                for m in input_res1: args2 += ' %d' % m
+                if FRAGMENT_LIBRARY:
+                    for frag_length in frag_lengths:
 
-                args2 += " -sample_res %d " % (j+1)
-                args2 += " -bridge_res %d %d %d" % (j+2,j+3,j+4)
-                args2 += " -cutpoint_closed %d " % (j+2)
+                        ( startpos, endpos, num_overlap_residues ) = check_frag_overlap( i, j, i_prev, j_prev, frag_length )
+                        if ( num_overlap_residues < 0 or num_overlap_residues > MAX_FRAGMENT_OVERLAP ): continue
 
-                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, decoy_tag, \
-                                                     fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+                        sub_job_tag = 'START_FROM_REGION_%d_%d_FRAGMENT_LIBRARY_%dMER' % ( i_prev, j_prev, frag_length )
+
+                        decoy_tag = 'S_$(Process)'
+
+                        args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
+                        args2 += " -input_res1 "
+                        for m in input_res1: args2 += ' %d' % m
+
+                        frag_file = frag_files[  frag_lengths.index( frag_length) ]
+                        args2 += " -in:file:frag_files %s" % frag_file
+
+                        args2 += ' -sample_res '
+                        for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
+
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+
+
+                if SWA_FRAGS:
+
+                    for frag_length in swa_frag_lengths:
+
+                        ( startpos, endpos, num_overlap_residues ) = check_frag_overlap( i, j, i_prev, j_prev, frag_length )
+                        if ( num_overlap_residues < 0 or num_overlap_residues > MAX_FRAGMENT_OVERLAP ): continue
+
+                        infile_swa = "region_%d_%d_sample.cluster.out" % (startpos, endpos)
+                        if infile_swa not in silent_files_in: continue
+
+                        sub_job_tag = 'START_FROM_REGION_%d_%d_SWA_FRAGMENTS_%dMER' % ( i_prev, j_prev, frag_length )
+
+                        decoy_tag = 'S_$(Process)'
+
+                        args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
+                        args2 += " -input_res1 "
+                        for m in input_res1: args2 += ' %d' % m
+
+                        args2 += " -silent2 %s/%s" % (swa_silent_file_dir, infile_swa )
+                        args2 += " -input_res2 "
+                        for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
+
+                        args2 += ' -sample_res '
+                        for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
+
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
 
 
         do_denovo = DENOVO
@@ -706,7 +763,7 @@ for L in range( min_length, max_length + 1 ):
 
             i_prev = start_region[0]
             j_prev = start_region[1]
-            prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
+            prev_job_tags = [ 'REGION_%d_%d' % (i_prev,j_prev) ]
             infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
 
             if ( abs(i - i_prev ) <= max_res_to_add_denovo and \
@@ -723,13 +780,16 @@ for L in range( min_length, max_length + 1 ):
 
                 args2 += ' -sample_res '
                 if ( i < i_prev and j == j_prev):
-                    for m in range(i,i_prev+1): args2 += ' %d' % m
+                    for m in range(i,i_prev+1):
+                        if m not in fixed_res: args2 += ' %d' % m
                 elif ( i == i_prev and j > j_prev ):
-                    for m in range(j_prev,j+1): args2 += ' %d' % m
+                    for m in range(j_prev,j+1):
+                        if m not in fixed_res: args2 += ' %d' % m
                 else:
-                    for m in [i,j]: args2 += ' %d' % m
+                    for m in [i,j]:
+                        if m not in fixed_res: args2 += ' %d' % m
 
-                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tag, args2, decoy_tag, \
+                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
 
@@ -743,9 +803,6 @@ for L in range( min_length, max_length + 1 ):
         # CLUSTER! And keep a small number of representatives (400)
         ################################################################
 
-        cluster_by_all_atom_rmsd_tag = ''
-        if cluster_by_all_atom_rmsd: cluster_by_all_atom_rmsd_tag = ' -cluster_by_all_atom_rmsd '
-
         outfile_cluster = overall_job_tag.lower()+'_sample.cluster.out'
         args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  %s -out:file:silent %s -nstruct %d %s -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  cluster_tag, outfile_cluster, FINAL_NUMBER, cluster_by_all_atom_rmsd_tag, score_diff_cut )
 
@@ -758,6 +815,35 @@ for L in range( min_length, max_length + 1 ):
         fid_dag.write('SCRIPT POST %s %s %s %s\n' % (overall_job_tag, POST_PROCESS_CLUSTER_SCRIPT, outfile_cluster, overall_job_tag ) )
 
         all_job_tags.append(  overall_job_tag )
+
+
+
+#####################################################################################
+if LOOP:
+    final_outfile = "region_FINAL.out"
+    if not exists( final_outfile ):
+
+        last_outfiles = []
+        last_jobs = []
+        for i in range( NRES-1 ):
+            job_tag = 'REGION_%d_%d' % (i+1,i)
+            if job_tag in all_job_tags:
+                last_jobs.append( job_tag )
+                last_outfiles.append( job_tag.lower()+'_sample.cluster.out' )
+        assert( len(last_outfiles) > 0 )
+
+        args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  %s -out:file:silent %s  %s -score_diff_cut %8.3f -silent_read_through_errors  -nstruct %d ' % (string.join( last_outfiles ), DB,  cluster_tag, final_outfile, cluster_by_all_atom_rmsd_tag, 2 * score_diff_cut, 10000 )
+
+        condor_submit_cluster_file = 'CONDOR/REGION_FINAL_cluster.condor'
+        make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1 )
+
+        final_job_tag = "REGION_FINAL"
+        fid_dag.write('\nJOB %s %s\n' % ( final_job_tag,condor_submit_cluster_file) )
+        for prev_job_tag in last_jobs:
+            if ( prev_job_tag not in jobs_done ):
+                fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, final_job_tag) )
+
+
 
 print
 print "Total number of jobs to run (not counting clustering):", len( real_compute_job_tags )
