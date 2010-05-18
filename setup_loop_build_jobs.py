@@ -120,13 +120,17 @@ if CUTOFF > 0:
     system( 'generate_coordinate_constraints.py %s -fade -stdev %3.1f -cst_res %s -anchor_res 1  > %s\n' % ( mini_start_file, CUTOFF, working_loop_res_tag, cst_file ) )
     cst_file_tag =  '-cst_file ' + cst_file
 
-fid.write( 'protein_loop_build_dagman.py -s %s  -input_res %s  -native %s -fasta %s  -score_diff_cut 10 -nstruct 200  -weights score12_no_hb_env_dep.wts -pack_weights pack_no_hb_env_dep.wts  -one_loop  -cluster_radius_sample 0.1 -cluster_radius 0.25  %s  -align_pdb %s \n' % ( noloop_file, input_res_tag, mini_native_file, fasta_file, cst_file_tag, mini_start_file ) )
+#fid.write( 'protein_loop_build_dagman.py -s %s  -input_res %s  -native %s -fasta %s  -score_diff_cut 10 -nstruct 200  -weights score12_no_hb_env_dep.wts -pack_weights pack_no_hb_env_dep.wts  -one_loop  -cluster_radius_sample 0.1 -cluster_radius 0.25  %s  -align_pdb %s \n' % ( noloop_file, input_res_tag, mini_native_file, fasta_file, cst_file_tag, mini_start_file ) )
+
+fid.write( 'grinder_dagman.py -loop_start_pdb %s  -loop_res %s  -native %s -fasta %s  -nstruct 200 %s  -align_pdb %s -denovo 1\n' % ( noloop_file, working_loop_res_tag, mini_native_file, fasta_file, cst_file_tag, mini_start_file ) )
+
 fid.close()
 
 # Prepare "README_SUB"
 fid = open( 'README_SUB', 'w' )
 fid.write(' rm blah.* \n' )
-fid.write( 'bsub -W 24:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py  -j %d rna_build.dag  \n' % NJOBS )
+#fid.write( 'bsub -W 24:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py  -j %d rna_build.dag  \n' % NJOBS )
+fid.write( 'bsub -W 24:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py  -j %d protein_build.dag  \n' % NJOBS )
 fid.close()
 
 chdir( CWD )

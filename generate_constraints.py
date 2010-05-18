@@ -170,7 +170,7 @@ def generate_constraints( argv, atom_names_in1, atom_names_in2, dist_cut_default
         fid.write( 'color gray, LOOSE_CST\n')
 
     if len( loose_res ) > 0 :
-        fid.write( 'color red, resi %d' % loose_res[0] )
+        fid.write( 'color gray, resi %d' % loose_res[0] )
         for m in loose_res[1:]: fid.write('+%d'%m)
         fid.write('\n')
 

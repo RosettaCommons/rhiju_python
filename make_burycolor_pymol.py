@@ -18,17 +18,17 @@ for i in range( len(inputfiles) ):
         if (not inputfile.find("superposition") > 0):
             pdbfiles.append( inputfile)
 
-pdbfiles.reverse()
+#pdbfiles.reverse()
+prefix = "TEST"
 
 #superimpose first!
 command = "python ~rhiju/python/superimpose.py "
 for pdbfile in pdbfiles: command += " "+pdbfile
-prefix = pdbfiles[0].replace( '.pdb','')
-command += " -R 2.0  > "+ prefix+"_superposition.pdb"
+command += " -R 2.0  > superposition.pdb"
 system(command)
 
 #Extract models
-command = "python ~rhiju/python/parse_NMR_models.py "+prefix+"_superposition.pdb"
+command = "python ~rhiju/python/parse_NMR_models.py superposition.pdb"
 system(command)
 
 fid = open(prefix+'.pml','w')
@@ -39,8 +39,8 @@ fid.write('reinitialize\n')
 count = 0
 for pdbfile in pdbfiles:
     count += 1
-    fid.write('load %s_superposition_%03d.pdb,model%d\n' %
-              (prefix,count, count))
+    fid.write('load superposition_%03d.pdb,model%d\n' %
+              (count, count))
 
 
 fid.write('\n')
@@ -66,6 +66,7 @@ fid.write('bg_color white\n')
 fid.write('show cartoon, all\n')
 fid.write('set cartoon_oval_length, 0.5\n')
 fid.write('set cartoon_oval_width, 0.5\n')
+fid.write('set cartoon_rect_length, 0.5\n')
 
 
 for count in range( len(pdbfiles) ):
@@ -73,7 +74,13 @@ for count in range( len(pdbfiles) ):
     fid.write('select model%d_backbone, model%d and c_backbone\n' % (count,count))
     fid.write('cmd.spectrum(selection = "model%d_backbone")\n' % count)
 
-colors = ['blue','green','red']
+if len( pdbfiles ) == 3:
+    colors = ['blue','green','red']
+elif len( pdbfiles ) == 4:
+    colors = ['blue','green','orange','red']
+else:
+    colors = ['blue','cyan','green','orange','red']
+
 for count in range( len(pdbfiles) ):
     pdbfile = pdbfiles[ count ]
     fid.write( 'color %s, model%d\n' % ( colors[count], count+1 ) )

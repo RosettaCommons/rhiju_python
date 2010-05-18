@@ -41,7 +41,7 @@ for i in range(len(lines)):
             maxsub = 0 # Failure!
             fit_threshold = -1
 
-        stderr.write('%s %s %5.3f %d\n' % (line1, line2, fit_threshold, maxsub))
+        stderr.write('%s %s %4.2f %d\n' % (line1, line2, fit_threshold, maxsub))
 
         maxsub_save[line1][line2] = maxsub
         maxsub_save[line2][line1] = maxsub
@@ -65,7 +65,7 @@ print
 for line1 in lines:
     print '%s' % line1+blanks[len(line1):maxlen],
     for line2 in lines:
-        print '%5.3f' % fit_threshold_save[line1][line2],
+        print '%4.2f' % fit_threshold_save[line1][line2],
     print
 
 command = 'rm -rf maxsub*pdb blah*pdb'

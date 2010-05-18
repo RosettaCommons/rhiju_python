@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 def cluster_check( cluster_in ):
-    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','lovejoy' ];
+    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','kwip','lovejoy','tsuname' ];
 
     cluster = cluster_in
     if cluster not in clusterlist:
@@ -39,7 +39,9 @@ def cluster_check( cluster_in ):
 
     if cluster == 'vanlang':  cluster = 'vanlang@biox2.stanford.edu'
     if cluster == 'kwipapat':  cluster = 'kwipapat@biox2.stanford.edu'
+    if cluster == 'kwip':  cluster = 'kwipapat@biox2.stanford.edu'
     if cluster == 'lovejoy':  cluster = 'lovejoy@biox2.stanford.edu'
+    if cluster == 'tsuname':  cluster = 'tsuname@biox2.stanford.edu'
 
     return (cluster,cluster_dir)
 
