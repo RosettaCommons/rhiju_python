@@ -482,8 +482,12 @@ for L in range( min_length, max_length + 1 ):
 
         if LOOP:
             # pretty reasonable definition of i and j in loop or at boundary
-            if ( i > (loop_end+1)   or i < (loop_start+1) ): continue
+            if ( i > (loop_end+1)   or i < (loop_start+2) ): continue
             if ( j < (loop_start-1) or j > (loop_end-2 ) ): continue
+
+            # very special case for building termini.
+            #if ( loop_start == 1  and j == 1 ): continue
+            #if ( loop_end == NRES and i == NRES ): continue
 
             #if not( ( loop_close and j < (loop_end-1) )   or ( (i - j) >= 2 ) ): continue
             # To close loop, must have at least a little bit built from either end.
