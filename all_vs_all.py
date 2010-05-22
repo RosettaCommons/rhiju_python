@@ -3,18 +3,20 @@
 from sys import argv,stdout,stderr
 from os import system
 import string
+from parse_options import parse_options
+
+rmsd_threshold = parse_options( argv, 'R', 8.0);
+subset_res = parse_options( argv,'subset',[-1])
 
 infilelist = argv[1]
 
-rmsd_threshold = 8.0
-if argv.count('-R'):
-    pos = argv.index('-R')
-    rmsd_threshold = float( argv[pos+1])
-    del(argv[pos])
-    del(argv[pos])
-
 lines = open(infilelist,'r').readlines()
 lines = [x[:-1] for x in lines]
+
+subset_tag = ''
+if len( subset_res ) > 0:
+    subset_tag = ' -subset'
+    for m in subset_res: subset_tag+= ' %d' % m
 
 fit_threshold_save = {}
 maxsub_save = {}
@@ -28,7 +30,7 @@ for i in range(len(lines)):
     for j in range(i, len(lines)):
         line2 = lines[j]
 
-        command = '~rhiju/python/superimpose.py %s %s  -R %d > q 2> blah.err' % (line1,line2,rmsd_threshold)
+        command = '~rhiju/python/superimpose.py %s %s  %s -R %d > q 2> blah.err' % (line1,line2,subset_tag,rmsd_threshold)
 #        print(command)
         system(command)
 

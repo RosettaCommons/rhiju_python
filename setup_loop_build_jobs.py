@@ -11,8 +11,12 @@ CUTOFF = parse_options( argv, 'coord_cutoff', -1.0 )
 segment_residues = parse_options( argv, 'segments', [ -1 ] )
 start_file  = parse_options( argv, 's', '' )
 native_file = parse_options( argv, 'native', '' )
+tag = parse_options( argv, 'tag', '' )
 loop = parse_options( argv, 'loop', [ -1 ] )
 NJOBS =  parse_options( argv, 'j', 400 )
+final_number =  parse_options( argv, 'final_number', 100 )
+loop_force_Nsquared =  parse_options( argv, 'loop_force_Nsquared', 0 )
+superimpose_res = parse_options( argv, 'superimpose_res', [-1] )
 
 assert( len( start_file ) > 0 )
 assert( exists( start_file ) )
@@ -45,10 +49,13 @@ assert( loop_start in subset_residues )
 assert( loop_end   in subset_residues )
 
 # Make directory
-if ( native_file == start_file ):
-    dir_name = 'loop%d-%d/from_native' % ( loop_start, loop_end )
-else:
-    dir_name = 'loop%d-%d/from_template' % ( loop_start, loop_end )
+if len( tag ) == "":
+    if ( native_file == start_file ):
+        tag = 'from_native'
+    else:
+        tag = 'from_template'
+
+dir_name = 'loop%d-%d/%s' % ( loop_start, loop_end, tag )
 
 system( 'mkdir -p '+dir_name )
 CWD = getcwd()
@@ -100,11 +107,14 @@ noloop_file = 'noloop_'+pdb_stripsidechain
 # Prepare "README_SETUP"
 input_res = []
 working_loop_res = []
+working_superimpose_res = []
 for k in range( len(subset_residues) ):
     if ( subset_residues[k] not in loop_res ):
         input_res.append( k+1 )
     else:
         working_loop_res.append( k+1 )
+    if subset_residues[k] in superimpose_res:
+        working_superimpose_res.append( k+1 )
 
 input_res_tag = ''
 for k in input_res: input_res_tag += ' %d' % k
@@ -122,13 +132,22 @@ if CUTOFF > 0:
 
 #fid.write( 'protein_loop_build_dagman.py -s %s  -input_res %s  -native %s -fasta %s  -score_diff_cut 10 -nstruct 200  -weights score12_no_hb_env_dep.wts -pack_weights pack_no_hb_env_dep.wts  -one_loop  -cluster_radius_sample 0.1 -cluster_radius 0.25  %s  -align_pdb %s \n' % ( noloop_file, input_res_tag, mini_native_file, fasta_file, cst_file_tag, mini_start_file ) )
 
-fid.write( 'grinder_dagman.py -loop_start_pdb %s  -loop_res %s  -native %s -fasta %s  -nstruct 200 %s  -align_pdb %s -denovo 1\n' % ( noloop_file, working_loop_res_tag, mini_native_file, fasta_file, cst_file_tag, mini_start_file ) )
+loop_force_Nsquared_tag = ''
+if loop_force_Nsquared:
+    loop_force_Nsquared_tag = ' -loop_force_Nsquared'
+
+superimpose_res_tag = ''
+if len(working_superimpose_res) > 0:
+    superimpose_res_tag = ' -superimpose_res'
+    for m in working_superimpose_res: superimpose_res_tag += ' %d' % m
+
+fid.write( 'grinder_dagman.py -loop_start_pdb %s  -loop_res %s  -native %s -fasta %s  -nstruct 200 %s  -align_pdb %s -denovo 1 %s %s -final_number %d \n' % ( noloop_file, working_loop_res_tag, mini_native_file, fasta_file, cst_file_tag, mini_start_file, loop_force_Nsquared_tag, superimpose_res_tag, final_number ) )
 
 fid.close()
 
 # Prepare "README_SUB"
 fid = open( 'README_SUB', 'w' )
-fid.write(' rm blah.* \n' )
+fid.write(' rm -rf blah.* \n' )
 #fid.write( 'bsub -W 24:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py  -j %d rna_build.dag  \n' % NJOBS )
 fid.write( 'bsub -W 24:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py  -j %d protein_build.dag  \n' % NJOBS )
 fid.close()
