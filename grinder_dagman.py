@@ -9,6 +9,7 @@ from time import sleep
 from parse_options import parse_options
 from get_sequence import get_sequence
 
+
 fasta_file = parse_options( argv, "fasta", "1shf.fasta" )
 assert( exists( fasta_file ) )
 sequence_lines = open( fasta_file  ).readlines()[1:]
@@ -31,9 +32,11 @@ filter_native_big_bins = parse_options( argv, "filter_native_big_bins", 0 )
 score_diff_cut = parse_options( argv, "score_diff_cut", 10.0 )
 max_res_to_add_denovo = parse_options( argv, "denovo", 0 )
 USE_MINI_TEMP = parse_options( argv, "use_mini_TEMP", 0 )
+no_rm_files= parse_options( argv, "no_rm_files", 0 )
 
 native_pdb = parse_options( argv, "native", "" )
 template_pdbs = parse_options( argv, "s", [""] )
+template_input_res = parse_options( argv, "input_res", [-1] )
 cst_file = parse_options( argv, "cst_file", "" )
 pathway_file = parse_options( argv, "pathway_file", "" )
 cluster_by_all_atom_rmsd = parse_options( argv, "cluster_by_all_atom_rmsd", 0 )
@@ -45,6 +48,7 @@ min_length = parse_options( argv, "min_length", 2 )
 max_length = parse_options( argv, "max_length", 0 )
 superimpose_res = parse_options( argv, "superimpose_res", [ -1 ] )
 virtual_res = parse_options( argv, "virtual_res", [ -1 ] )
+skip_res = parse_options( argv, "skip_res", [ -1 ] )
 align_pdb = parse_options( argv, "align_pdb", "" )
 template_mapping_files = parse_options( argv, "mapping", [""] )
 frag_files = parse_options( argv, "frag_files", [""] )
@@ -52,13 +56,17 @@ frag_lengths = parse_options( argv, "frag_lengths", [ -1 ] )
 MAX_FRAGMENT_OVERLAP = parse_options( argv, "max_fragment_overlap", 2 )
 swa_frag_lengths = parse_options( argv, "swa_frag_lengths", [-1] )
 swa_silent_file_dir = parse_options( argv, "swa_silent_file_dir", "" )
-loop_res = parse_options( argv, "loop_res", [-1] )
 fixed_res = parse_options( argv, "fixed_res", [-1] )
 no_fixed_res = parse_options( argv, "no_fixed_res", 0 )
 calc_rms_res = parse_options( argv, "calc_rms_res", [-1] )
-loop_start_pdb = parse_options( argv, "loop_start_pdb", "" )
+start_res = parse_options( argv, "start_res", [-1] )
+start_pdb = parse_options( argv, "start_pdb", "" )
+start_pdb = parse_options( argv, "loop_start_pdb", start_pdb )
+endpoints = parse_options( argv, "endpoints",[-1] )
+loop_res = parse_options( argv, "loop_res", [-1] )
 loop_force_Nsquared = parse_options( argv, "loop_force_Nsquared", 0 )
-
+override = parse_options( argv, "override", 0 )
+new_loop_close = parse_options( argv, "new_loop_close", 0 )
 
 if ( len( argv ) > 1 ): # Should remain with just the first element, the name of this script.
     print " Unrecognized flags?"
@@ -112,6 +120,10 @@ assert( exists( PACK_WEIGHTS ) or exists( DB + "/scoring/weights/"+PACK_WEIGHTS)
 
 fid_dag = open( "protein_build.dag", 'w' )
 fid_dag.write("DOT dag.dot\n")
+
+if no_rm_files:
+    POST_PROCESS_CLUSTER_SCRIPT += ' -no_rm_files'
+    POST_PROCESS_FILTER_SCRIPT += ' -no_rm_files'
 
 if not exists( 'CONDOR/' ):
     system( 'mkdir -p CONDOR' )
@@ -221,9 +233,21 @@ if len(pathway_file) > 0:
 if len( template_pdbs ) > 0:
     template_mappings = {}
     if len( template_mapping_files ) == 0:
-        # Asssume that sequences correspond perfectly.
         template_mapping = {}
-        for m in range( 1, NRES+1 ): template_mapping[ m ] = m
+        if len( template_input_res ) > 0:
+            count = 0
+            check_sub_sequence = ''
+            for m in template_input_res:
+                count += 1
+                template_mapping[ m ] =  count
+                check_sub_sequence += sequence[ m-1 ]
+            template_sequence = get_sequence( template_pdbs[ 0 ] )
+            #print check_sub_sequence
+            #print template_sequence
+            assert( check_sub_sequence == template_sequence )
+        else:
+            # Asssume that sequences correspond perfectly.
+            for m in range( 1, NRES+1 ): template_mapping[ m ] = m
         for n in range( len( template_pdbs) ):
             template_mappings[ template_pdbs[n] ] =  template_mapping
     else:
@@ -316,30 +340,67 @@ def wrap_range( i, j, total_residues = NRES ):
         for m in range( i, total_residues+1 ): x.append( m )
         return x
 
-min_loop_gap = 4
+START_FROM_PDB = len( start_pdb ) > 0
+
+min_loop_gap = 2
+if ( new_loop_close ): min_loop_gap = 4
+
 if LOOP:
     loop_res.sort()
     assert( len( loop_res ) >= min_loop_gap)
     for m in range( len(loop_res)-1): assert( loop_res[m]+1 == loop_res[m+1] )
 
-    assert( len(loop_start_pdb) > 0 )
-    assert( exists( loop_start_pdb ) )
+    assert( START_FROM_PDB )
+    assert( exists( start_pdb ) )
 
-    assumed_start_sequence = ''
     loop_start = loop_res[ 0 ]
     loop_end = loop_res[ -1 ]
-    for m in wrap_range( loop_end+1, loop_start, NRES ):
-        assumed_start_sequence += sequence[m-1]
 
-    actual_start_sequence = get_sequence( loop_start_pdb )
-    assert( assumed_start_sequence == actual_start_sequence )
+    start_res = wrap_range( loop_end+1, loop_start, NRES )
 
-    if len( superimpose_res ) == 0:
-        superimpose_res = wrap_range( loop_end+1, loop_start, NRES )
-    if len( fixed_res ) == 0 and not no_fixed_res:
-        fixed_res = wrap_range( loop_end+1, loop_start, NRES )
     if len( calc_rms_res ) == 0:
         calc_rms_res = range( loop_start, loop_end+1 )
+
+    if len( superimpose_res ) == 0:
+        superimpose_res = start_res
+
+if START_FROM_PDB and len( start_res ) == 0:
+    start_sequence = get_sequence( start_pdb )
+    nres_start = len( start_sequence )
+    found_match = 0
+    for i in range( NRES - nres_start + 1):
+        if (sequence[ i:(i+nres_start) ] == start_sequence):
+            found_match = 1
+            break
+    assert( found_match )
+    start_res = range( i+1, (i+nres_start+1) )
+
+    print "Figure out that starting pdb %s has residues %d-%d" % ( start_pdb, i+1, i+nres_start )
+
+if START_FROM_PDB:
+    assumed_start_sequence = ''
+    for m in start_res:
+        assumed_start_sequence += sequence[m-1]
+
+    actual_start_sequence = get_sequence( start_pdb )
+    assert( assumed_start_sequence == actual_start_sequence )
+
+    if len( fixed_res ) == 0 and not no_fixed_res:
+        fixed_res = start_res
+
+    if len( endpoints ) > 0 and ( start_res[0] not in endpoints ):
+        print "Adding ", start_res[0], " to endpoints"
+        endpoints.append( start_res[0] )
+    if len( endpoints ) > 0 and ( start_res[-1] not in endpoints ):
+        print "Adding ", start_res[-1], " to endpoints"
+        endpoints.append( start_res[-1] )
+
+
+if len( virtual_res ) > 0:
+    for k in virtual_res:
+        if k not in skip_res:
+            skip_res.append( k )
+    skip_res.sort()
 
 ##########################
 # BASIC COMMAND
@@ -405,24 +466,44 @@ for L in range( min_length, max_length + 1 ):
         i = k
         j = i + chunk_length - 1
         if ( j > NRES ): j -= NRES
+        res_to_be_modeled = wrap_range(i,j+1,NRES)
 
-        if ( not LOOP and ( i < MIN_RES or j > MAX_RES ) ): continue
+        if ( not LOOP and ( i < MIN_RES or j > MAX_RES or i > j ) ): continue
+
+        if START_FROM_PDB: #If loop, START_FROM_PDB will be true. Also, if -start_pdb is supplied from command line.
+            contains_start_region = 1
+            for m in start_res:
+                if m not in res_to_be_modeled:
+                    contains_start_region = 0
+                    break
+            if ( not contains_start_region ): continue
+
+        loop_close = (i == j+1)
 
         if LOOP:
-            if ( i > (loop_end+1)   or i < loop_start ): continue
-            #if ( j < (loop_start-1) or j > (loop_end-min_loop_gap ) ): continue
+            # pretty reasonable definition of i and j in loop or at boundary
+            if ( i > (loop_end+1)   or i < (loop_start+1) ): continue
             if ( j < (loop_start-1) or j > (loop_end-2 ) ): continue
-            #if not( ( i == j+1 and j < (loop_end-min_loop_gap+1) )   or ( i - j >= min_loop_gap): continue
-            if not( ( i == j+1 and j < (loop_end-1) )   or ( (i - j) >= 2 ) ): continue
-            if (not loop_force_Nsquared) and  ( i != j+1 ) and not ( i == loop_end+1 or j == loop_start-1): continue
 
+            #if not( ( loop_close and j < (loop_end-1) )   or ( (i - j) >= 2 ) ): continue
+            # To close loop, must have at least a little bit built from either end.
+            if ( loop_close and ( i > loop_end or j < loop_start ) ): continue
+
+            # Unless special O(N^2) type run (sample little bits of loop in both forward and reverse directions ),
+            #  force either i or j to be at boundary.
+            if (not loop_force_Nsquared) and  ( not loop_close ) and not ( i == loop_end+1 or j == loop_start-1): continue
+
+
+        if len( endpoints ) > 0:
+            if ( i not in endpoints ): continue
+            if ( j not in endpoints ): continue
 
         #ZIGZAG!! special case for beta hairpins.
         if ( ZIGZAG and abs( ( i - MIN_RES ) - ( MAX_RES - j ) ) > 1 ) : continue
 
         if follow_path and ( [i,j] not in pathway_regions ): continue
 
-        if ( i in virtual_res or j in virtual_res ): continue
+        if ( i in skip_res or j in skip_res ): continue
 
         overall_job_tag = 'REGION_%d_%d' % (i,j)
 
@@ -437,10 +518,6 @@ for L in range( min_length, max_length + 1 ):
             continue
         else:
             print
-
-        # OUTPUT DIRECTORY
-        if not( exists( overall_job_tag) ):
-            system( 'mkdir -p ' + overall_job_tag )
 
         termini_tag = ""
         if ( i == 1 ): termini_tag += " -n_terminus"
@@ -472,26 +549,27 @@ for L in range( min_length, max_length + 1 ):
             if prev_job_tag in all_job_tags:   start_regions.append( [i_prev, j_prev ] )
 
         # One more possibility -- if we contain a long segment of virtual residues.
-        virtual_sub_segment = []
+        skip_sub_segment = []
         for m in wrap_range(i,j+1):
-            if m in virtual_res: virtual_sub_segment.append( m )
-        if len( virtual_sub_segment ) > 0 :
-            virtual_start = virtual_sub_segment[0]
-            virtual_end   = virtual_sub_segment[-1]
-            if ( j - virtual_end ) <= MAX_FRAGMENT_OVERLAP:
+            if m in skip_res: skip_sub_segment.append( m )
+        if len( skip_sub_segment ) > 0 and ( not loop_close ):
+            skip_sub_segment.sort()
+            skip_start = skip_sub_segment[0]
+            skip_end   = skip_sub_segment[-1]
+            if (j > skip_end ) and ( j - skip_end ) <= MAX_FRAGMENT_OVERLAP:
                 i_prev = i
-                for j_prev in wrap_range( virtual_start - MAX_FRAGMENT_OVERLAP, virtual_start+1 ):
+                for j_prev in wrap_range( skip_start - MAX_FRAGMENT_OVERLAP, skip_start+1 ):
                     if ( [i_prev, j_prev ] in start_regions ): continue
                     prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
                     if prev_job_tag in all_job_tags: start_regions.append( [i_prev, j_prev ] )
-                    print ' -- long frag to bridge over virtual segment. start from:  %d-%d' % (i_prev,j_prev)
-            if ( virtual_start-i ) <= MAX_FRAGMENT_OVERLAP:
+                    print ' -- long frag to bridge over skip segment. start from:  %d-%d' % (i_prev,j_prev)
+            if (i < skip_start ) and ( skip_start-i ) <= MAX_FRAGMENT_OVERLAP:
                 j_prev = j
-                for i_prev in wrap_range( virtual_end+1, virtual_end+MAX_FRAGMENT_OVERLAP+1):
+                for i_prev in wrap_range( skip_end+1, skip_end+MAX_FRAGMENT_OVERLAP+1):
                     if ( [i_prev, j_prev ] in start_regions ): continue
                     prev_job_tag = 'REGION_%d_%d' % (i_prev,j_prev)
                     if prev_job_tag in all_job_tags: start_regions.append( [i_prev, j_prev ] )
-                    print ' -- long frag to bridge over virtual segment. start from:  %d-%d' % (i_prev,j_prev)
+                    print ' -- long frag to bridge over skip segment. start from:  %d-%d' % (i_prev,j_prev)
 
 
         job_tags = []
@@ -504,13 +582,13 @@ for L in range( min_length, max_length + 1 ):
         ########################################################
 
         prev_job_tags = []
-        if LOOP:
+        if START_FROM_PDB:
 
-            if ( j == loop_start-1 and i == loop_end+1 ):
-                sub_job_tag = "START_FROM_LOOP_START_PDB"
+            if ( res_to_be_modeled == start_res ):
+                sub_job_tag = "START_FROM_START_PDB"
 
                 args2 = args
-                args2 += ' -s1 ' + loop_start_pdb
+                args2 += ' -s1 ' + start_pdb
                 args2 += ' -input_res1 '
                 for k in wrap_range(i, j+1): args2 += ' %d' % k
                 args2 += ' -use_packer_instead_of_rotamer_trials'
@@ -594,7 +672,7 @@ for L in range( min_length, max_length + 1 ):
         # This is meant for O(N) loop modeling -- build forward,
         #  build backward and meet in the middle.
         ########################################################
-        if LOOP and ( i == j+1 ) and (not no_fixed_res) and ( j >= loop_start and i <= loop_end) : # special, chain closure!
+        if LOOP and ( loop_close ) and (not no_fixed_res) and ( j >= loop_start and i <= loop_end) : # special, chain closure!
             # old-style: close the loop
             job_tag1 = "REGION_%d_%d" % ( i+1,     loop_start-1 )
             job_tag2 = "REGION_%d_%d" % ( loop_end+1, j       )
@@ -618,8 +696,10 @@ for L in range( min_length, max_length + 1 ):
                 args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
                 args2 += " -cutpoint_closed %d " % (j+1)
 
-                args2 += " -sample_res"
-                for m in range( 1, NRES+1): args2 += " %d" % m
+                args2 += " -global_optimize"
+
+                #args2 += " -sample_res"
+                #for m in range( 1, NRES+1): args2 += " %d" % m
 
                 prev_job_tags = [ job_tag1, job_tag2 ]
                 setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
@@ -639,26 +719,51 @@ for L in range( min_length, max_length + 1 ):
             infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
             input_res1 =  wrap_range( i_prev, j_prev+1 )
 
-            if ( i == j+1 and LOOP ):
-                if ( j == j_prev ) and (i_prev == (j + min_loop_gap) ): # close the loop
-                    #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
-                    #  believe its psi, omega.
-                    sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP' % ( i_prev, j_prev )
+            if ( loop_close and LOOP ):
 
-                    decoy_tag = 'S_$(Process)'
+                if new_loop_close:
+                    if ( j == j_prev ) and (i_prev == (j + min_loop_gap) ): # close the loop
+                        #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
+                        #  believe its psi, omega.
+                        sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP' % ( i_prev, j_prev )
 
-                    args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
-                    args2 += " -input_res1 "
-                    for m in input_res1: args2 += ' %d' % m
+                        decoy_tag = 'S_$(Process)'
 
-                    args2 += " -sample_res"
-                    if ( j not in fixed_res ): args2 += " %d" % j
-                    args2 +=" %d" % (j+1)
-                    args2 += " -bridge_res %d %d %d" % (j+2,j+3,j+4)
-                    args2 += " -cutpoint_closed %d " % (j+1)
+                        args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
+                        args2 += " -input_res1 "
+                        for m in input_res1: args2 += ' %d' % m
 
-                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
-                                                         fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+                        args2 += " -sample_res"
+                        if ( j not in fixed_res ): args2 += " %d" % j
+                        args2 +=" %d" % (j+1)
+                        args2 += " -bridge_res %d %d %d" % (j+2,j+3,j+4)
+                        args2 += " -cutpoint_closed %d " % (j+1)
+
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+                else:
+                    if ( j == j_prev ) and  (i_prev == j+2) and ( j > loop_start) and (i < loop_end):
+                        #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
+                        #  believe its psi, omega.
+                        sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP' % ( i_prev, j_prev )
+
+                        decoy_tag = '' #Should be super fast.
+
+                        args2 = '%s  -silent1 %s ' % (args, infile )
+                        args2 += " -input_res1 "
+                        for m in input_res1: args2 += ' %d' % m
+
+                        #args2 += " -sample_res"
+                        #for m in wrap_range( loop_end, loop_start+1): args2 += " %d" % m
+
+                        args2 += " -global_optimize"
+
+                        args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
+                        args2 += " -cutpoint_closed %d " % (j+1)
+
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
             else:
                 if TEMPLATE:
@@ -753,7 +858,7 @@ for L in range( min_length, max_length + 1 ):
 
 
         do_denovo = DENOVO
-        if not DENOVO and len( combine_files ) == 0:
+        if ( not DENOVO ) and len( combine_files ) == 0 and (not loop_close) and (not override):
             print "No template_jobs for ", overall_job_tag,
             print " ... rescuing the run with denovo!"
             do_denovo = 1
@@ -768,7 +873,7 @@ for L in range( min_length, max_length + 1 ):
 
             if ( abs(i - i_prev ) <= max_res_to_add_denovo and \
                  abs(j - j_prev ) <= max_res_to_add_denovo and
-                 do_denovo ) :
+                 ( not loop_close ) and  do_denovo ) :
 
                 sub_job_tag = 'START_FROM_REGION_%d_%d_DENOVO' % ( i_prev, j_prev )
 
@@ -797,7 +902,14 @@ for L in range( min_length, max_length + 1 ):
         if len( combine_files ) == 0:
             print "PROBLEM: template_jobs for ", overall_job_tag
             print " Possible solution: in fragment library run, specify -min_length (the smallest region modeled) to be the frag size"
+            if loop_close or override:
+                print "OK, this is a loop closing step OR override ... no exit."
+                continue
             exit( 0 )
+
+        # OUTPUT DIRECTORY
+        if not( exists( overall_job_tag) ):
+            system( 'mkdir -p ' + overall_job_tag )
 
         ################################################################
         # CLUSTER! And keep a small number of representatives (400)

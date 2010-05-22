@@ -6,21 +6,29 @@ import string
 from os import system
 from os.path import basename, dirname, exists, expanduser
 from time import sleep
+from parse_options import parse_options
 
-RM_FILES = 1
+# By default remove files.
+RM_FILES = not(  parse_options( argv, "no_rm_files", 0 ) )
 
 indir_prefix = argv[1]
 
-globstring = indir_prefix+'*/*sample.out'
-print globstring
-
+globstring = indir_prefix+'/*sample.out'
+#print globstring
 globfiles = glob( globstring )
+
+globstring = indir_prefix+'_S_*/*sample.out'
+#print globstring
+globfiles2 = glob( globstring )
+for file in globfiles2: globfiles.append( file )
+
+
 if len( globfiles ) == 0:
     sleep( 5 )
     globfiles = glob( globstring )
 globfiles.sort()
 
-#print globfiles
+print globfiles
 
 cat_outfile = dirname( indir_prefix) + '/' + basename(indir_prefix).lower() + '_sample.out'
 
@@ -31,10 +39,13 @@ command = PYDIR+'/cat_outfiles.py '+string.join( globfiles ) + ' -o ' + cat_outf
 print( command )
 system( command )
 
-
-globstring = indir_prefix+'*'
+globstring = indir_prefix
 globfiles = glob( globstring )
 globfiles.sort()
+
+globstring = indir_prefix+'_S_*'
+globfiles2 = glob( globstring )
+for file in globfiles2: globfiles.append( file )
 
 if RM_FILES:
     for globfile in globfiles:

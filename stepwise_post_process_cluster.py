@@ -6,6 +6,10 @@ import string
 from os import system,chdir,getcwd
 from os.path import basename, dirname, exists, expanduser
 from time import sleep
+from parse_options import parse_options
+
+# By default remove files.
+RM_FILES = not(  parse_options( argv, "no_rm_files", 0 ) )
 
 outfile_cluster = argv[1]
 outdir = argv[2]
@@ -25,31 +29,7 @@ assert( exists( PYDIR ) )
 
 wait_for_file( outfile_cluster )
 
-#####################
-#####################
-#####################
-# early return --
-#  no longer extracting
-#  PDBs.
-#####################
-#####################
-exit()
-
-
-command = 'mv '+outfile_cluster+' '+outdir
-print( command )
-system( command )
-
-chdir( outdir )
-
-wait_for_file( outfile_cluster )
-
-command = PYDIR+'/extract_lowscore_decoys.py -start_at_zero '+outfile_cluster+' 400'
-print( command )
-system( command )
-
-command = 'mv '+outfile_cluster+' ..'
-print( command )
-system( command )
-
-
+if RM_FILES:
+    command = 'rm -rf '+outdir
+    print command
+    system( command )
