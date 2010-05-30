@@ -19,7 +19,7 @@ else:
     outid = sys.stdout
 
 if fragfilefile[-2:] == 'gz':
-    lines = popen('zcat '+fragfilefile).readlines()
+    lines = popen('gzcat '+fragfilefile).readlines()
     fragfilefile = fragfilefile[:-3]
 else:
     lines = open(fragfilefile).readlines()

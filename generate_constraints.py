@@ -40,10 +40,15 @@ def get_dist( pos1, pos2 ):
 
     return sqrt( dist2 )
 
-def write_function( fid, dist, fade, stdev_to_use, cst_depth ):
+def write_function( fid, dist, fade, stdev_to_use, cst_depth, tight_fade ):
     if fade:
-        stdout.write( " FADE %8.3f %8.3f %8.3f" %
-                          ( dist - 2*stdev_to_use, dist + 2*stdev_to_use, stdev_to_use ) )
+        stdout.write( " FADE" )
+        if tight_fade:
+            stdout.write( " %8.3f %8.3f %8.3f" %
+                      ( dist - 2 * stdev_to_use, dist + 2 * stdev_to_use, 2*stdev_to_use ) )
+        else:
+            stdout.write( " %8.3f %8.3f %8.3f" %
+                           ( dist - 2*stdev_to_use, dist + 2*stdev_to_use, stdev_to_use ) )
 
         if not ( cst_depth == 0.0 ):
             stdout.write( " %8.2f 0.0 \n" % cst_depth )
@@ -51,6 +56,7 @@ def write_function( fid, dist, fade, stdev_to_use, cst_depth ):
             stdout.write( " -10.0 10.0 \n" )
 
     else:
+        assert( not tight_fade )
         if( cst_depth != 0.0 ):
             print 'should not supply cst_depth with harmonic constraints!'
             exit( 0 )
@@ -73,6 +79,7 @@ def generate_constraints( argv, atom_names_in1, atom_names_in2, dist_cut_default
     anchor_atom_name = parse_options( argv, "anchor_atom", " CA " )
     anchor_resnum = parse_options( argv, 'anchor_res', 0 )
     cst_depth = parse_options( argv, 'cst_depth', 999.9 )
+    tight_fade = parse_options( argv, 'tight_fade', 0 )
     if (cst_depth == 999.9) : cst_depth = 0.0
 
     if ( DIST_CUT == 0.0 and len( atom_names_in2) == 0 ): COORD_CST = 1 #signal to use coordinate constraints
@@ -138,7 +145,7 @@ def generate_constraints( argv, atom_names_in1, atom_names_in2, dist_cut_default
                              positions1[ i ][1],
                              positions1[ i ][2] ) )
 
-            write_function( stdout, 0.0, fade, stdev_to_use, cst_depth )
+            write_function( stdout, 0.0, fade, stdev_to_use, cst_depth, tight_fade )
 
     else: # AtomPairs.
         stdout.write( "[ atompairs ]\n" )
@@ -173,7 +180,7 @@ def generate_constraints( argv, atom_names_in1, atom_names_in2, dist_cut_default
                         fid.write('dist CST, resi %d and name %s, resi %d and name %s\n' % (res1, atom1, res2, atom2 ))
 
                     stdout.write( " %s %d   %s %d  " %   ( atom1, res1, atom2, res2 ) )
-                    write_function( stdout, dist, fade, stdev_to_use, cst_depth )
+                    write_function( stdout, dist, fade, stdev_to_use, cst_depth, tight_fade )
 
         fid.write( 'hide labels, CST\n')
         fid.write( 'hide labels, LOOSE_CST\n')

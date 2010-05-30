@@ -14,7 +14,7 @@ outfiles = []
 
 in_pdb = 0
 writeout = 0
-#init = 1
+init = 0
 
 for line in lines:
     if line[0:6] == 'ENDMDL' or line[0:5] == 'MODEL' and in_pdb:

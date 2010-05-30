@@ -19,14 +19,18 @@ else:
     outid = sys.stdout
 
 if psipred_ss2file[-2:] == 'gz':
-    lines = popen('zcat '+psipred_ss2file).readlines()
+    lines = popen('gzcat '+psipred_ss2file).readlines()
 else:
     lines = open(psipred_ss2file).readlines()
 
 
-for i in range( len(lines)):
-    line = lines[i]
-    if i+1 >= startseq and i+1 <= endseq:
+for line in lines[:2]:
+    outid.write(line)
+
+count = 0
+for line in lines[2:]:
+    count += 1
+    if count >= startseq and count <= endseq:
         outid.write(line)
 
 outid.close()

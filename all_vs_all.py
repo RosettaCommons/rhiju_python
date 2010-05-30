@@ -30,7 +30,10 @@ for i in range(len(lines)):
     for j in range(i, len(lines)):
         line2 = lines[j]
 
-        command = '~rhiju/python/superimpose.py %s %s  %s -R %d > q 2> blah.err' % (line1,line2,subset_tag,rmsd_threshold)
+        if ( rmsd_threshold == 8.0 ):
+            command = '~rhiju/python/superimpose.py %s %s  %s > q 2> blah.err' % (line1,line2,subset_tag)
+        else:
+            command = '~rhiju/python/superimpose.py %s %s  %s -R %6.2f > q 2> blah.err' % (line1,line2,subset_tag,rmsd_threshold)
 #        print(command)
         system(command)
 
@@ -69,6 +72,24 @@ for line1 in lines:
     for line2 in lines:
         print '%4.2f' % fit_threshold_save[line1][line2],
     print
+
+print
+
+
+mean_rmsds = []
+for line1 in lines:
+    mean_rmsd = 0.0
+    for line2 in lines:
+        mean_rmsd += fit_threshold_save[ line1 ][ line2 ]
+    mean_rmsd /= (len( lines ) - 1 )
+    mean_rmsds.append( [mean_rmsd, line1] )
+
+mean_rmsds.sort()
+for i in range( len(mean_rmsds) ):
+    line1 = mean_rmsds[i][1]
+    mean_rmsd = mean_rmsds[i][0]
+    print '%s' % line1+blanks[len(line1):maxlen],
+    print '%4.2f' % mean_rmsd
 
 command = 'rm -rf maxsub*pdb blah*pdb'
 system(command)

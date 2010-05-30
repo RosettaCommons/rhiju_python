@@ -19,7 +19,7 @@ else:
     outid = sys.stdout
 
 if fastafile[-2:] == 'gz':
-    lines = popen('zcat '+fastafile).readlines()
+    lines = popen('gzcat '+fastafile).readlines()
 else:
     lines = open(fastafile).readlines()
 

@@ -22,7 +22,7 @@ else:
 
 
 if pdbfile[-2:] == 'gz':
-    lines = popen('zcat '+pdbfile).readlines()
+    lines = popen('gzcat '+pdbfile).readlines()
 else:
     lines = open(pdbfile).readlines()
 
