@@ -49,6 +49,8 @@ fastaid.write('>'+pdbname+'\n');
 oldresnum = '   '
 count = 0;
 
+change_names = { 'NGL':'GLY','LYP':'LYS','CYX':'CYS'}
+
 if chainid == '_':
     chainid = ' '
 
@@ -84,6 +86,9 @@ for i in range(len(lines)):
                     i += 1
                     line = lines[i]
                     resnum = line_edit[23:26]
+
+            if (line[17:20] in change_names.keys() ): #Selenomethionine
+                line_edit = 'ATOM  '+line[6:17]+ change_names[ line[17:20] ] +line[20:]
 
             resnum = line_edit[23:26]
             if not resnum == oldresnum:

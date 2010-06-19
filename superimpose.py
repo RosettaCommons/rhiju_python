@@ -93,7 +93,7 @@ if args.count('-subset'):
     pos = args.index('-subset')
     del args[pos]
     use_subset = 1
-    stderr.write( 'using a subset of residues: '  )
+    #stderr.write( 'using a subset of residues: '  )
     goodint = 1
     while goodint:
         try:
@@ -102,11 +102,11 @@ if args.count('-subset'):
             subset_residues.append( subset_residue )
             #subset_residues.append( subset_residue - 1 )
             #subset_residues.append( subset_residue + 1)
-            stderr.write('%d ' % subset_residue )
+            #stderr.write('%d ' % subset_residue )
         except:
             goodint = 0
 
-    stderr.write( '\n'  )
+    #stderr.write( '\n'  )
 
 if args.count('-1'):
     del args[args.index('-1')]
@@ -170,6 +170,7 @@ for pdb in pdb_list[1:]:
 #                  %(pdb1,pdb)
 
     #stderr.write(command+'\n')
+    print command
     lines = popen(command).readlines()
 
     if slice:
@@ -178,6 +179,8 @@ for pdb in pdb_list[1:]:
 
     if use_subset:
         command = 'rm blah_'+pdb1
+        system(command)
+        command = 'rm blah_'+pdb
         system(command)
 
     if not lines:
@@ -313,4 +316,4 @@ if CALC_PER_RESIDUE_DEVIATIONS:
         stderr.write('\n')
 
 
-system('rm maxsub_sup.pdb maxsub_sup2.pdb rasmol.tcl')
+system('rm -rf maxsub_sup.pdb maxsub_sup2.pdb rasmol.tcl')

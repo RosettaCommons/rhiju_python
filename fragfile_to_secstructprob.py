@@ -37,7 +37,7 @@ def Read_fragments(fragment_file):
 
     base = string.split(fragment_file,'/')[-1]
     if fragment_file[-3:] == '.gz':
-        data = popen('zcat '+fragment_file)
+        data = popen('gzcat '+fragment_file)
         size = int(base[-17:-15])
     else:
         data = open(fragment_file,'r')

@@ -36,7 +36,9 @@ else:
 
 fastaid = stderr
 num_model = 0
-max_model = 60 # for virus
+
+#max_model = 60 # for virus
+max_model = 0 # for virus
 
 for pdbname in pdbnames:
     #netpdbname = '/net/pdb/' + pdbname[1:3] + '/' + pdbname
@@ -44,14 +46,17 @@ for pdbname in pdbnames:
     netpdbname = pdbname
 
     print 'Reading ... '+netpdbname
+    if not exists( netpdbname ):
+        print 'DOES NOT EXIST: ', netpdbname
+        continue
 
     if ( netpdbname[-3:] == '.gz' ):
         lines = popen( 'gzcat '+netpdbname ).readlines()
     else:
         lines = open(netpdbname,'r').readlines()
 
-    outfile = pdbname
-    outfile = dirname( abspath(outfile) ) + '/' + string.lower( basename(outfile) )
+    outfile = string.lower( basename( pdbname ) )
+    #outfile = dirname( abspath(outfile) ) + '/' + string.lower( basename(outfile) )
     outfile = outfile.replace( '.pdb', '_RNA.pdb').replace('.gz','');
     outid = open( outfile, 'w')
 

@@ -13,18 +13,18 @@ if argv.count('-subset'):
     pos = argv.index('-subset')
     del argv[pos]
 
-    stderr.write( 'PDBSLICE using a subset of residues: '  )
+    #stderr.write( 'PDBSLICE using a subset of residues: '  )
     goodint = 1
     while goodint:
         try:
             subset_residue = int(argv[pos])
             subset_residues.append( subset_residue )
             del argv[pos]
-            stderr.write('%d ' % subset_residue )
+            #stderr.write('%d ' % subset_residue )
         except:
             goodint = 0
 
-    stderr.write( '\n'  )
+    #stderr.write( '\n'  )
 
     pdbfiles = argv[1:-1]
 
@@ -40,18 +40,18 @@ if argv.count('-segments'):
     del argv[pos]
 
     segment_residues = []
-    stderr.write( 'PDBSLICE using a subset of residues: '  )
+    #stderr.write( 'PDBSLICE using a subset of residues: '  )
     goodint = 1
     while goodint:
         try:
             segment_residue = int(argv[pos])
             segment_residues.append( segment_residue )
             del argv[pos]
-            stderr.write('%d ' % segment_residue )
+            #stderr.write('%d ' % segment_residue )
         except:
             goodint = 0
 
-    stderr.write( '\n'  )
+    #stderr.write( '\n'  )
 
     pdbfiles = argv[1:-1]
 
@@ -71,18 +71,18 @@ if argv.count('-excise'):
     pos = argv.index('-excise')
     del argv[pos]
 
-    stderr.write( 'PDBSLICE using a excise of residues: '  )
+    #stderr.write( 'PDBSLICE using a excise of residues: '  )
     goodint = 1
     while goodint:
         try:
             excise_residue = int(argv[pos])
             excise_residues.append( excise_residue )
             del argv[pos]
-            stderr.write('%d ' % excise_residue )
+            #stderr.write('%d ' % excise_residue )
         except:
             goodint = 0
 
-    stderr.write( '\n'  )
+    #stderr.write( '\n'  )
 
     pdbfiles = argv[1:-1]
 

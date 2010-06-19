@@ -254,7 +254,7 @@ for infile in infiles:
                   ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
         if output_virtual: command += " -output_virtual "
 
-        if (scoretags.count('cenpack')): command += ' -out:file:residue_type_set centroid '
+        if (scoretags.count('vdw')): command += ' -out:file:residue_type_set centroid '
 
 
     print(command)
