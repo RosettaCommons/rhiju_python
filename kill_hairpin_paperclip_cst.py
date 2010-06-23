@@ -6,7 +6,8 @@ import string
 
 dist_cutoff = parse_options( argv, 'dist_cutoff', 6.5 )
 dist_fade   = parse_options( argv, 'dist_fade', 2.0 )
-penalty     = parse_options( argv, 'penalty', 1.0 )
+penalty     = parse_options( argv, 'penalty', 2.0 )
+allow_hairpin = parse_options( argv, 'allow_hairpin', [-1] )
 
 assert( len( argv ) == 2 )
 
@@ -21,17 +22,42 @@ for line in lines:
 
 #print strands
 
+ok_hairpins = []
+for n in range( len(allow_hairpin)/2 ):
+    ok_hairpins.append( allow_hairpin[2*n : 2*n+2] )
+
 numstrands = len( strands )
 
 print '[ atompairs ]'
+
+###################
+# Kill self-strands
+###################
+for n in range( numstrands  ):
+
+    for i in range( strands[n][0], strands[n][1]+1 ):
+        for j in range( strands[n][0], strands[n][1]+1 ):
+            if ( i >= j ): continue
+            print '%s %d %s %d   FADE %8.3f %8.3f %8.3f %8.3f' % \
+                ( 'CA',i,'CA',j, -1 * dist_cutoff, dist_cutoff, dist_fade, penalty )
+
 
 
 ###################
 # Kill hairpins.
 ###################
 for n in range( numstrands  - 1 ):
+
+    allow_it = 0
+    for hairpin in ok_hairpins:
+        if ( n+1 == hairpin[0] and n+2 == hairpin[1] ): allow_it = 1
+        if ( n+2 == hairpin[0] and n+1 == hairpin[1] ): allow_it = 1
+    if allow_it: continue
+
+
     for i in range( strands[n][0], strands[n][1]+1 ):
         for j in range( strands[n+1][0], strands[n+1][1]+1 ):
+
             print '%s %d %s %d   FADE %8.3f %8.3f %8.3f %8.3f' % \
                 ( 'CA',i,'CA',j, -1 * dist_cutoff, dist_cutoff, dist_fade, penalty )
 
