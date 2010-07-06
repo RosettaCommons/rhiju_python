@@ -9,6 +9,10 @@ from time import sleep
 from parse_options import parse_options
 from get_sequence import get_sequence
 
+###################
+# Clusterer fix
+###################
+FIX_CALC_RMS_TAG = 1
 
 fasta_file = parse_options( argv, "fasta", "1shf.fasta" )
 assert( exists( fasta_file ) )
@@ -43,7 +47,7 @@ cluster_by_all_atom_rmsd = parse_options( argv, "cluster_by_all_atom_rmsd", 0 )
 add_peptide_plane = parse_options( argv, "add_peptide_plane", 0 ) #Now defunct!
 no_peptide_plane = parse_options( argv, "no_peptide_plane", 0 )
 BUILD_BOTH_TERMINI = parse_options( argv, "build_both_termini", 0 )
-MAX_ADDED_SEGMENT = parse_options( argv, "max_added_segment", 16 )
+MAX_ADDED_SEGMENT = parse_options( argv, "max_added_segment", 20 )
 min_length = parse_options( argv, "min_length", 2 )
 max_length = parse_options( argv, "max_length", 0 )
 superimpose_res = parse_options( argv, "superimpose_res", [ -1 ] )
@@ -61,12 +65,15 @@ no_fixed_res = parse_options( argv, "no_fixed_res", 0 )
 calc_rms_res = parse_options( argv, "calc_rms_res", [-1] )
 start_res = parse_options( argv, "start_res", [-1] )
 start_pdb = parse_options( argv, "start_pdb", "" )
-start_pdb = parse_options( argv, "loop_start_pdb", start_pdb )
+loop_start_pdb = parse_options( argv, "loop_start_pdb", "" )
 endpoints = parse_options( argv, "endpoints",[-1] )
 loop_res = parse_options( argv, "loop_res", [-1] )
 loop_force_Nsquared = parse_options( argv, "loop_force_Nsquared", 0 )
 override = parse_options( argv, "override", 0 )
 new_loop_close = parse_options( argv, "new_loop_close", 0 )
+cutpoints_open = parse_options( argv, "cutpoint_open", [ -1 ] )
+only_go_midway = parse_options( argv, "only_go_midway", 0 )
+centroid = parse_options( argv, "centroid", 0 )
 
 if ( len( argv ) > 1 ): # Should remain with just the first element, the name of this script.
     print " Unrecognized flags?"
@@ -77,7 +84,11 @@ DENOVO = ( max_res_to_add_denovo > 0 )
 TEMPLATE = len( template_pdbs ) > 0
 FRAGMENT_LIBRARY = len( frag_files ) > 0
 SWA_FRAGS = len( swa_frag_lengths ) > 0
-LOOP = len( loop_res ) > 0
+
+LOOP = 0
+if len( loop_start_pdb ) > 0:
+    LOOP = 1
+    start_pdb = loop_start_pdb
 
 for template_pdb in template_pdbs: assert( exists( template_pdb ) )
 for frag_file in frag_files: assert( exists( frag_file ) )
@@ -122,8 +133,8 @@ fid_dag = open( "protein_build.dag", 'w' )
 fid_dag.write("DOT dag.dot\n")
 
 if no_rm_files:
-    POST_PROCESS_CLUSTER_SCRIPT += ' -no_rm_files'
-    POST_PROCESS_FILTER_SCRIPT += ' -no_rm_files'
+    POST_PROCESS_CLUSTER_SCRIPT += ' -no_rm_files 1'
+    POST_PROCESS_FILTER_SCRIPT += ' -no_rm_files 1'
 
 if not exists( 'CONDOR/' ):
     system( 'mkdir -p CONDOR' )
@@ -295,6 +306,7 @@ if len( frag_lengths ) == 0:
         assert( pos > 0 )
         frag_length = int( frag_file[pos-2 : pos] )
         frag_lengths.append( frag_length )
+
 assert( len( frag_lengths ) == len( frag_files ) )
 
 
@@ -345,11 +357,13 @@ START_FROM_PDB = len( start_pdb ) > 0
 min_loop_gap = 2
 if ( new_loop_close ): min_loop_gap = 4
 
+cutpoint_open_in_loop = 0
 if LOOP:
     loop_res.sort()
     assert( len( loop_res ) >= min_loop_gap)
     for m in range( len(loop_res)-1): assert( loop_res[m]+1 == loop_res[m+1] )
 
+    start_pdb
     assert( START_FROM_PDB )
     assert( exists( start_pdb ) )
 
@@ -364,6 +378,9 @@ if LOOP:
     if len( superimpose_res ) == 0:
         superimpose_res = start_res
 
+    for m in range( loop_start-1, loop_end+1 ):
+        if m in cutpoints_open: cutpoint_open_in_loop = 1
+
 if START_FROM_PDB and len( start_res ) == 0:
     start_sequence = get_sequence( start_pdb )
     nres_start = len( start_sequence )
@@ -375,18 +392,29 @@ if START_FROM_PDB and len( start_res ) == 0:
     assert( found_match )
     start_res = range( i+1, (i+nres_start+1) )
 
+    if FIX_CALC_RMS_TAG and len( calc_rms_res ) == 0:
+        if ( i > 1 ):
+            calc_rms_res = range( 1, i+1 )
+        else:
+            assert( i+nres_start+1 < NRES )
+            calc_rms_res = range( i+nres_start+1, NRES+1 )
+
     print "Figure out that starting pdb %s has residues %d-%d" % ( start_pdb, i+1, i+nres_start )
 
 if START_FROM_PDB:
     assumed_start_sequence = ''
+    #print start_res
     for m in start_res:
         assumed_start_sequence += sequence[m-1]
 
     actual_start_sequence = get_sequence( start_pdb )
+    #print assumed_start_sequence
+    #print actual_start_sequence
     assert( assumed_start_sequence == actual_start_sequence )
 
     if len( fixed_res ) == 0 and not no_fixed_res:
-        fixed_res = start_res
+        fixed_res = []
+        for m in start_res: fixed_res.append( m )
 
     if len( endpoints ) > 0 and ( start_res[0] not in endpoints ):
         print "Adding ", start_res[0], " to endpoints"
@@ -396,11 +424,17 @@ if START_FROM_PDB:
         endpoints.append( start_res[-1] )
 
 
-if len( virtual_res ) > 0:
-    for k in virtual_res:
-        if k not in skip_res:
-            skip_res.append( k )
-    skip_res.sort()
+for k in virtual_res:
+    if k not in skip_res:  skip_res.append( k )
+skip_res.sort()
+
+for k in skip_res:
+    if (k not in fixed_res):  fixed_res.append( k )
+fixed_res.sort()
+
+if centroid:
+    PACK_WEIGHTS =  'score3_with_cst.wts'
+    SCORE_WEIGHTS = 'score3_min.wts'
 
 ##########################
 # BASIC COMMAND
@@ -439,6 +473,12 @@ if len( fixed_res ) > 0:
 if len( calc_rms_res ) > 0:
     args += ' -calc_rms_res '
     for k in calc_rms_res: args += '%d ' % k
+if len( cutpoints_open ) > 0:
+    args += ' -cutpoint_open '
+    for cutpos in cutpoints_open: args += '%d ' % cutpos
+if centroid:
+    args += ' -centroid '
+    #args += ' -centroid -skip_minimize '
 
 args_START = args
 
@@ -446,6 +486,11 @@ if AUTO_TUNE:
     cluster_tag = ' -auto_tune '
 else:
     cluster_tag = ' -cluster:radius %s ' % CLUSTER_RADIUS
+
+
+if FIX_CALC_RMS_TAG and len( calc_rms_res ) > 0:
+    cluster_tag += ' -calc_rms_res'
+    for k in calc_rms_res: cluster_tag += ' %d' % k
 
 cluster_by_all_atom_rmsd_tag = ''
 if cluster_by_all_atom_rmsd: cluster_by_all_atom_rmsd_tag = ' -cluster_by_all_atom_rmsd '
@@ -458,9 +503,11 @@ if cluster_by_all_atom_rmsd: cluster_by_all_atom_rmsd_tag = ' -cluster_by_all_at
 
 if (max_length == 0): max_length = NRES
 for L in range( min_length, max_length + 1 ):
-
     chunk_length = L;
     #num_chunks = ( len( sequence) - chunk_length) + 1
+
+    #print L
+    if START_FROM_PDB and L < len( start_res ): continue
 
     for k in range( 1, NRES + 1 ) :
         i = k
@@ -469,6 +516,7 @@ for L in range( min_length, max_length + 1 ):
         res_to_be_modeled = wrap_range(i,j+1,NRES)
 
         if ( not LOOP and ( i < MIN_RES or j > MAX_RES or i > j ) ): continue
+        if ( i in skip_res or j in skip_res ): continue
 
         if START_FROM_PDB: #If loop, START_FROM_PDB will be true. Also, if -start_pdb is supplied from command line.
             contains_start_region = 1
@@ -481,9 +529,29 @@ for L in range( min_length, max_length + 1 ):
         loop_close = (i == j+1)
 
         if LOOP:
+
+            found_cutpoint_open = 0
+            for m in range( loop_start-1, j):
+                if m in cutpoints_open:
+                    found_cutpoint_open = 1
+                    break
+            for m in range( i, loop_end+1):
+                if m in cutpoints_open:
+                    found_cutpoint_open = 1
+                    break
+            if found_cutpoint_open: continue
+
             # pretty reasonable definition of i and j in loop or at boundary
-            if ( i > (loop_end+1)   or i < (loop_start+2) ): continue
-            if ( j < (loop_start-1) or j > (loop_end-2 ) ): continue
+            if ( i > (loop_end+1) ): continue
+            if ( j < (loop_start-1) ): continue
+
+            # How far forward or backward should we build loop?
+            # Can't go all the way to the end -- we need to leave a gap for loop closure.
+            #
+            #  The one special case here is if there is a cutpoint_open at the loop boundary
+            #  we won't close the chain -- we'll just build to the end.
+            if ( not cutpoint_open_in_loop and i < (loop_start+2)   ): continue
+            if ( not cutpoint_open_in_loop and j > (loop_end  -2)   ): continue
 
             # very special case for building termini.
             #if ( loop_start == 1  and j == 1 ): continue
@@ -491,12 +559,19 @@ for L in range( min_length, max_length + 1 ):
 
             #if not( ( loop_close and j < (loop_end-1) )   or ( (i - j) >= 2 ) ): continue
             # To close loop, must have at least a little bit built from either end.
-            if ( loop_close and ( i > loop_end or j < loop_start ) ): continue
+            if ( loop_close and ( i > loop_end or j < loop_start ) and not cutpoint_open_in_loop ): continue
 
             # Unless special O(N^2) type run (sample little bits of loop in both forward and reverse directions ),
             #  force either i or j to be at boundary.
-            if (not loop_force_Nsquared) and  ( not loop_close ) and not ( i == loop_end+1 or j == loop_start-1): continue
+            if (not loop_force_Nsquared) and  (not loop_close) and not ( i == loop_end+1 or j == loop_start-1): continue
 
+            if ( cutpoint_open_in_loop ): loop_close = 0
+
+            if ( only_go_midway ):
+                if ( i == loop_end+1    and  j > (( loop_start+loop_end)/2 + 1) ): continue
+                if ( j == loop_start-1  and  i < (( loop_start+loop_end)/2 - 1) ): continue
+                if ( loop_close    and  j > (( loop_start+loop_end)/2 + 1) ): continue
+                if ( loop_close    and  i < (( loop_start+loop_end)/2 - 2) ): continue
 
         if len( endpoints ) > 0:
             if ( i not in endpoints ): continue
@@ -506,8 +581,6 @@ for L in range( min_length, max_length + 1 ):
         if ( ZIGZAG and abs( ( i - MIN_RES ) - ( MAX_RES - j ) ) > 1 ) : continue
 
         if follow_path and ( [i,j] not in pathway_regions ): continue
-
-        if ( i in skip_res or j in skip_res ): continue
 
         overall_job_tag = 'REGION_%d_%d' % (i,j)
 
@@ -715,6 +788,7 @@ for L in range( min_length, max_length + 1 ):
         # APPEND OR PREPEND TO PREVIOUS PDB
         #  [I wonder if this could just be unified with above?]
         ###########################################################
+
         for start_region in start_regions:
 
             i_prev = start_region[0]
@@ -805,11 +879,11 @@ for L in range( min_length, max_length + 1 ):
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                              fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
-
                 if FRAGMENT_LIBRARY:
                     for frag_length in frag_lengths:
 
                         ( startpos, endpos, num_overlap_residues ) = check_frag_overlap( i, j, i_prev, j_prev, frag_length )
+
                         if ( num_overlap_residues < 0 or num_overlap_residues > MAX_FRAGMENT_OVERLAP ): continue
 
                         sub_job_tag = 'START_FROM_REGION_%d_%d_FRAGMENT_LIBRARY_%dMER' % ( i_prev, j_prev, frag_length )
@@ -904,10 +978,11 @@ for L in range( min_length, max_length + 1 ):
 
 
         if len( combine_files ) == 0:
+            if loop_close: continue
             print "PROBLEM: template_jobs for ", overall_job_tag
             print " Possible solution: in fragment library run, specify -min_length (the smallest region modeled) to be the frag size"
-            if loop_close or override:
-                print "OK, this is a loop closing step OR override ... no exit."
+            if override:
+                print "OK, override ... no exit."
                 continue
             exit( 0 )
 
@@ -922,6 +997,10 @@ for L in range( min_length, max_length + 1 ):
         outfile_cluster = overall_job_tag.lower()+'_sample.cluster.out'
         args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  %s -out:file:silent %s -nstruct %d %s -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  cluster_tag, outfile_cluster, FINAL_NUMBER, cluster_by_all_atom_rmsd_tag, score_diff_cut )
 
+        if FIX_CALC_RMS_TAG:
+            args_cluster += ' -working_res'
+            for m in res_to_be_modeled: args_cluster += ' %d' % m
+
         condor_submit_cluster_file = 'CONDOR/REGION_%d_%d/cluster.condor' % (i,j)
 
         make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1, "scheduler" )
@@ -935,29 +1014,36 @@ for L in range( min_length, max_length + 1 ):
 
 
 #####################################################################################
-if LOOP:
-    final_outfile = "region_FINAL.out"
-    if not exists( final_outfile ):
+final_outfile = "region_FINAL.out"
+if not exists( final_outfile ) and ( MIN_RES == 1 and MAX_RES == NRES ):
 
-        last_outfiles = []
-        last_jobs = []
-        for i in range( NRES-1 ):
-            job_tag = 'REGION_%d_%d' % (i+1,i)
-            if job_tag in all_job_tags:
-                last_jobs.append( job_tag )
-                last_outfiles.append( job_tag.lower()+'_sample.cluster.out' )
-        assert( len(last_outfiles) > 0 )
+    last_outfiles = []
+    last_jobs = []
+    for i in range(1, NRES+1):
+        if (i == 1): j = NRES
+        else: j = i - 1
+        job_tag = 'REGION_%d_%d' % (i,j)
+        if job_tag in all_job_tags:
+            last_jobs.append( job_tag )
+            last_outfiles.append( job_tag.lower()+'_sample.cluster.out' )
 
-        args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  %s -out:file:silent %s  %s -score_diff_cut %8.3f -silent_read_through_errors  -nstruct %d ' % (string.join( last_outfiles ), DB,  cluster_tag, final_outfile, cluster_by_all_atom_rmsd_tag, 2 * score_diff_cut, 10000 )
+    assert( len(last_outfiles) > 0 )
 
-        condor_submit_cluster_file = 'CONDOR/REGION_FINAL_cluster.condor'
-        make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1 )
+    print 'REGION_FINAL'
+    args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  %s -out:file:silent %s  %s -score_diff_cut %8.3f -silent_read_through_errors  -nstruct %d ' % (string.join( last_outfiles ), DB,  cluster_tag, final_outfile, cluster_by_all_atom_rmsd_tag, 2 * score_diff_cut, 10000 )
 
-        final_job_tag = "REGION_FINAL"
-        fid_dag.write('\nJOB %s %s\n' % ( final_job_tag,condor_submit_cluster_file) )
-        for prev_job_tag in last_jobs:
-            if ( prev_job_tag not in jobs_done ):
-                fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, final_job_tag) )
+    if FIX_CALC_RMS_TAG:
+        args_cluster += ' -working_res'
+        for m in range(1, NRES+1): args_cluster += ' %d' % m
+
+    condor_submit_cluster_file = 'CONDOR/REGION_FINAL_cluster.condor'
+    make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1 )
+
+    final_job_tag = "REGION_FINAL"
+    fid_dag.write('\nJOB %s %s\n' % ( final_job_tag,condor_submit_cluster_file) )
+    for prev_job_tag in last_jobs:
+        if ( prev_job_tag not in jobs_done ):
+            fid_dag.write('PARENT %s  CHILD %s\n' % (prev_job_tag, final_job_tag) )
 
 
 
