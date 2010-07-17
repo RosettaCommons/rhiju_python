@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 def cluster_check( cluster_in ):
-    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','kwip','lovejoy','tsuname' ];
+    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','kwip','lovejoy','tsuname','lovejoy_scratch' ];
 
     cluster = cluster_in
     if cluster not in clusterlist:
@@ -28,6 +28,10 @@ def cluster_check( cluster_in ):
     if cluster == 'biox2_scratch':
         cluster = 'biox2.stanford.edu'
         cluster_dir = '/scratch/users/rhiju/'
+
+    if cluster == 'lovejoy_scratch':
+        cluster = 'lovejoy@biox2.stanford.edu'
+        cluster_dir = '/scratch/users/lovejoy/'
 
     if cluster == 'ade_scratch':
         cluster = 'ade.stanford.edu'

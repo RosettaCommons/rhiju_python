@@ -76,6 +76,25 @@ for line1 in lines:
 print
 
 
+mean_maxsubs = []
+for line1 in lines:
+    mean_maxsub = 0.0
+    for line2 in lines:
+        if line1 == line2: continue
+        mean_maxsub += maxsub_save[ line1 ][ line2 ]
+    mean_maxsub /= (len( lines ) - 1 )
+    mean_maxsubs.append( [mean_maxsub, line1] )
+
+mean_maxsubs.sort()
+mean_maxsubs.reverse()
+for i in range( len(mean_maxsubs) ):
+    line1 = mean_maxsubs[i][1]
+    mean_maxsub = mean_maxsubs[i][0]
+    print '%s' % line1+blanks[len(line1):maxlen],
+    print '%4.2f' % mean_maxsub
+print
+
+
 mean_rmsds = []
 for line1 in lines:
     mean_rmsd = 0.0

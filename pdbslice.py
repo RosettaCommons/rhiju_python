@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from os import popen,system
+from os.path import basename
 from sys import argv,stderr
 import string
 
@@ -107,7 +108,7 @@ atomnums = []
 
 for pdbfile in pdbfiles:
     gzipped = 0
-    outid = open(prefix+pdbfile,'w')
+    outid = open(prefix+basename(pdbfile),'w')
 
     if pdbfile[-2:] == 'gz':
         lines = popen('zcat '+pdbfile).readlines()

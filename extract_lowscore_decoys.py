@@ -189,12 +189,6 @@ for infile in infiles:
                     +' '+wanted_rot_templates_file )
 
 
-    #EXE = HOMEDIR+'/rosetta++/rosetta.gcc'
-    #if not exists( EXE ):
-    #    EXE = 'rm boinc* ros*txt; '+HOMEDIR+'/rosetta++/rosetta.mactelboincgraphics '
-    #command = '%s -extract -l %s -paths %s/paths.txt -s %s %s %s '% (EXE, templist_name, HOMEDIR,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
-
-
     # Centroid readout?
     MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
     if not exists( MINI_EXE):
@@ -255,6 +249,15 @@ for infile in infiles:
         if output_virtual: command += " -output_virtual "
 
         if (scoretags.count('vdw')): command += ' -out:file:residue_type_set centroid '
+
+    old_rosetta = 0
+    scorelabels = string.split( popen( 'head -n 2 '+outfilename ).readlines()[-1] )
+    if "SCORE" in scorelabels:
+        EXE = HOMEDIR+'/rosetta++/rosetta.gcc'
+        if not exists( EXE ):
+            EXE = 'rm boinc* ros*txt; '+HOMEDIR+'/rosetta++/rosetta.mactelboincgraphics '
+            command = '%s -extract -l %s -paths %s/paths.txt -s %s %s %s '% (EXE, templist_name, HOMEDIR,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
+        old_rosetta = 1
 
 
     print(command)

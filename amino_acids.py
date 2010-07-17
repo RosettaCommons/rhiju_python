@@ -9,17 +9,17 @@ longer_names={'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
               'HIS': 'H', 'ILE': 'I', 'LEU': 'L', 'LYS': 'K',
               'MET': 'M', 'PHE': 'F', 'PRO': 'P', 'SER': 'S',
               'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V',
-              'B3A': 'A', 'B3R': 'R', 'B3N': 'N', 'B3D': 'D',
-              'B3C': 'C', 'B3E': 'E', 'B3Q': 'Q', 'B3G': 'G',
-              'B3H': 'H', 'B3I': 'I', 'B3L': 'L', 'B3K': 'K',
-              'B3M': 'M', 'B3F': 'F', 'B3P': 'P', 'B3S': 'S',
-              'B3T': 'T', 'B3W': 'W', 'B3Y': 'Y', 'B3V': 'V',
-              'B3O': 'O', 'CP1': '5', 'CP2': '6',
-              'XI1': '1', 'XI2': '2',
-              'PY3': '3', 'PY2': '2',
-              'NAP': 'B',
+              #'B3A': 'A', 'B3R': 'R', 'B3N': 'N', 'B3D': 'D',
+              #'B3C': 'C', 'B3E': 'E', 'B3Q': 'Q', 'B3G': 'G',
+              #'B3H': 'H', 'B3I': 'I', 'B3L': 'L', 'B3K': 'K',
+              #'B3M': 'M', 'B3F': 'F', 'B3P': 'P', 'B3S': 'S',
+              #'B3T': 'T', 'B3W': 'W', 'B3Y': 'Y', 'B3V': 'V',
+              #'B3O': 'O', 'CP1': '5', 'CP2': '6',
+              #'XI1': '1', 'XI2': '2',
+              #'PY3': '3', 'PY2': '2',
+              #'NAP': 'B',
               ' rA': 'a', ' rC': 'c', ' rG': 'g', ' rU': 'u',
-              'ADE': 'a', 'CYT': 'c', 'GUA': 'g', 'URA': 'u'
+              #'ADE': 'a', 'CYT': 'c', 'GUA': 'g', 'URA': 'u'
               }
 
 short_to_long = {}

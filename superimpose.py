@@ -6,7 +6,7 @@ import string
 from glob import glob
 from sys import argv,stderr,exit
 from os import popen,system
-from os.path import exists
+from os.path import exists,basename
 from operator import add
 from math import sqrt
 
@@ -141,7 +141,7 @@ for pdb in pdb_list[1:]:
             command += ' %d ' % i
         command += ' blah_ '
         system(command)
-        pdb1_to_superimpose = 'blah_'+pdb1
+        pdb1_to_superimpose = 'blah_'+basename(pdb1)
 
         command = '~rhiju/python/pdbslice.py '+pdb
         command += ' -subset '
@@ -149,7 +149,7 @@ for pdb in pdb_list[1:]:
             command += ' %d ' % i
         command += ' blah_ '
         system(command)
-        pdb_to_superimpose = 'blah_'+pdb
+        pdb_to_superimpose = 'blah_'+basename(pdb)
 
 
     if R_DEFINED:
@@ -174,13 +174,13 @@ for pdb in pdb_list[1:]:
     lines = popen(command).readlines()
 
     if slice:
-        command = 'rm blah_'+pdb1
+        command = 'rm blah_'+basename(pdb1)
         system(command)
 
     if use_subset:
-        command = 'rm blah_'+pdb1
+        command = 'rm blah_'+basename(pdb1)
         system(command)
-        command = 'rm blah_'+pdb
+        command = 'rm blah_'+basename(pdb)
         system(command)
 
     if not lines:
