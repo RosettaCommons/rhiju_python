@@ -33,7 +33,9 @@ for prediction in predictions:
         command = 'pdbslice.py %s -subset %s tmp_' % ( prediction, make_tag( slice_res ) )
         system( command )
 
-    if not ( get_sequence( pdb_to_superimpose ) == native_sequence ): continue
+    if not ( get_sequence( pdb_to_superimpose ) == native_sequence ):
+        system( 'rm -f '+pdb_to_superimpose )
+        continue
 
     maxsubs = []
     #cluster_threshold = [  2,   3, 5, 8, 16 ]

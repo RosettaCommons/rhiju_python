@@ -5,6 +5,9 @@ from sys import argv,stderr,stdout
 from os import popen,system
 from os.path import exists
 from amino_acids import longer_names
+from parse_options import parse_options
+
+retain_atom_num = parse_options( argv, "retain_atom_num", 0 )
 
 assert( len(argv)>1)
 
@@ -47,7 +50,10 @@ for pdbname in pdbnames:
 		    else:
 			    newnum = '%4d' % count
 
-		    line_edit = '%s%5d%s%s%s' % (line_edit[0:6],atomnum,line[11:22], newnum, line_edit[26:] )
+		    if retain_atom_num:
+			    line_edit = '%s%s%s' % (line_edit[0:22], newnum, line_edit[26:] )
+		    else:
+			    line_edit = '%s%5d%s%s%s' % (line_edit[0:6],atomnum,line[11:22], newnum, line_edit[26:] )
 
 		    outid.write(line_edit)
 
