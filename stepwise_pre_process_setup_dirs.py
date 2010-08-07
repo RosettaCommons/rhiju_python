@@ -26,7 +26,9 @@ for q in range( MAX_JOBS ):
 
     if tag in tags:
         newdir = outdir+'/%s_%s' % ( sub_job_tag, tag )
-        if not exists( newdir ):  system( 'mkdir -p '+newdir )
+        if not exists( newdir ):
+            system( 'mkdir -p '+newdir )
+            system( 'chmod 777 '  + newdir )
     else:
         break
 

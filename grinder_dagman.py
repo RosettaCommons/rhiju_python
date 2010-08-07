@@ -37,6 +37,7 @@ score_diff_cut = parse_options( argv, "score_diff_cut", 10.0 )
 max_res_to_add_denovo = parse_options( argv, "denovo", 0 )
 USE_MINI_TEMP = parse_options( argv, "use_mini_TEMP", 0 )
 no_rm_files= parse_options( argv, "no_rm_files", 0 )
+secstruct= parse_options( argv, "secstruct", "" )
 
 native_pdb = parse_options( argv, "native", "" )
 template_pdbs = parse_options( argv, "s", [""] )
@@ -66,6 +67,7 @@ calc_rms_res = parse_options( argv, "calc_rms_res", [-1] )
 start_res = parse_options( argv, "start_res", [-1] )
 start_pdb = parse_options( argv, "start_pdb", "" )
 loop_start_pdb = parse_options( argv, "loop_start_pdb", "" )
+loop_start_full_outfile = parse_options( argv, "loop_start_full_outfile", "" )
 endpoints = parse_options( argv, "endpoints",[-1] )
 loop_res = parse_options( argv, "loop_res", [-1] )
 loop_force_Nsquared = parse_options( argv, "loop_force_Nsquared", 0 )
@@ -89,6 +91,12 @@ LOOP = 0
 if len( loop_start_pdb ) > 0:
     LOOP = 1
     start_pdb = loop_start_pdb
+if len( loop_start_full_outfile ) > 0:
+    assert( len( loop_start_pdb) == 0 )
+    assert( loop_start_full_outfile == 'region_0_0_sample.cluster.out' )
+    LOOP = 1
+
+
 
 for template_pdb in template_pdbs: assert( exists( template_pdb ) )
 for frag_file in frag_files: assert( exists( frag_file ) )
@@ -138,13 +146,18 @@ if no_rm_files:
 
 if not exists( 'CONDOR/' ):
     system( 'mkdir -p CONDOR' )
-
+    system( 'chmod 777 -R CONDOR' )
 
 #########################################################
 # list of jobs...
 all_job_tags = []
 real_compute_job_tags = []
 jobs_done = []
+
+# Special case.
+if len( loop_start_full_outfile ) > 0 :
+    all_job_tags.append( 'REGION_0_0' )
+    jobs_done.append( 'REGION_0_0' )
 
 #########################################################
 # Some useful functions (move somewhere else?)
@@ -162,7 +175,9 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number, univer
     sub_job_dir = job_dir + '/' + sub_job_tag
 
     assert( exists( job_dir ) )
-    if not exists( sub_job_dir ): system( 'mkdir -p '+sub_job_dir )
+    if not exists( sub_job_dir ):
+        system( 'mkdir -p '+sub_job_dir )
+        system( 'chmod 777 -R '+sub_job_dir )
 
     fid.write('output = %s/$(Process).out\n' % sub_job_dir )
     fid.write('log = %s/%s.log\n' % ( job_dir,sub_job_tag) )
@@ -181,7 +196,10 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
     args2 += ' -out:file:silent %s ' % outfile
 
     condor_file_dir =  "CONDOR/%s/" % overall_job_tag
-    if not exists( condor_file_dir ): system( 'mkdir -p '+condor_file_dir )
+    if not exists( condor_file_dir ):
+        system( 'mkdir -p '+condor_file_dir )
+        system( 'chmod 777 -R '+condor_file_dir )
+
     condor_submit_file = '%s/%s.condor' %  (condor_file_dir,sub_job_tag)
 
     job_tag = overall_job_tag+"_"+sub_job_tag
@@ -202,7 +220,9 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
         assert( len( prev_job_tags ) > 0 )
         fid_dag.write('SCRIPT PRE %s   %s %s %s %s %s\n' % (job_tag, PRE_PROCESS_SETUP_SCRIPT,overall_job_tag,prev_job_tags[0],condor_submit_file,sub_job_tag) )
     else:
-        if not exists( newdir ): system( 'mkdir -p '+newdir )
+        if not exists( newdir ):
+            system( 'mkdir -p '+newdir )
+            system( 'chmod 777 -R '+newdir )
 
     fid_dag.write('SCRIPT POST %s %s %s/%s\n' % (job_tag, POST_PROCESS_FILTER_SCRIPT,overall_job_tag,sub_job_tag ) )
 
@@ -363,12 +383,15 @@ if LOOP:
     assert( len( loop_res ) >= min_loop_gap)
     for m in range( len(loop_res)-1): assert( loop_res[m]+1 == loop_res[m+1] )
 
-    start_pdb
-    assert( START_FROM_PDB )
-    assert( exists( start_pdb ) )
-
+    if START_FROM_PDB:
+        assert( exists( start_pdb ) )
+    else:
+        assert( exists( loop_start_full_outfile ) )
     loop_start = loop_res[ 0 ]
     loop_end = loop_res[ -1 ]
+
+    LOOP_AT_TERMINUS = 0
+    if loop_end == NRES or loop_start == 1: LOOP_AT_TERMINUS = 1
 
     start_res = wrap_range( loop_end+1, loop_start, NRES )
 
@@ -380,6 +403,14 @@ if LOOP:
 
     for m in range( loop_start-1, loop_end+1 ):
         if m in cutpoints_open: cutpoint_open_in_loop = 1
+
+    if len( endpoints ) > 0 and ( loop_start-1 not in endpoints ):
+        obligate_endpoints = [ loop_start-1, loop_start, loop_start+1, loop_start+2, \
+                               loop_end-2, loop_end-1, loop_end, loop_end+1 ]
+        for m in obligate_endpoints:
+            if m not in endpoints:
+                print "Adding ", m, " to endpoints"
+                endpoints.append( m )
 
 if START_FROM_PDB and len( start_res ) == 0:
     start_sequence = get_sequence( start_pdb )
@@ -416,12 +447,12 @@ if START_FROM_PDB:
         fixed_res = []
         for m in start_res: fixed_res.append( m )
 
-    if len( endpoints ) > 0 and ( start_res[0] not in endpoints ):
-        print "Adding ", start_res[0], " to endpoints"
-        endpoints.append( start_res[0] )
-    if len( endpoints ) > 0 and ( start_res[-1] not in endpoints ):
-        print "Adding ", start_res[-1], " to endpoints"
-        endpoints.append( start_res[-1] )
+    if len( endpoints ) > 0 and not LOOP:
+        obligate_endpoints = [start_res[0], start_res[-1]]
+        for m in obligate_endpoints:
+            if m not in endpoints:
+                print "Adding ", m, " to endpoints"
+                endpoints.append( m )
 
 
 for k in virtual_res:
@@ -479,6 +510,10 @@ if len( cutpoints_open ) > 0:
 if centroid:
     args += ' -centroid '
     #args += ' -centroid -skip_minimize '
+if len( secstruct ) > 0:
+    args += ' -secstruct '+secstruct
+
+args += ' -mute all' # trying to cut down on disk space!
 
 args_START = args
 
@@ -515,10 +550,10 @@ for L in range( min_length, max_length + 1 ):
         if ( j > NRES ): j -= NRES
         res_to_be_modeled = wrap_range(i,j+1,NRES)
 
-        if ( not LOOP and ( i < MIN_RES or j > MAX_RES or i > j ) ): continue
+        if ( ( not LOOP or LOOP_AT_TERMINUS ) and ( i < MIN_RES or j > MAX_RES or i > j ) ): continue
         if ( i in skip_res or j in skip_res ): continue
 
-        if START_FROM_PDB: #If loop, START_FROM_PDB will be true. Also, if -start_pdb is supplied from command line.
+        if START_FROM_PDB or LOOP:
             contains_start_region = 1
             for m in start_res:
                 if m not in res_to_be_modeled:
@@ -528,7 +563,7 @@ for L in range( min_length, max_length + 1 ):
 
         loop_close = (i == j+1)
 
-        if LOOP:
+        if LOOP and not LOOP_AT_TERMINUS:
 
             found_cutpoint_open = 0
             for m in range( loop_start-1, j):
@@ -672,6 +707,33 @@ for L in range( min_length, max_length + 1 ):
 
                 setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+        elif LOOP:
+            # Note that most of the time LOOP also implies "START_FROM_PDB" and the previous block is activated.
+            # This is a rare case where we start from an outfile
+            assert( len( loop_start_full_outfile ) > 0 )
+
+            if ( res_to_be_modeled == start_res ):
+                sub_job_tag = 'START_FROM_OUTFILE'
+
+                decoy_tag = 'S_$(Process)'
+
+                infile1 =  loop_start_full_outfile
+                args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
+
+                args2 += " -input_res1 "
+                for k in wrap_range(i, j+1): args2 += ' %d' % k
+
+                args2 += " -slice_res1 "
+                for k in wrap_range(i, j+1): args2 += ' %d' % k
+
+                args2 += ' -use_packer_instead_of_rotamer_trials'
+                args2 += " -global_optimize"
+
+                prev_job_tags = [ 'REGION_0_0' ]
+                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                     fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
 
         else:
 
@@ -1050,3 +1112,7 @@ if not exists( final_outfile ) and ( MIN_RES == 1 and MAX_RES == NRES ):
 print
 print "Total number of jobs to run (not counting clustering):", len( real_compute_job_tags )
 print "Total number of final outfiles (and clustering jobs):", len( all_job_tags )
+
+
+
+

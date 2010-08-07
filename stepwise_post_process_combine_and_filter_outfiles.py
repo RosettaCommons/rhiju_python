@@ -38,6 +38,7 @@ assert( exists( PYDIR ) )
 command = PYDIR+'/cat_outfiles.py '+string.join( globfiles ) + ' -o ' + cat_outfile
 print( command )
 system( command )
+system( 'chmod 777 '+cat_outfile )
 
 globstring = indir_prefix
 globfiles = glob( globstring )
@@ -64,7 +65,7 @@ filter_outfile = cat_outfile.replace('.out','.low4000.out')
 command = PYDIR+'/extract_lowscore_decoys_outfile.py '+cat_outfile+' 4000 > '+filter_outfile
 print( command )
 system( command )
-
+system( 'chmod 777 '+filter_outfile )
 
 ##########################################
 # DISK SPACE!

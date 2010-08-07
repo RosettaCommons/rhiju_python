@@ -28,6 +28,7 @@ PYDIR = expanduser('~')+'/python'
 assert( exists( PYDIR ) )
 
 wait_for_file( outfile_cluster )
+system( "chmod 777 "+outfile_cluster)
 
 if RM_FILES:
     command = 'rm -rf '+outdir
