@@ -405,6 +405,8 @@ start_res_for_input_pdb = []
 cutpoint_open_in_loop = 0
 
 all_loop_res = []
+LOOP_AT_TERMINUS = 0
+
 if START_FROM_PDB:
 
     # -loop_res for one contiguous loop was specified, not -start_res
@@ -422,7 +424,6 @@ if START_FROM_PDB:
         loop_start = loop_res[ 0 ]
         loop_end = loop_res[ -1 ]
 
-        LOOP_AT_TERMINUS = 0
         if loop_end == NRES or loop_start == 1: LOOP_AT_TERMINUS = 1
 
         start_res = wrap_range( loop_end+1, loop_start, NRES )
@@ -1191,10 +1192,12 @@ for L in range( min_length, max_length + 1 ):
                 args2 += ' -sample_res '
                 if ( i < i_prev and j == j_prev):
                     for m in range(i,i_prev+1):
-                        if m not in fixed_res: args2 += ' %d' % m
+                        args2 += ' %d' % m
+                        #if m not in fixed_res: args2 += ' %d' % m
                 elif ( i == i_prev and j > j_prev ):
                     for m in range(j_prev,j+1):
-                        if m not in fixed_res: args2 += ' %d' % m
+                        args2 += ' %d' % m
+                        #if m not in fixed_res: args2 += ' %d' % m
                 else:
                     for m in [i,j]:
                         if m not in fixed_res: args2 += ' %d' % m
