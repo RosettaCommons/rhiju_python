@@ -19,6 +19,7 @@ assert( exists( fasta_file ) )
 sequence_lines = open( fasta_file  ).readlines()[1:]
 sequence = string.join(  map( lambda x : x[:-1], sequence_lines) ,  '' )
 NRES = len( sequence )
+NRES = parse_options( argv, "nres_to_model", NRES )
 
 MIN_RES = parse_options( argv, "min_res", 1 )
 MAX_RES = parse_options( argv, "max_res", NRES )
@@ -54,6 +55,7 @@ max_length = parse_options( argv, "max_length", 0 )
 superimpose_res = parse_options( argv, "superimpose_res", [ -1 ] )
 virtual_res = parse_options( argv, "virtual_res", [ -1 ] )
 skip_res = parse_options( argv, "skip_res", [ -1 ] )
+jump_res = parse_options( argv, "jump_res", [ -1 ] )
 align_pdb = parse_options( argv, "align_pdb", "" )
 template_mapping_files = parse_options( argv, "mapping", [""] )
 frag_files = parse_options( argv, "frag_files", [""] )
@@ -183,7 +185,7 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number, univer
     assert( exists( job_dir ) )
     if not exists( sub_job_dir ):
         system( 'mkdir -p '+sub_job_dir )
-        system( 'chmod 777 -R '+sub_job_dir )
+        #system( 'chmod 777 -R '+sub_job_dir )
 
     fid.write('output = %s/$(Process).out\n' % sub_job_dir )
     fid.write('log = %s/%s.log\n' % ( job_dir,sub_job_tag) )
@@ -204,7 +206,7 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
     condor_file_dir =  "CONDOR/%s/" % overall_job_tag
     if not exists( condor_file_dir ):
         system( 'mkdir -p '+condor_file_dir )
-        system( 'chmod 777 -R '+condor_file_dir )
+        #system( 'chmod 777 -R '+condor_file_dir )
 
     condor_submit_file = '%s/%s.condor' %  (condor_file_dir,sub_job_tag)
 
@@ -228,7 +230,7 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
     else:
         if not exists( newdir ):
             system( 'mkdir -p '+newdir )
-            system( 'chmod 777 -R '+newdir )
+            #system( 'chmod 777 -R '+newdir )
 
     fid_dag.write('SCRIPT POST %s %s %s/%s\n' % (job_tag, POST_PROCESS_FILTER_SCRIPT,overall_job_tag,sub_job_tag ) )
 
@@ -371,15 +373,46 @@ def wrap_range( i, j, total_residues = NRES ):
     # Kind of like range(i,j).
     # But if i > j-1, gives residues not in j ... i-1.
     # Useful for loop stuff
-    if ( i < j ):
-        return range(i,j)
-    else:
-        x = range(1,j)
-        for m in range( i, total_residues+1 ): x.append( m )
-        return x
+    new_range = []
 
-def reorder_to_be_contiguous( res_list, total_residues = NRES ):
+    if ( i < j ):
+        new_range = range(i,j)
+    else:
+        new_range = range(1,j)
+        for m in range( i, total_residues+1 ): new_range.append( m )
+
+    return new_range
+
+def wrap_range_and_add_satellite( i, j, total_residues = NRES, start_res_for_input_pdb = []):
+    new_range = wrap_range( i, j, NRES )
+
+
+    for n in range( len(start_res_for_input_pdb) ):
+
+        start_res = start_res_for_input_pdb[ n ]
+
+        found_a_start_res = 0
+        for m in start_res:
+            if m in new_range:
+                found_a_start_res = 1
+                break
+
+        if found_a_start_res:
+            for m in start_res:
+                if m not in new_range:
+                    new_range.append( m )
+
+        new_range.sort()
+
+    return new_range
+
+def reorder_to_be_contiguous( res_list_input, total_residues = NRES ):
     in_order = 1
+
+    res_list = []
+    for m in res_list_input:
+        if (m <= NRES): res_list.append( m )
+
     for n in range( len( res_list )-1 ):
         if not ( res_list[n+1]-1 == res_list[n] ):
             in_order = 0
@@ -406,7 +439,6 @@ cutpoint_open_in_loop = 0
 
 all_loop_res = []
 LOOP_AT_TERMINUS = 0
-jump_res = []
 if START_FROM_PDB:
 
     # -loop_res for one contiguous loop was specified, not -start_res
@@ -526,7 +558,8 @@ if START_FROM_PDB:
 
     min_start_pdb_length = NRES
     for start_res in start_res_for_input_pdb:
-        if ( len( start_res ) < min_start_pdb_length ): min_start_pdb_length = len( start_res )
+        start_pdb_length = len( reorder_to_be_contiguous( start_res ) )
+        if ( start_pdb_length < min_start_pdb_length ): min_start_pdb_length = start_pdb_length
 
     if len( fixed_res ) == 0 and not no_fixed_res:
         fixed_res = []
@@ -538,6 +571,7 @@ if START_FROM_PDB:
             if i not in fixed_res: calc_rms_res.append( i )
 
     if len( superimpose_res ) == 0: superimpose_res = fixed_res
+
 
 for k in virtual_res:
     if k not in skip_res:  skip_res.append( k )
@@ -651,14 +685,14 @@ for L in range( min_length, max_length + 1 ):
             does_not_contain_whole_start_region = 0
             for start_res in start_res_for_input_pdb:
                 contains_start_region = 0
-                for m in start_res:
+                for m in reorder_to_be_contiguous(start_res):
                     if m in res_to_be_modeled:
                         contains_start_region = 1
                         break
 
                 if contains_start_region:
                     contains_at_least_one_start_region = 1
-                    for m in start_res:
+                    for m in reorder_to_be_contiguous(start_res):
                         if m not in res_to_be_modeled:
                             does_not_contain_whole_start_region = 1
                             break
@@ -685,7 +719,6 @@ for L in range( min_length, max_length + 1 ):
             loop_close = (i == j+1)
             if loop_close and not found_specific_loop: continue
             if ( i == 1 and j == NRES and not found_specific_loop and not LOOP_AT_TERMINUS): continue
-
 
             if found_specific_loop:
                 # Don't build across open cutpoints
@@ -768,6 +801,7 @@ for L in range( min_length, max_length + 1 ):
         ###########################################
         start_regions = []
 
+
         for k in range( 1, MAX_ADDED_SEGMENT):
             i_prev = i
             j_prev = j - k
@@ -840,7 +874,8 @@ for L in range( min_length, max_length + 1 ):
             for n in range( len(start_res_for_input_pdb) ):
                 start_res = start_res_for_input_pdb[ n ]
 
-                if ( res_to_be_modeled == start_res ):
+
+                if ( reorder_to_be_contiguous( res_to_be_modeled ) == reorder_to_be_contiguous( start_res ) ):
 
                     if ( len( loop_start_full_outfile ) > 0 ):
                         sub_job_tag = 'START_FROM_OUTFILE'
@@ -851,10 +886,10 @@ for L in range( min_length, max_length + 1 ):
                         args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
 
                         args2 += " -input_res1 "
-                        for k in wrap_range(i, j+1): args2 += ' %d' % k
+                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                         args2 += " -slice_res1 "
-                        for k in wrap_range(i, j+1): args2 += ' %d' % k
+                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                         args2 += ' -use_packer_instead_of_rotamer_trials'
                         args2 += " -global_optimize"
@@ -869,7 +904,8 @@ for L in range( min_length, max_length + 1 ):
                         args2 = args
                         args2 += ' -s1 ' + start_pdbs[n]
                         args2 += ' -input_res1 '
-                        for k in wrap_range(i, j+1): args2 += ' %d' % k
+                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+
                         args2 += ' -use_packer_instead_of_rotamer_trials'
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
@@ -891,9 +927,9 @@ for L in range( min_length, max_length + 1 ):
                     args2 = args
                     args2 += ' -s1 ' + template_pdb
                     args2 += ' -input_res1 '
-                    for k in wrap_range(i,j+1): args2 += ' %d' % k
+                    for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
                     args2 += ' -slice_res1 '
-                    for k in wrap_range(i,j+1): args2 += ' %d' % template_mapping[ k ]
+                    for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % template_mapping[ k ]
                     args2 += ' -backbone_only1'
                     args2 += ' -use_packer_instead_of_rotamer_trials'
 
@@ -915,7 +951,7 @@ for L in range( min_length, max_length + 1 ):
                     args2 += ' -use_packer_instead_of_rotamer_trials'
 
                     args2 += ' -sample_res'
-                    for m in wrap_range(i,j+1): args2 += ' %d' % m
+                    for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                     setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                          fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -927,7 +963,7 @@ for L in range( min_length, max_length + 1 ):
                 args2 = "%s -silent1 %s/%s" % ( args, swa_silent_file_dir, outfile_cluster )
                 args2 += ' -use_packer_instead_of_rotamer_trials'
                 args2 += ' -input_res1 '
-                for k in wrap_range(i,j+1): args2 += ' %d' % k
+                for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
                 setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
@@ -965,12 +1001,12 @@ for L in range( min_length, max_length + 1 ):
                 infile1 =  job_tag1.lower()+"_sample.cluster.out"
                 args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
                 args2 += " -input_res1 "
-                for m in wrap_range( i+1, loop_start ): args2 += ' %d' % m
+                for k in wrap_range_and_add_satellite(i+1, loop_start, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                 infile2 =  job_tag2.lower()+"_sample.cluster.out"
                 args2 += ' -silent2 %s ' % ( infile2 )
                 args2 += " -input_res2 "
-                for m in wrap_range( loop_end+1, j+1 ): args2 += ' %d' % m
+                for k in wrap_range_and_add_satellite(loop_end+1, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                 args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
                 args2 += " -cutpoint_closed %d " % (j+1)
@@ -996,7 +1032,8 @@ for L in range( min_length, max_length + 1 ):
             j_prev = start_region[1]
             prev_job_tags = [ 'REGION_%d_%d' % (i_prev,j_prev) ]
             infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
-            input_res1 =  wrap_range( i_prev, j_prev+1 )
+
+            input_res1 =  wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb )
 
             if ( loop_close and START_FROM_PDB ):
 
@@ -1051,7 +1088,7 @@ for L in range( min_length, max_length + 1 ):
                         template_mapping = template_mappings[ template_pdb ]
 
                         input_res2 = []
-                        for m in wrap_range( i, j+1 ):
+                        for m in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ):
                             if m not in input_res1:
                                 input_res2.append( m )
                         if ( not template_continuous( input_res2[0],input_res2[-1],template_mapping ) ): continue
@@ -1074,7 +1111,7 @@ for L in range( min_length, max_length + 1 ):
                         args2 += ' -backbone_only2'
 
                         args2 += ' -sample_res '
-                        for m in wrap_range( i, j+1 ): args2 += ' %d' % m
+                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
@@ -1099,7 +1136,7 @@ for L in range( min_length, max_length + 1 ):
                         args2 += " -in:file:frag_files %s" % frag_file
 
                         args2 += ' -sample_res '
-                        for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
+                        for k in wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                              fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -1126,10 +1163,10 @@ for L in range( min_length, max_length + 1 ):
 
                         args2 += " -silent2 %s/%s" % (swa_silent_file_dir, infile_swa )
                         args2 += " -input_res2 "
-                        for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
+                        for k in wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                         args2 += ' -sample_res '
-                        for m in wrap_range( startpos, endpos+1 ): args2 += ' %d' % m
+                        for k in wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                              fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -1160,20 +1197,15 @@ for L in range( min_length, max_length + 1 ):
                         args2 += " -s2 %s" % start_pdbs[n]
 
                         input_res2 = []
-                        for m in wrap_range( i, j+1 ):
+                        for m in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ):
                             if m not in input_res1:
                                 input_res2.append( m )
 
                         args2 += " -input_res2 "
                         for k in input_res2: args2 += ' %d' % k
 
-                        sample_res = []
-                        sample_res.append( boundary_res )
-                        sample_res.append( start_res[0] )
-                        sample_res.append( start_res[-1] )
-                        sample_res.sort()
                         args2 += ' -sample_res '
-                        for m in sample_res: args2 += ' %d' % m
+                        args2 += ' %d' % boundary_res
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                              fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -1206,7 +1238,7 @@ for L in range( min_length, max_length + 1 ):
                 args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
 
                 args2 += ' -input_res1 '
-                for m in wrap_range(i_prev,j_prev+1): args2 += ' %d' % m
+                for k in wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
 
                 args2 += ' -sample_res '
                 if ( i < i_prev and j == j_prev):
