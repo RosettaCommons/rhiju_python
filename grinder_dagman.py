@@ -406,7 +406,7 @@ cutpoint_open_in_loop = 0
 
 all_loop_res = []
 LOOP_AT_TERMINUS = 0
-
+jump_res = []
 if START_FROM_PDB:
 
     # -loop_res for one contiguous loop was specified, not -start_res
@@ -485,6 +485,10 @@ if START_FROM_PDB:
             full_actual_start_sequence += m
             start_res_for_this_pdb.append( start_res[count] )
             count += 1
+            if ( 1 in start_res_for_this_pdb and NRES in start_res_for_this_pdb ):
+                jump_res.append( 1 )
+                jump_res.append( NRES )
+
         #print  start_res_for_this_pdb, reorder_to_be_contiguous( start_res_for_this_pdb )
         #start_res_for_input_pdb.append( reorder_to_be_contiguous( start_res_for_this_pdb ) )
         start_res_for_input_pdb.append( start_res_for_this_pdb )
@@ -526,7 +530,14 @@ if START_FROM_PDB:
 
     if len( fixed_res ) == 0 and not no_fixed_res:
         fixed_res = []
-        for m in start_res: fixed_res.append( m )
+        for start_res in start_res_for_input_pdb:
+            for m in start_res: fixed_res.append( m )
+
+    if len( calc_rms_res ) == 0:
+        for i in range(1, NRES+1):
+            if i not in fixed_res: calc_rms_res.append( i )
+
+    if len( superimpose_res ) == 0: superimpose_res = fixed_res
 
 for k in virtual_res:
     if k not in skip_res:  skip_res.append( k )
@@ -577,6 +588,9 @@ if len( fixed_res ) > 0:
 if len( calc_rms_res ) > 0:
     args += ' -calc_rms_res '
     for k in calc_rms_res: args += '%d ' % k
+if len( jump_res ) > 0:
+    args += ' -jump_res '
+    for k in jump_res: args += '%d ' % k
 if len( cutpoints_open ) > 0:
     args += ' -cutpoint_open '
     for cutpos in cutpoints_open: args += '%d ' % cutpos
@@ -1153,8 +1167,13 @@ for L in range( min_length, max_length + 1 ):
                         args2 += " -input_res2 "
                         for k in input_res2: args2 += ' %d' % k
 
+                        sample_res = []
+                        sample_res.append( boundary_res )
+                        sample_res.append( start_res[0] )
+                        sample_res.append( start_res[-1] )
+                        sample_res.sort()
                         args2 += ' -sample_res '
-                        args2 += ' %d' % boundary_res
+                        for m in sample_res: args2 += ' %d' % m
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                              fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
