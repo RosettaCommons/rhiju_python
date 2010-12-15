@@ -8,7 +8,6 @@ def get_sequence( pdbname, removechain = 0 ):
 
     netpdbname = pdbname
     assert( exists(netpdbname))
-    #print 'Reading ... '+netpdbname
 
     lines = open(netpdbname,'r').readlines()
 

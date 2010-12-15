@@ -187,6 +187,10 @@ for pdbname in pdbnames:
                 if removechain:
                     line_edit = line_edit[0:21]+'  '+line_edit[23:]
 
+                line_edit = line_edit.replace( 'HO2\'', '2HO*' )
+                line_edit = line_edit.replace( 'HO5\'', '5HO*' )
+                line_edit = line_edit.replace( 'H5\'\'', '2H5*' )
+
                 line_edit = line_edit.replace('\'','*')
                 line_edit = line_edit.replace('OP1','O1P')
                 line_edit = line_edit.replace('OP2','O2P')

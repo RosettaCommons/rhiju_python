@@ -2,6 +2,7 @@
 
 from sys import argv
 import string
+from string import upper
 
 sequence = string.join(argv[1:],'')
 
@@ -21,8 +22,8 @@ if (numchar > MAXCHAR ):
     scanchar = MAXCHAR
 
 for i in range( scanchar ):
-    seq1 += make_DNA[ sequence[i] ]
-    seq2 += complement[ sequence[numchar - 1 - i] ]
+    seq1 += make_DNA[ sequence[i].upper() ]
+    seq2 += complement[ sequence[numchar - 1 - i].upper() ]
 
 
 print seq1

@@ -49,6 +49,12 @@ if argv.count('-start_pdb'):
     del( argv[pos] )
     use_start_pdb = 1
 
+#output_virtual = 0
+#if argv.count('-output_virtual'):
+#    pos = argv.index('-output_virtual')
+#    del( argv[pos] )
+#    output_virtual = 1
+
 output_virtual = 1
 if argv.count('-no_virtual'):
     pos = argv.index('-no_virtual')
@@ -194,7 +200,7 @@ for infile in infiles:
     if not exists( MINI_EXE):
         MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
 
-        command = '%s -in:file:silent  %s   -in:file:tags %s -database %s/minirosetta_database/ -out:file:residue_type_set centroid ' % \
+    command = '%s -in:file:silent  %s   -in:file:tags %s -database %s/minirosetta_database/ -out:file:residue_type_set centroid ' % \
                   ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
 
     # Check if this is an RNA run.
