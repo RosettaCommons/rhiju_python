@@ -154,7 +154,7 @@ if no_rm_files:
 
 if not exists( 'CONDOR/' ):
     system( 'mkdir -p CONDOR' )
-    system( 'chmod 777 -R CONDOR' )
+    #system( 'chmod 777 -R CONDOR' )
 
 #########################################################
 # list of jobs...
@@ -185,7 +185,7 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number, univer
     assert( exists( job_dir ) )
     if not exists( sub_job_dir ):
         system( 'mkdir -p '+sub_job_dir )
-        #system( 'chmod 777 -R '+sub_job_dir )
+        ##system( 'chmod 777 -R '+sub_job_dir )
 
     fid.write('output = %s/$(Process).out\n' % sub_job_dir )
     fid.write('log = %s/%s.log\n' % ( job_dir,sub_job_tag) )
@@ -206,7 +206,7 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
     condor_file_dir =  "CONDOR/%s/" % overall_job_tag
     if not exists( condor_file_dir ):
         system( 'mkdir -p '+condor_file_dir )
-        #system( 'chmod 777 -R '+condor_file_dir )
+        ##system( 'chmod 777 -R '+condor_file_dir )
 
     condor_submit_file = '%s/%s.condor' %  (condor_file_dir,sub_job_tag)
 
@@ -230,7 +230,7 @@ def setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_
     else:
         if not exists( newdir ):
             system( 'mkdir -p '+newdir )
-            #system( 'chmod 777 -R '+newdir )
+            ##system( 'chmod 777 -R '+newdir )
 
     fid_dag.write('SCRIPT POST %s %s %s/%s\n' % (job_tag, POST_PROCESS_FILTER_SCRIPT,overall_job_tag,sub_job_tag ) )
 
@@ -755,7 +755,7 @@ for L in range( min_length, max_length + 1 ):
                 #if not( ( loop_close and j < (loop_end-1) )   or ( (i - j) >= 2 ) ): continue
 
                 # To close loop, must have at least a little bit built from either end.
-                if ( loop_close and ( i >= loop_end or j <= loop_start ) and not cutpoint_open_in_loop ): continue
+                if ( loop_close and ( i >= loop_end or j < loop_start ) and not cutpoint_open_in_loop ): continue
 
                 # Unless special O(N^2) type run (sample little bits of loop in both forward and reverse directions ),
                 #  force either i or j to be at boundary.
@@ -766,6 +766,7 @@ for L in range( min_length, max_length + 1 ):
                     if ( j == loop_start-1  and  i < (( loop_start+loop_end)/2 - 1) ): continue
                     if ( loop_close    and  j > (( loop_start+loop_end)/2 + 1) ): continue
                     if ( loop_close    and  i < (( loop_start+loop_end)/2 - 2) ): continue
+
 
         if len( endpoints ) > 0:
             if ( i not in endpoints ): continue

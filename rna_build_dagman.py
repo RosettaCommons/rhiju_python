@@ -16,28 +16,37 @@ sequence = open( fasta_file  ).readlines()[1][:-1]
 MIN_RES = parse_options( argv, "min_res", 1 )
 MAX_RES = parse_options( argv, "max_res", len( sequence ) )
 
-# This is a dummy number -- typical number of pdbs in an ensemble.
-# For each job, it will be replaced with a more accurate number, based
-#  on the results of parent jobs.
-FINAL_NUMBER = 108
-
 # Starting PDB files.
 native_pdb = parse_options( argv, "native", "" )
 input_pdbs = parse_options( argv, "s", ["1shf.pdb"] )
 input_res_full = parse_options( argv, "input_res", [ 0 ] )
 score_diff_cut = parse_options( argv, "score_diff_cut", 1000000.0 )
-CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 0.5 )
+CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 0.25 )
+CLUSTER_RADIUS_SAMPLE = parse_options( argv, "cluster_radius_sample", 0.1 )
 AUTO_TUNE = parse_options( argv, "auto_tune", 0 )
 NSTRUCT = parse_options( argv, "nstruct", 400 )
 cutpoints_open = parse_options( argv, "cutpoint_open", [ -1 ] )
 fixed_res = parse_options( argv, "fixed_res", [ -1 ] )
+superimpose_res = parse_options( argv, "superimpose_res", [ -1 ] )
+calc_rms_res = parse_options( argv, "calc_rms_res", [ -1 ] )
 terminal_res = parse_options( argv, "terminal_res", [ -1 ] )
 bulge_res = parse_options( argv, "bulge_res", [ -1 ] )
 internal_loop = parse_options( argv, "internal_loop", 0 )
+native_rmsd_screen =  parse_options( argv, "native_rmsd_screen", 0 )
+max_slip =  parse_options( argv, "max_slip", -1 )
+cst_file = parse_options( argv, "cst_file", "" )
+score_weights = parse_options( argv, "score_weights", "" )
+no_rm_files= parse_options( argv, "no_rm_files", 0 )
+
+if ( len( argv ) > 1 ): # Should remain with just the first element, the name of this script.
+    print " Unrecognized flags?"
+    print "   ",string.join(argv[1:] )
+    exit( 0 )
 
 assert( len( input_pdbs ) > 0 ) # Later can create a mode that builds from scratch
 # Assert uniqueness -- not overlapping input pdbs!
 for i in range( len(input_res_full) ): assert( input_res_full[i] not in input_res_full[:i] )
+
 
 
 ###############################################################
@@ -65,6 +74,12 @@ assert( exists( POST_PROCESS_FILTER_SCRIPT ) )
 
 POST_PROCESS_CLUSTER_SCRIPT = PYDIR+"/stepwise_post_process_cluster.py"
 assert( exists( POST_PROCESS_CLUSTER_SCRIPT ) )
+
+if len( score_weights ) > 0 : assert( exists( score_weights ) or exists( DB + "/scoring/weights/"+score_weights) )
+
+if no_rm_files:
+    POST_PROCESS_CLUSTER_SCRIPT += ' -no_rm_files 1'
+    POST_PROCESS_FILTER_SCRIPT += ' -no_rm_files 1'
 
 fid_dag = open( "rna_build.dag", 'w' )
 fid_dag.write("DOT dag.dot\n")
@@ -230,9 +245,18 @@ def get_boundary_res( i, assigned_element ):
 
 
 # BASIC COMMAND
-args = ' -algorithm rna_resample_test  -database %s -fasta %s -output_virtual  ' %  ( DB, fasta_file  )
+args = ' -algorithm rna_resample_test -database %s -fasta %s -output_virtual  ' %  ( DB, fasta_file  )
+args +=  ' -cluster:radius %8.3f ' % CLUSTER_RADIUS_SAMPLE
+args +=  ' -num_pose_kept %d ' % NSTRUCT
+
+if len( score_weights ) > 0: args += ' -score:weights %s ' % score_weights
 
 if len( native_pdb ) > 0: args += '-native %s ' % native_pdb
+
+
+if len( cst_file ) > 0:
+    assert( exists( cst_file ) )
+    args += ' -cst_file %s' % cst_file
 
 if len( cutpoints_open ) > 0:
     args += ' -cutpoint_open '
@@ -242,6 +266,12 @@ if len( fixed_res ) > 0:
     args += ' -fixed_res '
     for k in fixed_res: args += '%d ' % k
 
+if len( superimpose_res ) == 0: superimpose_res = fixed_res
+
+if len( superimpose_res ) > 0:
+    args += ' -superimpose_res '
+    for k in superimpose_res: args += '%d ' % k
+
 if len( terminal_res ) > 0:
     args += ' -terminal_res '
     for k in terminal_res: args += '%d ' % k
@@ -250,10 +280,16 @@ if len( bulge_res ) > 0:
     args += ' -bulge_res '
     for k in bulge_res: args += '%d ' % k
 
+if native_rmsd_screen: args += ' -sampler_native_rmsd_screen '
+
 if AUTO_TUNE:
     cluster_tag = ' -auto_tune '
 else:
     cluster_tag = ' -cluster:radius %s ' % CLUSTER_RADIUS
+
+if len( calc_rms_res ) > 0:
+    cluster_tag += ' -calc_rms_res'
+    for k in calc_rms_res: cluster_tag += ' %d' % k
 
 # Order calculation based on number of elements modeled -- smaller fragments first.
 for L in range( 2, num_elements+1 ):
@@ -262,6 +298,10 @@ for L in range( 2, num_elements+1 ):
 
         i = k
         j = ( k + L - 1 ) % num_elements
+
+        slip = abs( i + j ) % num_elements
+        if abs(slip-num_elements) < abs(slip): slip = slip - num_elements
+        if max_slip > 0 and ( abs(slip) > max_slip ) : continue
 
         # Native PDB.
         prefix = 'region_%d_%d_' % (i,j)
@@ -329,16 +369,15 @@ for L in range( 2, num_elements+1 ):
             # Start with "fixed", pre-constructed pose
             ######################################################
             # Job input depends on whether we are starting from pdb, silent file, etc.
-            input_pdbs_for_job = []
             if prev_job_tag in input_file_tags:
                 input_num = input_file_tags.index( prev_job_tag )
-                input_pdbs_for_job.append( input_pdbs[ input_num ] )
                 newdir = outdir+'/START_FROM_REGION_%d_%d' % (i_prev, j_prev )
                 if not exists( newdir ): system( 'mkdir -p '+newdir )
                 outfile = newdir + '/' + prefix + 'sample.out'
-                args2 = args # Will add in arguments for input pdbs "-s ... " later.
+                args2 = args
 
-                args2 += ' -input_res '
+                args2 += " -s1 %s " % input_pdbs[ input_num ]
+                args2 += ' -input_res1 '
                 for k in input_res[ input_num ]: args2 += '%d ' % k
 
                 num_jobs_to_queue = 1
@@ -351,7 +390,7 @@ for L in range( 2, num_elements+1 ):
 
                 infile = 'region_%d_%d_sample.cluster.out' % (i_prev,j_prev)
                 tag = 'S_$(Process)'
-                args2 = '%s -in:file:silent_struct_type binary_rna -in:file:silent %s -tags %s ' % (args, infile, tag )
+                args2 = '%s -in:file:silent_struct_type binary_rna -silent1 %s -tags1 %s ' % (args, infile, tag )
                 newdir = outdir+'/START_FROM_REGION_%d_%d_%s' % (i_prev, j_prev, tag.upper() )
                 outfile = newdir + '/' + prefix + 'sample.out'
 
@@ -362,7 +401,7 @@ for L in range( 2, num_elements+1 ):
                     for k in element_definition[ m ]: modeled_res_prev.append( k )
                 modeled_res_prev.sort()
                 # This defines input res for only the first pdb/silent_struct.
-                args2 += ' -input_res '
+                args2 += ' -input_res1 '
                 for k in modeled_res_prev: args2 += '%d ' % k
 
 
@@ -382,7 +421,7 @@ for L in range( 2, num_elements+1 ):
             else:
                 # Its an input file.
                 input_num = element_to_color[ moving_element ]
-                input_pdbs_for_job.append( input_pdbs[ input_num ] )
+                args2 += " -s2 %s " % input_pdbs[ input_num ]
                 args2 += ' -input_res2 '
                 for k in input_res[ input_num ]: args2 += '%d ' % k
 
@@ -394,10 +433,6 @@ for L in range( 2, num_elements+1 ):
                 assert( sample_res > 0 )
                 args2 += ' -sample_res %d ' % sample_res
 
-
-            if ( len( input_pdbs_for_job ) > 0 ):
-                args2 += " -s "
-                for input_pdb_for_job in input_pdbs_for_job: args2 += "%s " % input_pdb_for_job
 
             # Special --> close cutpoint.
             if ( L == num_elements ):
@@ -442,7 +477,7 @@ for L in range( 2, num_elements+1 ):
 
         fid_dag.write('\nJOB %s %s\n' % (overall_job_tag,condor_submit_cluster_file) )
         fid_dag.write('PARENT %s CHILD %s\n' % (string.join(job_tags),overall_job_tag) )
-        #fid_dag.write('SCRIPT POST %s %s %s %s\n' % (overall_job_tag, POST_PROCESS_CLUSTER_SCRIPT, outfile_cluster, outdir ) )
+        fid_dag.write('SCRIPT POST %s %s %s %s\n' % (overall_job_tag, POST_PROCESS_CLUSTER_SCRIPT, outfile_cluster, overall_job_tag ) )
 
         all_job_tags.append(  overall_job_tag )
 
@@ -526,7 +561,7 @@ if CLOSE_CIRCLE:
             # What is already built? What will move? I think the code guarantees that any silent file
             # will have residues modeled in appropriate sequential order. I hope.
             modeled_res1 = []
-            args2 += ' -input_res '
+            args2 += ' -input_res1 '
             for m in modeled_elements1:
                 for k in element_definition[ m ]: modeled_res1.append( k )
                 modeled_res1.sort()
