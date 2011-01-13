@@ -123,6 +123,10 @@ for infile in infiles:
     remark_tags = string.split( popen('head -n 3 '+infile).readlines()[-1] )
     if remark_tags.count('BINARY_SILENTFILE'):
         binary_silentfile = 1
+    remark_tags = string.split( popen('head -n 4 '+infile).readlines()[-1] )
+    if remark_tags.count('BINARY'):
+        binary_silentfile = 1
+
     coarse = 0
     if remark_tags.count('COARSE'):
         coarse = 1
@@ -218,7 +222,6 @@ for infile in infiles:
     if len(string.split(lines[6])) > 10:
         command += ' -fa_input'
 
-
     # Hey this could be a new mini RNA file
     if rna:
         #MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.linuxgccrelease'
@@ -248,7 +251,6 @@ for infile in infiles:
         MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
         if not exists( MINI_EXE):
             MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
-
 
         command = '%s -in:file:silent  %s  -in:file:silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/  ' % \
                   ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
