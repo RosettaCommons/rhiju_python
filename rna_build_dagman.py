@@ -19,12 +19,14 @@ MAX_RES = parse_options( argv, "max_res", len( sequence ) )
 # Starting PDB files.
 native_pdb = parse_options( argv, "native", "" )
 input_pdbs = parse_options( argv, "s", ["1shf.pdb"] )
+rna_torsion_potential = parse_options( argv, "rna_torsion_potential", "" )
 input_res_full = parse_options( argv, "input_res", [ 0 ] )
 score_diff_cut = parse_options( argv, "score_diff_cut", 1000000.0 )
 CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 0.25 )
 CLUSTER_RADIUS_SAMPLE = parse_options( argv, "cluster_radius_sample", 0.1 )
 AUTO_TUNE = parse_options( argv, "auto_tune", 0 )
 NSTRUCT = parse_options( argv, "nstruct", 400 )
+sampler_native_rmsd_screen_cutoff = parse_options( argv, "sampler_native_rmsd_screen_cutoff", 2.0 )
 cutpoints_open = parse_options( argv, "cutpoint_open", [ -1 ] )
 fixed_res = parse_options( argv, "fixed_res", [ -1 ] )
 superimpose_res = parse_options( argv, "superimpose_res", [ -1 ] )
@@ -280,7 +282,11 @@ if len( bulge_res ) > 0:
     args += ' -bulge_res '
     for k in bulge_res: args += '%d ' % k
 
-if native_rmsd_screen: args += ' -sampler_native_rmsd_screen '
+if native_rmsd_screen:
+    args += ' -sampler_native_rmsd_screen -sampler_native_rmsd_screen_cutoff %8.3f ' % sampler_native_rmsd_screen_cutoff
+
+if len( rna_torsion_potential ) > 0:
+    args += ' -rna_torsion_potential '+rna_torsion_potential
 
 if AUTO_TUNE:
     cluster_tag = ' -auto_tune '
@@ -290,6 +296,7 @@ else:
 if len( calc_rms_res ) > 0:
     cluster_tag += ' -calc_rms_res'
     for k in calc_rms_res: cluster_tag += ' %d' % k
+
 
 # Order calculation based on number of elements modeled -- smaller fragments first.
 for L in range( 2, num_elements+1 ):
