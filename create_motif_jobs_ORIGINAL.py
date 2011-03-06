@@ -150,9 +150,7 @@ motif_stem_sets = []
 motifs = []
 for i in range( numres ):
 
-    if not already_in_motif[i] and ( not already_in_stem[ i ] or
-                                     ( i > 0 and already_in_stem[i-1] and \
-                                           pair_map[i]+1 != pair_map[i-1] ) ):
+    if ( not already_in_stem[ i ] and not already_in_motif[ i ]):
 
         motif_count += 1
         motif_res = []
@@ -160,28 +158,27 @@ for i in range( numres ):
         cutpoints = []
 
         if ( i > 1 ):
+            k = i-2
 
-            # back up to beginning of stem.
-            k = i - 1
             motif_stem = []
-
-            # first base pair.
             motif_stem.append( [ k, pair_map[k] ] )
-            motif_res.append( k )
-            motif_res.append( pair_map[k] )
-
-            k-= 1
-            while k >= 0 and already_in_stem[k] and \
-                    (pair_map[k]-1 == pair_map[k+1]):
-                motif_stem.append( [ k, pair_map[k] ] )
-                motif_res.append( k )
-                motif_res.append( pair_map[k] )
-                k -= 1
+            motif_stem.append( [ k+1, pair_map[k+1] ] )
             motif_stem_set.append( motif_stem )
-            k += 1
-            cutpoints.append( pair_map[k] )
 
-        print 'AFTER FIRST HELIX: ', motif_res
+            #Couple base pairs at end.
+            motif_res.append( k )
+            k += 1
+            assert( already_in_stem[ k ] )
+            motif_res.append( k )
+
+            k = pair_map[ k ]
+            assert( already_in_stem[ k ] )
+            motif_res.append( k )
+            k += 1
+            assert( already_in_stem[ k ] )
+            motif_res.append( k )
+
+            cutpoints.append( k )
 
         k = i
         while ( k not in motif_res and k < numres):
@@ -191,9 +188,9 @@ for i in range( numres ):
                     print 'Hey cant deal with pseudoknots!'
                     exit()
                 motif_res.append( k )
+                already_in_motif[ k ] = 1
                 k += 1
 
-            stem_start = k
 
             if k >= numres:
                 cutpoints.append( k-1 )
@@ -201,32 +198,35 @@ for i in range( numres ):
 
             if k in motif_res : break
 
+            cutpoints.append( k+1 )
+
             motif_stem = []
             motif_stem.append( [ k, pair_map[k] ] )
-            motif_res.append( k )
-            motif_res.append( pair_map[ k ] )
-            k+=1
-
-            while ( k < numres and already_in_stem[ k ] and \
-                        pair_map[k-1] == pair_map[k]+1 and not k in motif_res):
-                motif_stem.append( [ k, pair_map[k] ] )
-                motif_res.append( k )
-                motif_res.append( pair_map[ k ] )
-                k += 1
+            motif_stem.append( [ k+1, pair_map[k+1] ] )
             motif_stem_set.append( motif_stem )
-            cutpoints.append( k-1 )
+
+
+            #Couple base pairs at end.
+            motif_res.append( k )
+            k += 1
+            assert( already_in_stem[ k ] )
+            motif_res.append( k )
+
+            k = pair_map[ k ]
+            assert( already_in_stem[ k ] )
+            motif_res.append( k )
+            k += 1
+            assert( already_in_stem[ k ] )
+            motif_res.append( k )
 
             # Next non-helical part..
-            k = pair_map[ stem_start ] + 1
-
-            print 'AFTER NEXT HELIX: ', motif_res
+            k += 1
 
         motif_res.sort()
 
         motif_res_map = {}
         for k in range( len( motif_res ) ):
             motif_res_map[ motif_res[k] ] = k
-            already_in_motif[ motif_res[k] ] = 1
 
         motifs.append( motif_res )
         motif_stem_sets.append( motif_stem_set )
@@ -258,7 +258,6 @@ for i in range( stem_count ):
         fid.write( sequence[stem_res[stem_length-k-1][1]] )
         print stem_res[stem_length-k-1][1]+1,
 
-    print
     fid.write('\n')
     fid.close()
 
@@ -308,42 +307,15 @@ for i in range( motif_count ):
     motif_params_file = 'motif%d_%s.params' % (i+1, fasta_file.replace('.fasta',''))
     fid = open( motif_params_file , 'w' )
 
-    which_stems = []
-    stem_chunk_res = []
     for k in range( len(motif_stem_set) ):
         motif_stem = motif_stem_set[ k ]
-        fid.write( 'STEM   ' )
-        for n in range( len( motif_stem ) ):
-            fid.write( ' PAIR %d %d W W A'  % \
-                       ( motif_res_map[ motif_stem[n][0] ]+1,
-                         motif_res_map[ motif_stem[n][1] ]+1 ) )
-        fid.write( '\n' )
-
-        fid.write( 'OBLIGATE PAIR %d %d W W A \n\n'  % \
-                       ( motif_res_map[ motif_stem[-1][0] ]+1,
-                         motif_res_map[ motif_stem[-1][1] ]+1 ) )
-
-        #need to find in stems
-        for n in range( len( stems )  ):
-            stem = stems[n]
-            found_match = 0
-            for q in range( len( stem ) ) :
-                if motif_stem[0][0] in stem[q]:
-                    found_match = 1
-                    break
-            if found_match: break
-        which_stems.append( n )
-
-        for q in range( len( stem ) ):
-            stem_chunk_res.append( motif_res_map[ stem[q][0] ]+1 )
-        for q in range( len( stem ) ):
-            stem_chunk_res.append( motif_res_map[ stem[ len(stem) - q - 1][1] ]+1 )
+        fid.write( 'STEM   PAIR %d %d W W A   PAIR %d %d W W A \n' % \
+                       ( motif_res_map[ motif_stem[0][0] ]+1,
+                         motif_res_map[ motif_stem[0][1] ]+1,
+                         motif_res_map[ motif_stem[1][0] ]+1,
+                         motif_res_map[ motif_stem[1][1] ]+1 ) )
 
     motif_cutpoint.sort()
-
-    print motif_res
-    print motif_cutpoint
-
     if ( len( motif_cutpoint ) > 1 ):
         fid.write( 'CUTPOINT_OPEN ' )
         for k in range( len( motif_cutpoint ) ):
@@ -393,21 +365,13 @@ for i in range( motif_count ):
 
     motif_out_file = motif_params_file.replace( '.params','.out')
     motif_out_files.append( motif_out_file )
-    NSTRUCT = 100
-    command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -params_file %s -nstruct %d -out:file:silent %s -cycles 5000 -mute all -close_loops -close_loops_after_each_move -minimize_rna' % \
+    NSTRUCT = 40
+    command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -params_file %s -nstruct %d -out:file:silent %s -cycles 5000 -mute all -vary_geometry' % \
         ( native_tag, motif_fasta_file, motif_params_file, NSTRUCT, motif_out_file )
 
     if data_exists: command += ' -data_file %s ' % motif_data_file
     if cst_exists and cst_found: command += ' -cst_file %s ' % motif_cst_file
     if torsions_exists: command += ' -vall_torsions %s ' % torsions_file
-
-    # new -- forcing exactly the same stems in all motifs.
-    command += ' -close_loops -in:file:silent_struct_type rna -in:file:silent '
-    for n in which_stems: command += ' stem%d_%s.out' % (n+1, fasta_file.replace('.fasta',''))
-
-    command += ' -chunk_res '
-    for m in stem_chunk_res: command += ' %d' % m
-
     fid_README_MOTIFS.write( command+'\n' )
 
 
@@ -424,7 +388,6 @@ for i in range( motif_count ):
 
     for k in range( len(motif_stem_set) ):
         motif_stem = motif_stem_set[ k ]
-        #print motif_stem
         possible_cutpoints =  [ motif_stem[ 0 ][ 0 ], motif_stem[ 1 ][ 1 ] ]
         possible_cutpoints.sort()
         if ( possible_cutpoints[0] not in cutpoints):
@@ -475,7 +438,7 @@ native_tag = ''
 if native_exists: native_tag = '-native '+native_pdb_file
 
 outfile = params_file.replace( '.params','.out' )
-command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -in:file:silent_struct_type binary_rna  -cycles 10000 -nstruct 200 -out:file:silent %s -params_file %s -cst_file %s -close_loops  -in:file:silent ' % \
+command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -in:file:silent_struct_type binary_rna  -cycles 10000 -nstruct 200 -out:file:silent %s -params_file %s -cst_file %s -close_loops -in:file:silent ' % \
 ( native_tag, fasta_file, outfile, params_file, assemble_cst_file )
 
 for stem_out_file in stem_out_files:

@@ -15,7 +15,7 @@ for filename in filenames:
         fid.write("pause\n");
 fid.close()
 
-RASMOL_EXE = '/Applications/rasmol_32BIT'
+RASMOL_EXE = '/Applications/rasmol_64bit'
 if not exists( RASMOL_EXE ):
     RASMOL_EXE = '/net/local/bin/rasmol'
 if not exists( RASMOL_EXE ):

@@ -64,6 +64,11 @@ for infile in infiles:
 
     firstlines = popen('head -n 3 '+infile).readlines()
     scoretags = string.split( firstlines[1] )
+    IS_OUTFILE = 1
+    if firstlines[0].find( "SEQUENCE" ) < 0  and   firstlines[0].find("SCORE:") >= 0:
+        IS_OUTFILE = 0
+        scoretags = string.split( firstlines[0] )
+
     scoretag=''
     if scorecol_defined:
         scoretag = scoretags[ abs(scorecol) ]
@@ -112,7 +117,6 @@ for infile in infiles:
 
     lines = map( lambda x:x[-1], score_plus_lines[:int(NSTRUCT)] )
 
-
     #lines = popen('grep SCORE: '+infile+' | grep -v NATIVE | grep -v rms | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
 
     templist_name = 'temp.%s.list'% basename(infile)
@@ -132,13 +136,15 @@ for infile in infiles:
     fid.close()
 
 
-    if (firstlines[2][:6] == 'REMARK' ):
+    if not IS_OUTFILE:
+        command = 'head -n 1 '+infile
+        system(command)
+    elif (firstlines[2][:6] == 'REMARK' ):
         command = 'head -n 3 '+infile
         system(command)
     else:
         command = 'head -n 2 '+infile
         system(command)
-
 
     count = 1
     fid = open( infile )
