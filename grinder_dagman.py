@@ -8,6 +8,7 @@ import string
 from time import sleep
 from parse_options import parse_options
 from get_sequence import get_sequence
+from make_tag import make_tag, make_tag_with_dashes
 
 ###################
 # Clusterer fix
@@ -84,6 +85,8 @@ new_loop_close = parse_options( argv, "new_loop_close", 0 )
 cutpoints_open = parse_options( argv, "cutpoint_open", [ -1 ] )
 only_go_midway = parse_options( argv, "only_go_midway", 0 )
 centroid = parse_options( argv, "centroid", 0 )
+DO_CCD = not parse_options( argv,'no_ccd',0 )
+DO_KIC = parse_options( argv, 'do_kic', 0 )
 
 if ( len( argv ) > 1 ): # Should remain with just the first element, the name of this script.
     print " Unrecognized flags?"
@@ -451,7 +454,7 @@ if START_FROM_PDB:
         assert( len(start_res) == 0 )
         loop_res.sort()
         assert( len( loop_res ) >= min_loop_gap)
-        for m in range( len(loop_res)-1): assert( loop_res[m]+1 == loop_res[m+1] )
+        for m in range( len(loop_res)-1 ): assert( loop_res[m]+1 == loop_res[m+1] )
 
         loop_start = loop_res[ 0 ]
         loop_end = loop_res[ -1 ]
@@ -542,18 +545,19 @@ if START_FROM_PDB:
         loop_force_Nsquared = 1
 
     # OK, loop residue segments.
-    this_loop_res = []
-    for m in range( 1, NRES+1 ):
-        in_start_res = 0
-        for start_res in start_res_for_input_pdb:
-            if ( m in start_res ):
-                in_start_res = 1
-                break
-        if (in_start_res):
-            if ( len(this_loop_res) > 0 ): all_loop_res.append( this_loop_res )
-            this_loop_res = []
-        else:
-            this_loop_res.append( m )
+    if len( all_loop_res ) == 0:
+        this_loop_res = []
+        for m in range( 1, NRES+1 ):
+            in_start_res = 0
+            for start_res in start_res_for_input_pdb:
+                if ( m in start_res ):
+                    in_start_res = 1
+                    break
+            if (in_start_res):
+                if ( len(this_loop_res) > 0 ): all_loop_res.append( this_loop_res )
+                this_loop_res = []
+            else:
+                this_loop_res.append( m )
     #print all_loop_res
 
     min_start_pdb_length = NRES
@@ -612,22 +616,22 @@ if len( native_pdb ) > 0:
     args += ' -native %s' % native_pdb
 if len( superimpose_res ) > 0:
     args += ' -superimpose_res '
-    for k in superimpose_res: args += '%d ' % k
+    args += make_tag_with_dashes( superimpose_res )
 if len( virtual_res ) > 0:
     args += ' -virtual_res '
-    for k in virtual_res: args += '%d ' % k
+    args += make_tag_with_dashes( virtual_res )
 if len( fixed_res ) > 0:
     args += ' -fixed_res '
-    for k in fixed_res: args += '%d ' % k
+    args += make_tag_with_dashes( fixed_res )
 if len( calc_rms_res ) > 0:
     args += ' -calc_rms_res '
-    for k in calc_rms_res: args += '%d ' % k
+    args += make_tag_with_dashes( calc_rms_res )
 if len( jump_res ) > 0:
     args += ' -jump_res '
-    for k in jump_res: args += '%d ' % k
+    args += make_tag_with_dashes( jump_res )
 if len( cutpoints_open ) > 0:
     args += ' -cutpoint_open '
-    for cutpos in cutpoints_open: args += '%d ' % cutpos
+    args += make_tag_with_dashes( cutpoints_open )
 if centroid:
     args += ' -centroid '
     #args += ' -centroid -skip_minimize '
@@ -701,15 +705,19 @@ for L in range( min_length, max_length + 1 ):
             if ( not contains_at_least_one_start_region ): continue
             if ( does_not_contain_whole_start_region ): continue
 
-
             #######################
             # Setup for loops...
             #######################
             # which loop are we in?
             found_specific_loop = 0
             for loop_res in all_loop_res:
-                if ( (j in loop_res or (loop_res[-1] == NRES and j == 1) ) and
-                     (i in loop_res or (loop_res[ 0] == 1 and i == NRES) ) ):
+
+                loop_res_expand = [ loop_res[0]-1 ]
+                for m in loop_res: loop_res_expand.append( m )
+                loop_res_expand.append( loop_res[-1]+1 )
+
+                if ( (j in loop_res_expand or (loop_res[-1] == NRES and j == 1) ) and
+                     (i in loop_res_expand or (loop_res[ 0] == 1 and i == NRES) ) ):
                     found_specific_loop = 1
                     loop_start = loop_res[0]
                     loop_end = loop_res[-1]
@@ -731,7 +739,9 @@ for L in range( min_length, max_length + 1 ):
                     if m in cutpoints_open:
                         found_cutpoint_open = 1
                         break
+
                 if found_cutpoint_open: continue
+
 
                 # Even if we don't build across cutpoints, this loop may have an open cutpoint later...
                 # That determine whether or not we bother building all the way to the end
@@ -741,13 +751,28 @@ for L in range( min_length, max_length + 1 ):
                 if ( i == 1 or  j == NRES ): cutpoint_open_in_loop = 1
                 if ( cutpoint_open_in_loop ): loop_close = 0
 
+
                 # How far forward or backward should we build loop?
                 # Can't go all the way to the end -- we need to leave a gap for loop closure.
                 #
                 #  The one special case here is if there is a cutpoint_open at the loop boundary
                 #  we won't close the chain -- we'll just build to the end.
-                if ( not cutpoint_open_in_loop  and len( all_loop_res ) == 1 and i < (loop_start+2)   ): continue
-                if ( not cutpoint_open_in_loop  and len( all_loop_res ) == 1 and j > (loop_end  -2)   ): continue
+                #if ( not cutpoint_open_in_loop  and len( all_loop_res ) == 1 and i < (loop_start+2)   ): continue
+                #if ( not cutpoint_open_in_loop  and len( all_loop_res ) == 1 and j > (loop_end  -2)   ): continue
+
+                # boundary cases that do not proceed into loop closure
+                #if ( not cutpoint_open_in_loop and i == loop_end+1     and j == loop_end-1   ): continue
+                #if ( not cutpoint_open_in_loop and i == loop_start+1   and j == loop_start-1 ): continue
+
+                if not cutpoint_open_in_loop:
+                    if loop_close:
+                        #if j < loop_start: continue
+                        #if i > loop_end-1: continue
+                        if j < loop_start-1: continue
+                        if i > loop_end+1: continue
+                    else:
+                        #if (i-j) <= 3: continue
+                        if (i-j) <= 1: continue
 
                 # very special case for building termini -- this is now covered above
                 #if ( loop_start == 1  and j == 1 ): continue
@@ -755,7 +780,8 @@ for L in range( min_length, max_length + 1 ):
                 #if not( ( loop_close and j < (loop_end-1) )   or ( (i - j) >= 2 ) ): continue
 
                 # To close loop, must have at least a little bit built from either end.
-                if ( loop_close and ( i >= loop_end or j < loop_start ) and not cutpoint_open_in_loop ): continue
+                #if ( loop_close and ( i >= loop_end or j < loop_start ) and not cutpoint_open_in_loop ): continue
+                # actually in new scheme, do not need anything prebuilt.
 
                 # Unless special O(N^2) type run (sample little bits of loop in both forward and reverse directions ),
                 #  force either i or j to be at boundary.
@@ -788,8 +814,6 @@ for L in range( min_length, max_length + 1 ):
             jobs_done.append( overall_job_tag   )
             print 'DONE'
             continue
-        else:
-            print
 
         termini_tag = ""
         if ( i == 1 ): termini_tag += " -n_terminus"
@@ -868,7 +892,6 @@ for L in range( min_length, max_length + 1 ):
         #
         #  currently have: DENOVO, TEMPLATE, FRAGMENT_LIBRARY
         ########################################################
-
         prev_job_tags = []
         if START_FROM_PDB:
 
@@ -887,10 +910,10 @@ for L in range( min_length, max_length + 1 ):
                         args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
 
                         args2 += " -input_res1 "
-                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
 
                         args2 += " -slice_res1 "
-                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
 
                         args2 += ' -use_packer_instead_of_rotamer_trials'
                         args2 += " -global_optimize"
@@ -905,7 +928,7 @@ for L in range( min_length, max_length + 1 ):
                         args2 = args
                         args2 += ' -s1 ' + start_pdbs[n]
                         args2 += ' -input_res1 '
-                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
 
                         args2 += ' -use_packer_instead_of_rotamer_trials'
 
@@ -928,9 +951,9 @@ for L in range( min_length, max_length + 1 ):
                     args2 = args
                     args2 += ' -s1 ' + template_pdb
                     args2 += ' -input_res1 '
-                    for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                    args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
                     args2 += ' -slice_res1 '
-                    for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % template_mapping[ k ]
+                    args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
                     args2 += ' -backbone_only1'
                     args2 += ' -use_packer_instead_of_rotamer_trials'
 
@@ -952,7 +975,7 @@ for L in range( min_length, max_length + 1 ):
                     args2 += ' -use_packer_instead_of_rotamer_trials'
 
                     args2 += ' -sample_res'
-                    for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                    args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
 
                     setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                          fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -964,7 +987,7 @@ for L in range( min_length, max_length + 1 ):
                 args2 = "%s -silent1 %s/%s" % ( args, swa_silent_file_dir, outfile_cluster )
                 args2 += ' -use_packer_instead_of_rotamer_trials'
                 args2 += ' -input_res1 '
-                for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
                 setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
@@ -988,45 +1011,163 @@ for L in range( min_length, max_length + 1 ):
         # This is meant for O(N) loop modeling -- build forward,
         #  build backward and meet in the middle.
         ########################################################
-        if  START_FROM_PDB and loop_close and (not no_fixed_res) and ( j >= loop_start and i <= loop_end) and not loop_force_Nsquared: # special, chain closure!
-            # old-style: close the loop
-            job_tag1 = "REGION_%d_%d" % ( i+1,     loop_start-1 )
-            job_tag2 = "REGION_%d_%d" % ( loop_end+1, j       )
+        if  START_FROM_PDB and loop_close and (not no_fixed_res) and ( j >= loop_start-1 and i <= loop_end+1) and not loop_force_Nsquared: # special, chain closure!
 
-            if ( job_tag1 in all_job_tags ) and ( job_tag2 in all_job_tags ):
+            ###############################################################################################
+            # Kinematic loop closure -- close gaps with 3 bridge residues -- might deprecate this soon
+            ###############################################################################################
+            if DO_KIC:
+                i_prev = i+2
+                j_prev = j-1
+                # One parent silent file exists with exactly 3 residues to be closed. Will occur in N^2 modeling or  or if there are only 3 residues in loop [as a boundary case in O(N)],
+                job_tag = "REGION_%d_%d" % ( i_prev, j_prev )
+                if job_tag in all_job_tags:
+                    sub_job_tag = 'START_FROM_%s_CLOSE_LOOP_KIC' % ( job_tag )
 
-                sub_job_tag = 'START_FROM_%s_%s_CLOSE_LOOP' % ( job_tag1, job_tag2 )
+                    decoy_tag = 'S_$(Process)'
 
-                decoy_tag = 'S_$(Process)'
+                    infile1 =  job_tag.lower()+"_sample.cluster.out"
+                    args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
+                    args2 += " -input_res1 "
+                    args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ) )
 
-                infile1 =  job_tag1.lower()+"_sample.cluster.out"
-                args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
-                args2 += " -input_res1 "
-                for k in wrap_range_and_add_satellite(i+1, loop_start, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                    args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
+                    args2 += " -cutpoint_closed %d " % (j+1)
+                    args2 += " -global_optimize"
 
-                infile2 =  job_tag2.lower()+"_sample.cluster.out"
-                args2 += ' -silent2 %s ' % ( infile2 )
-                args2 += " -input_res2 "
-                for k in wrap_range_and_add_satellite(loop_end+1, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                    prev_job_tags = [ job_tag ]
+                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                         fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
-                args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
-                args2 += " -cutpoint_closed %d " % (j+1)
 
-                args2 += " -global_optimize"
+                # KIC -- combine loop models from both N-terminus and C-terminus: close the loop. Again, might be deprecated soon.
+                i_prev = i+2
+                j_prev = j-1
+                job_tag1 = "REGION_%d_%d" % ( i_prev,     loop_start-1 )
+                job_tag2 = "REGION_%d_%d" % ( loop_end+1, j_prev       )
 
-                #args2 += " -sample_res"
-                #for m in range( 1, NRES+1): args2 += " %d" % m
+                if ( job_tag1 in all_job_tags ) and ( job_tag2 in all_job_tags) and ( j_prev >= loop_start and i_prev <= loop_end ):
 
-                prev_job_tags = [ job_tag1, job_tag2 ]
-                setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
-                                                     fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+                    sub_job_tag = 'START_FROM_%s_%s_CLOSE_LOOP_KIC' % ( job_tag1, job_tag2 )
+
+                    decoy_tag = 'S_$(Process)'
+
+                    infile1 =  job_tag1.lower()+"_sample.cluster.out"
+                    args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
+                    args2 += " -input_res1 "
+                    args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, loop_start, NRES, start_res_for_input_pdb ) )
+
+                    infile2 =  job_tag2.lower()+"_sample.cluster.out"
+                    args2 += ' -silent2 %s ' % ( infile2 )
+                    args2 += " -input_res2 "
+                    args2 += make_tag_with_dashes( wrap_range_and_add_satellite(loop_end+1, j_prev+1, NRES, start_res_for_input_pdb ) )
+
+                    args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
+                    args2 += " -cutpoint_closed %d " % (j+1)
+
+                    args2 += " -global_optimize"
+
+                    prev_job_tags = [ job_tag1, job_tag2 ]
+                    setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                         fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+
+            ######################################################################
+            # CCD loop closure -- close gaps with 2, 1, or 0 bridge residues
+            ######################################################################
+            # combine loop models from both N-terminus and C-terminus: close the loop
+            if DO_CCD:
+                j_prev = j
+                for i_prev in [ i, i+1, i+2 ]:
+                    if ( j_prev < loop_start or i_prev > loop_end ): continue
+
+                    job_tag1 = "REGION_%d_%d" % ( i_prev,     loop_start-1 )
+                    job_tag2 = "REGION_%d_%d" % ( loop_end+1, j_prev       )
+
+                    if ( job_tag1 in all_job_tags ) and ( job_tag2 in all_job_tags ):
+
+                        sub_job_tag = 'START_FROM_%s_%s_CLOSE_LOOP_CCD' % ( job_tag1, job_tag2 )
+
+                        decoy_tag = 'S_$(Process)'
+
+                        infile1 =  job_tag1.lower()+"_sample.cluster.out"
+                        args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
+                        args2 += " -input_res1 "
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, loop_start, NRES, start_res_for_input_pdb ) )
+
+                        infile2 =  job_tag2.lower()+"_sample.cluster.out"
+                        args2 += ' -silent2 %s ' % ( infile2 )
+                        args2 += " -input_res2 "
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(loop_end+1, j_prev+1, NRES, start_res_for_input_pdb ) )
+
+                        if ( i_prev > i ):  args2 += " -bridge_res " + make_tag( range( i, i_prev ) )
+                        args2 += " -cutpoint_closed %d " % (j)
+                        args2 += " -ccd_close"
+                        args2 += " -global_optimize"
+
+                        prev_job_tags = [ job_tag1, job_tag2 ]
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+
+                # build residues and close -- again, this might be combinable with stuff above.
+                # in this case, build one residues from C-terminus, CCD close over intervening residues.
+                j_prev = j-1
+                for i_prev in [ i, i+1, i+2 ]:
+                    job_tag = "REGION_%d_%d" % ( i_prev, j_prev )
+                    if job_tag in all_job_tags:
+                        sub_job_tag = 'START_FROM_%s_CLOSE_LOOP_CCD' % ( job_tag )
+
+                        decoy_tag = 'S_$(Process)'
+
+                        infile1 =  job_tag.lower()+"_sample.cluster.out"
+                        args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
+                        args2 += " -input_res1 "
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ) )
+
+                        args2 += " -sample_res %d" % ( j )
+                        if ( i_prev > i ):  args2 += " -bridge_res " + make_tag( range( i, i_prev ) )
+                        args2 += " -cutpoint_closed %d " % (j)
+                        args2 += " -ccd_close"
+
+                        args2 += " -global_optimize"
+
+                        prev_job_tags = [ job_tag ]
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
+
+                j_prev = j
+                for i_prev in [ i+1, i+2, i+3 ]:
+                    job_tag = "REGION_%d_%d" % ( i_prev, j_prev )
+                    if job_tag in all_job_tags:
+                        sub_job_tag = 'START_FROM_%s_CLOSE_LOOP_CCD' % ( job_tag )
+
+                        decoy_tag = 'S_$(Process)'
+
+                        infile1 =  job_tag.lower()+"_sample.cluster.out"
+                        args2 = '%s  -silent1 %s -tags1 %s' % (args, infile1, decoy_tag )
+                        args2 += " -input_res1 "
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ) )
+
+                        args2 += " -sample_res %d" % (i_prev-1)
+                        if ( i_prev > i+1 ):  args2 += " -bridge_res " + make_tag( range( i, i_prev-1 ) )
+                        args2 += " -cutpoint_closed %d " % (j+1)
+                        args2 += " -ccd_close"
+
+                        args2 += " -global_optimize"
+
+                        prev_job_tags = [ job_tag ]
+                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+
 
 
         ###########################################################
         # APPEND OR PREPEND TO PREVIOUS PDB
         #  [I wonder if this could just be unified with above?]
+        #
         ###########################################################
-
         for start_region in start_regions:
 
             i_prev = start_region[0]
@@ -1036,51 +1177,54 @@ for L in range( min_length, max_length + 1 ):
 
             input_res1 =  wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb )
 
-            if ( loop_close and START_FROM_PDB ):
+            if ( loop_close and START_FROM_PDB and DO_KIC):
+                # FOLLOWING HAS NOT BEEN UPDATED AFTER IMPROVEMENTS TO
+                #  LOOP CLOSURE ABOVE! -- NEED TO DOUBLE-CHECK IT.
+                # Is it even necessary?
+                if False:
+                    if new_loop_close:
+                        if ( j == j_prev ) and (i_prev == (j + min_loop_gap) ): # close the loop
+                            #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
+                            #  believe its psi, omega.
+                            sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP_KIC' % ( i_prev, j_prev )
 
-                if new_loop_close:
-                    if ( j == j_prev ) and (i_prev == (j + min_loop_gap) ): # close the loop
-                        #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
-                        #  believe its psi, omega.
-                        sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP' % ( i_prev, j_prev )
+                            decoy_tag = 'S_$(Process)'
 
-                        decoy_tag = 'S_$(Process)'
+                            args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
+                            args2 += " -input_res1 "
+                            for m in input_res1: args2 += ' %d' % m
 
-                        args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
-                        args2 += " -input_res1 "
-                        for m in input_res1: args2 += ' %d' % m
+                            args2 += " -sample_res"
+                            if ( j not in fixed_res ): args2 += " %d" % j
+                            args2 +=" %d" % (j+1)
+                            args2 += " -bridge_res %d %d %d" % (j+2,j+3,j+4)
+                            args2 += " -cutpoint_closed %d " % (j+1)
 
-                        args2 += " -sample_res"
-                        if ( j not in fixed_res ): args2 += " %d" % j
-                        args2 +=" %d" % (j+1)
-                        args2 += " -bridge_res %d %d %d" % (j+2,j+3,j+4)
-                        args2 += " -cutpoint_closed %d " % (j+1)
+                            setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                                 fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
-                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
-                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+                    else:
+                        if ( j == j_prev ) and  (i_prev == j+2) and ( j >= loop_start) and (j+2 <= loop_end):
+                            #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
+                            #  believe its psi, omega.
+                            sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP_KIC' % ( i_prev, j_prev )
 
-                else:
-                    if ( j == j_prev ) and  (i_prev == j+2) and ( j >= loop_start) and (j+2 <= loop_end):
-                        #  sample j, j+1;  bridge_res j+2, j+3, j+4.  Note that  j+4 was previously sampled, so we can hopefully
-                        #  believe its psi, omega.
-                        sub_job_tag = 'START_FROM_REGION_%d_%d_CLOSE_LOOP' % ( i_prev, j_prev )
+                            decoy_tag = '' #Should be super fast.
 
-                        decoy_tag = '' #Should be super fast.
+                            args2 = '%s  -silent1 %s ' % (args, infile )
+                            args2 += " -input_res1 "
+                            for m in input_res1: args2 += ' %d' % m
 
-                        args2 = '%s  -silent1 %s ' % (args, infile )
-                        args2 += " -input_res1 "
-                        for m in input_res1: args2 += ' %d' % m
+                            #args2 += " -sample_res"
+                            #for m in wrap_range( loop_end, loop_start+1): args2 += " %d" % m
 
-                        #args2 += " -sample_res"
-                        #for m in wrap_range( loop_end, loop_start+1): args2 += " %d" % m
+                            args2 += " -global_optimize"
 
-                        args2 += " -global_optimize"
+                            args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
+                            args2 += " -cutpoint_closed %d " % (j+1)
 
-                        args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
-                        args2 += " -cutpoint_closed %d " % (j+1)
-
-                        setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
-                                                             fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
+                            setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
+                                                                 fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
             else:
                 if TEMPLATE:
@@ -1112,7 +1256,7 @@ for L in range( min_length, max_length + 1 ):
                         args2 += ' -backbone_only2'
 
                         args2 += ' -sample_res '
-                        for k in wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i, j+1, NRES, start_res_for_input_pdb ) )
 
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, '', \
@@ -1137,7 +1281,7 @@ for L in range( min_length, max_length + 1 ):
                         args2 += " -in:file:frag_files %s" % frag_file
 
                         args2 += ' -sample_res '
-                        for k in wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ) )
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                              fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -1164,10 +1308,10 @@ for L in range( min_length, max_length + 1 ):
 
                         args2 += " -silent2 %s/%s" % (swa_silent_file_dir, infile_swa )
                         args2 += " -input_res2 "
-                        for k in wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ) )
 
                         args2 += ' -sample_res '
-                        for k in wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                        args2 += make_tag_with_dashes( wrap_range_and_add_satellite(startpos, endpos+1, NRES, start_res_for_input_pdb ) )
 
                         setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                              fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -1239,7 +1383,7 @@ for L in range( min_length, max_length + 1 ):
                 args2 = '%s  -silent1 %s -tags1 %s' % (args, infile, decoy_tag )
 
                 args2 += ' -input_res1 '
-                for k in wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ): args2 += ' %d' % k
+                args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ) )
 
                 args2 += ' -sample_res '
                 if ( i < i_prev and j == j_prev):
@@ -1258,6 +1402,8 @@ for L in range( min_length, max_length + 1 ):
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
 
 
+
+        print len( combine_files )
 
         if len( combine_files ) == 0:
             if loop_close:
