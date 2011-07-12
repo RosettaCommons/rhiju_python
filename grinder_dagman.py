@@ -87,6 +87,7 @@ only_go_midway = parse_options( argv, "only_go_midway", 0 )
 centroid = parse_options( argv, "centroid", 0 )
 DO_CCD = not parse_options( argv,'no_ccd',0 )
 DO_KIC = parse_options( argv, 'do_kic', 0 )
+disable_sampling_of_loop_takeoff = parse_options( argv, 'disable_sampling_of_loop_takeoff', 0 )
 
 if ( len( argv ) > 1 ): # Should remain with just the first element, the name of this script.
     print " Unrecognized flags?"
@@ -637,6 +638,8 @@ if centroid:
     #args += ' -centroid -skip_minimize '
 if len( secstruct ) > 0:
     args += ' -secstruct '+secstruct
+if disable_sampling_of_loop_takeoff:
+    args += ' -disable_sampling_of_loop_takeoff'
 
 args += ' -mute all' # trying to cut down on disk space!
 
@@ -792,6 +795,10 @@ for L in range( min_length, max_length + 1 ):
                     if ( j == loop_start-1  and  i < (( loop_start+loop_end)/2 - 1) ): continue
                     if ( loop_close    and  j > (( loop_start+loop_end)/2 + 1) ): continue
                     if ( loop_close    and  i < (( loop_start+loop_end)/2 - 2) ): continue
+
+                if ( loop_close and disable_sampling_of_loop_takeoff ):
+                    if ( i == loop_end + 1): continue
+                    if ( j == loop_start - 1): continue
 
 
         if len( endpoints ) > 0:
@@ -1115,6 +1122,7 @@ for L in range( min_length, max_length + 1 ):
                 j_prev = j-1
                 for i_prev in [ i, i+1, i+2 ]:
                     job_tag = "REGION_%d_%d" % ( i_prev, j_prev )
+                    if disable_sampling_of_loop_takeoff and ( j==loop_start-1 or i_prev==loop_end+1 ): continue
                     if job_tag in all_job_tags:
                         sub_job_tag = 'START_FROM_%s_CLOSE_LOOP_CCD' % ( job_tag )
 
@@ -1140,6 +1148,8 @@ for L in range( min_length, max_length + 1 ):
                 j_prev = j
                 for i_prev in [ i+1, i+2, i+3 ]:
                     job_tag = "REGION_%d_%d" % ( i_prev, j_prev )
+                    cutpoint_at_Cterm = i_prev-2
+                    if disable_sampling_of_loop_takeoff and ( j ==loop_start-1 or cutpoint_at_Cterm==loop_end ): continue
                     if job_tag in all_job_tags:
                         sub_job_tag = 'START_FROM_%s_CLOSE_LOOP_CCD' % ( job_tag )
 
@@ -1152,7 +1162,7 @@ for L in range( min_length, max_length + 1 ):
 
                         args2 += " -sample_res %d" % (i_prev-1)
                         if ( i_prev > i+1 ):  args2 += " -bridge_res " + make_tag( range( i, i_prev-1 ) )
-                        args2 += " -cutpoint_closed %d " % (j+1)
+                        args2 += " -cutpoint_closed %d " % (cutpoint_at_Cterm)
                         args2 += " -ccd_close"
 
                         args2 += " -global_optimize"
@@ -1388,12 +1398,12 @@ for L in range( min_length, max_length + 1 ):
                 args2 += ' -sample_res '
                 if ( i < i_prev and j == j_prev):
                     for m in range(i,i_prev+1):
-                        args2 += ' %d' % m
-                        #if m not in fixed_res: args2 += ' %d' % m
+                        #args2 += ' %d' % m
+                        if (not disable_sampling_of_loop_takeoff) or (m not in fixed_res): args2 += ' %d' % m
                 elif ( i == i_prev and j > j_prev ):
                     for m in range(j_prev,j+1):
-                        args2 += ' %d' % m
-                        #if m not in fixed_res: args2 += ' %d' % m
+                        #args2 += ' %d' % m
+                        if (not disable_sampling_of_loop_takeoff) or (m not in fixed_res): args2 += ' %d' % m
                 else:
                     for m in [i,j]:
                         if m not in fixed_res: args2 += ' %d' % m
