@@ -9,7 +9,8 @@ import string
 
 HOMEDIR = expanduser('~rhiju')
 
-EXE = HOMEDIR+'/projects/rdat/external/RNAstructure_Rochester/RNAstructure/exe/Fold'
+#EXE = HOMEDIR+'/projects/rdat/external/RNAstructure_Rochester/RNAstructure/exe/Fold'
+EXE = HOMEDIR+'/projects/rdat/external/RNAstructure_DASLAB/exe/Fold'
 assert( exists(EXE ) )
 
 PYDIR = HOMEDIR+'/python'
