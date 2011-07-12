@@ -19,6 +19,8 @@ seq_file = parse_options( argv, 'seq_file', '' )
 outdir = parse_options( argv, 'outdir','RUNS')
 min_res = parse_options( argv, 'min_res', -1 )
 max_res = parse_options( argv, 'max_res', -1 )
+sm = parse_options( argv, 'sm', -99.9 )
+si = parse_options( argv, 'si', -99.9 )
 maxdistance = parse_options( argv, 'maxdistance', -1 )
 shape_file = parse_options( argv, 'shape_file', '' )
 force_unpair_file = parse_options( argv, 'force_unpair_file', '' )
@@ -62,6 +64,9 @@ def outputcommand( seq_file, ct_file, shape_file, force_unpair_constraints_file,
 
     if len( force_unpair_constraints_file ) > 0:
         command_line += ' -c %s ' % force_unpair_constraints_file
+
+    if ( sm != -99.9 ): command_line += ' -sm %5.2f ' % sm
+    if ( si != -99.9 ): command_line += ' -si %5.2f ' % si
 
     outfile = '/dev/null'
     errfile = '/dev/null'
