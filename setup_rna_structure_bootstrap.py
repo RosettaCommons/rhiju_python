@@ -13,6 +13,7 @@ EXE = HOMEDIR+'/projects/rdat/external/RNAstructure_Rochester/RNAstructure/exe/F
 #EXE = HOMEDIR+'/projects/rdat/external/RNAstructure_DASLAB/exe/Fold'
 assert( exists(EXE ) )
 
+
 PYDIR = HOMEDIR+'/python'
 assert( exists( PYDIR ) )
 
@@ -25,8 +26,13 @@ si = parse_options( argv, 'si', -99.9 )
 maxdistance = parse_options( argv, 'maxdistance', -1 )
 shape_file = parse_options( argv, 'shape_file', '' )
 force_unpair_file = parse_options( argv, 'force_unpair_file', '' )
+partition = parse_options( argv, 'partition', 0 )
 nboot = parse_options( argv, 'nboot', 0 )
 jobfile = parse_options( argv, 'jobfile', 'bsubRNAstructure')
+
+if partition:
+    EXE = EXE.replace( 'Fold', 'partition' )
+    assert( exists( EXE ) )
 
 assert( len( argv ) == 1 )
 
@@ -54,11 +60,24 @@ if (min_res != 1 or max_res != 1 ):
 if ( maxdistance > 0 ): EXE += ' -md %d ' % maxdistance
 
 assert( len( seq_file ) > 0 )
-if nboot > 0: assert( len( shape_file ) > 0 )
+if nboot > 0:
+    assert( len( shape_file ) > 0 )
+    assert( partition == 0 )
+if partition > 0: assert( nboot == 0 )
 
 if not exists( outdir ): system( 'mkdir -p '+outdir )
 
-def outputcommand( seq_file, ct_file, shape_file, force_unpair_constraints_file, fid ):
+def outputcommand( seq_file, ct_file, shape_file, force_unpair_constraints_file, fid, partition ):
+
+    if partition:
+        partition_dir = outdir + '/'+  seq_file.replace('.seq','') + '_PARTITION/'  # need to create bpp.txt somewhere. This is kind of silly.
+        if not exists( partition_dir ): system( 'mkdir -p '+ partition_dir )
+        ct_file = 'blah.pfs'
+        seq_file = '../../'+seq_file
+        if len( shape_file ) > 0 : shape_file = '../../'+shape_file
+        if len( force_unpair_constraints_file ) > 0 : force_unpair_constraints_file = '../../'+force_unpair_constraints_file
+        print 'Will use: ', partition_dir
+
     shape_tag = ''
     if len( shape_file ) > 0: shape_tag = ' -sh %s' % shape_file
     command_line = '%s %s %s %s' % ( EXE, seq_file, ct_file, shape_tag )
@@ -68,6 +87,8 @@ def outputcommand( seq_file, ct_file, shape_file, force_unpair_constraints_file,
 
     if ( sm != -99.9 ): command_line += ' -sm %5.2f ' % sm
     if ( si != -99.9 ): command_line += ' -si %5.2f ' % si
+
+    if partition:  command_line  = '" cd %s; %s"' % (partition_dir, command_line)
 
     outfile = '/dev/null'
     errfile = '/dev/null'
@@ -95,8 +116,13 @@ if len( force_unpair ) > 0:
 
 fid = open( jobfile, 'w' )
 ct_file = outdir+'/'+seq_file+'.ct'
+
+if partition:
+    partition_dir = outdir + '/' +  seq_file.replace('.seq','') + '_PARTITION/'  # need to create bpp.txt somewhere. This is kind of silly.
+    ct_file = partition_dir + 'bpp.txt'
+
 if not exists( ct_file ):
-    outputcommand( seq_file, ct_file, shape_file, force_unpair_constraints_file, fid )
+    outputcommand( seq_file, ct_file, shape_file, force_unpair_constraints_file, fid, partition )
 else:
     print 'Job done already ==> ', ct_file
 
@@ -122,7 +148,10 @@ if len( shape_file ) > 0 and nboot > 0:
                 fid2.write( lines[ rand_index[m] ] )
             fid2.close()
 
-            outputcommand( seq_file, boot_ct_file, boot_shape_file, force_unpair_constraints_file, fid )
+            outputcommand( seq_file, boot_ct_file, boot_shape_file, force_unpair_constraints_file, fid, 0 )
             nboot_actual += 1
 
     print 'Set up %d bootstraps for %s' % (nboot_actual,seq_file)
+
+fid.close()
+print 'Created: ', jobfile

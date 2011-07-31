@@ -1395,18 +1395,23 @@ for L in range( min_length, max_length + 1 ):
                 args2 += ' -input_res1 '
                 args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ) )
 
-                args2 += ' -sample_res '
+                sample_res = []
                 if ( i < i_prev and j == j_prev):
                     for m in range(i,i_prev+1):
                         #args2 += ' %d' % m
-                        if (not disable_sampling_of_loop_takeoff) or (m not in fixed_res): args2 += ' %d' % m
+                        if (not disable_sampling_of_loop_takeoff) or (m not in fixed_res): sample_res.append( m )
                 elif ( i == i_prev and j > j_prev ):
                     for m in range(j_prev,j+1):
                         #args2 += ' %d' % m
-                        if (not disable_sampling_of_loop_takeoff) or (m not in fixed_res): args2 += ' %d' % m
+                        if (not disable_sampling_of_loop_takeoff) or (m not in fixed_res): sample_res.append( m )
                 else:
                     for m in [i,j]:
-                        if m not in fixed_res: args2 += ' %d' % m
+                        if m not in fixed_res: sample_res.append( m )
+
+                args2 += ' -sample_res ' + make_tag(sample_res)
+
+                # if only sampling one residue, go ahead and sample more backbone stuff.
+                if len( sample_res ) == 1: args2 = args2.replace( '-n_sample 18', '-n_sample 36' )
 
                 setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                      fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)

@@ -1,14 +1,24 @@
 #!/usr/bin/python
 
-from sys import argv
-from os import popen
-from os.path import basename
+from sys import argv,exit
+from os import popen, system
+from os.path import basename,dirname
 from glob import glob
 
 indir = argv[ 1 ]
 
+globfiles = glob( '%s/*/bpp.txt' % indir )
+globfiles.sort()
+for bpp_file in globfiles:
+    new_file = basename( dirname( bpp_file) ).replace( '_PARTITION', '_partition_bpp.txt' )
+    command = 'cp %s %s' % (bpp_file, new_file )
+    print command
+    system( command )
+
 globfiles = glob( '%s/*.seq.ct' % indir )
 globfiles.sort()
+
+#exit( 0 )
 
 for ct_file in globfiles:
     cat_file = basename( ct_file ).replace('.seq.ct','_structures.txt' )
