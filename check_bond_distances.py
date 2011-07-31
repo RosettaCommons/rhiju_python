@@ -39,7 +39,7 @@ def get_dist( coord, i1,j1,i2,j2 ):
     return dist
 
 def get_angle( coord, i1,j1,i2,j2,i3,j3 ):
-    angle = 0.0
+    angle = 0
 
     if  j1 in coord.keys() and  i1 in coord[ j1 ].keys() \
             and j2 in coord.keys() and  i2 in coord[ j2 ].keys() \

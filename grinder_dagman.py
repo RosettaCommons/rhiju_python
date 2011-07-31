@@ -1018,7 +1018,9 @@ for L in range( min_length, max_length + 1 ):
         # This is meant for O(N) loop modeling -- build forward,
         #  build backward and meet in the middle.
         ########################################################
-        if  START_FROM_PDB and loop_close and (not no_fixed_res) and ( j >= loop_start-1 and i <= loop_end+1) and not loop_force_Nsquared: # special, chain closure!
+
+        #if  START_FROM_PDB and loop_close and (not no_fixed_res) and ( j >= loop_start-1 and i <= loop_end+1) and not loop_force_Nsquared:
+        if  START_FROM_PDB and loop_close and (not no_fixed_res) and ( j >= loop_start-1 and i <= loop_end+1):
 
             ###############################################################################################
             # Kinematic loop closure -- close gaps with 3 bridge residues -- might deprecate this soon
@@ -1481,8 +1483,8 @@ if not exists( final_outfile ) and ( MIN_RES == 1 and MAX_RES == NRES ):
     args_cluster = ' -cluster_test -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  %s -out:file:silent %s  %s -score_diff_cut %8.3f -silent_read_through_errors  -nstruct %d ' % (string.join( last_outfiles ), DB,  cluster_tag, final_outfile, cluster_by_all_atom_rmsd_tag, 2 * score_diff_cut, 10000 )
 
     if FIX_CALC_RMS_TAG:
-        args_cluster += ' -working_res'
-        for m in range(1, NRES+1): args_cluster += ' %d' % m
+        args_cluster += ' -working_res '
+        args_cluster += make_tag_with_dashes( range(1,NRES+1) )
 
     condor_submit_cluster_file = 'CONDOR/REGION_FINAL_cluster.condor'
     make_condor_submit_file( condor_submit_cluster_file, args_cluster, 1 )

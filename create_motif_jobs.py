@@ -83,6 +83,7 @@ motif_out_files = []
 
 # Parse out stems
 lines = open( params_file ).readlines()
+cutpoints_original = []
 for line in lines:
     if line[:4] == 'STEM':
         cols = string.split( line )
@@ -107,6 +108,9 @@ for line in lines:
         except:
             continue
 
+    if line[:13] == 'CUTPOINT_OPEN':
+        cutpoints_original = map( lambda x:int(x), string.split( line[14:] ) )
+
 print pair_map
 
 # Parse out stems
@@ -126,7 +130,7 @@ for i in range( numres ):
         already_in_stem[ pair_map[k] ] = 1
 
         # Can we extend in one direction?
-        while( pair_map.has_key( k + 1 ) and  pair_map[ k+1 ] == pair_map[ k ] - 1 ):
+        while( pair_map.has_key( k + 1 ) and  pair_map[ k+1 ] == pair_map[ k ] - 1  and  not already_in_stem[k+1] ):
             k += 1
             stem_res.append( [k, pair_map[k]] )
             already_in_stem[ k ] = 1
@@ -417,30 +421,41 @@ fid_README_MOTIFS.close()
 # Output assembly job
 #Where are the jumps and chainbreaks?
 jumps = []
+
+if len( cutpoints_original ) > 0:
+    fid.write( 'CUTPOINT_OPEN ' )
+    for cutpoint in cutpoints_original:
+        fid.write( ' %d'  % (cutpoint+1) )
+    fid.write( '\n' )
+
+
 cutpoints  = []
 for i in range( motif_count ):
 
     motif_stem_set = motif_stem_sets[ i ]
 
-    for k in range( len(motif_stem_set) ):
-        motif_stem = motif_stem_set[ k ]
-        #print motif_stem
-        possible_cutpoints =  [ motif_stem[ 0 ][ 0 ], motif_stem[ 1 ][ 1 ] ]
-        possible_cutpoints.sort()
-        if ( possible_cutpoints[0] not in cutpoints):
-            cutpoints.append( possible_cutpoints[ 0 ] )
+    motif_stem = motif_stem_set[ 0 ]
+
+    possible_cutpoints =  [ motif_stem[ 0 ][ 0 ], motif_stem[ 1 ][ 1 ] ]
+    possible_cutpoints.sort()
+    print possible_cutpoints
+    if ( possible_cutpoints[0] not in cutpoints):
+        cutpoints.append( possible_cutpoints[ 0 ] )
 
 
 params_file = fasta_file.replace('.fasta','_assemble.params' )
 fid = open( params_file, 'w')
-fid.write( 'CUTPOINT_OPEN ' )
-cutpoints.sort()
-for cutpoint in cutpoints:
-    fid.write( ' %d'  % (cutpoint+1) )
-fid.write( '\n' )
 
-for cutpoint in cutpoints:
-    fid.write( 'OBLIGATE   PAIR %d %d W W A\n' % (cutpoint+1, pair_map[cutpoint]+1) )
+
+if len( cutpoints ) > 0:
+    fid.write( 'CUTPOINT_CLOSED ' )
+    #cutpoints.sort()
+    for cutpoint in cutpoints:
+        fid.write( ' %d'  % (cutpoint+1) )
+    fid.write( '\n' )
+
+#for cutpoint in cutpoints:
+#    fid.write( 'OBLIGATE   PAIR %d %d W W A\n' % (cutpoint+1, pair_map[cutpoint]+1) )
 
 for i in range( stem_count ):
     stem_res = stems[i]
@@ -449,6 +464,9 @@ for i in range( stem_count ):
         fid.write( ' PAIR %d %d W W A ' % \
                        ( stem_res[k][ 0 ]+1, stem_res[k][ 1 ]+1 ) )
     fid.write('\n')
+    fid.write( 'OBLIGATE PAIR %d %d W W A \n\n'  % \
+                   ( stem_res[-1][0] + 1,\
+                     stem_res[-1][1] + 1 ) )
 
 fid.close()
 ########
@@ -482,6 +500,18 @@ for stem_out_file in stem_out_files:
     command += ' '+stem_out_file
 for motif_out_file in motif_out_files:
     command += ' '+motif_out_file
+
+command += ' -chunk_res '
+for n in range( len( stems )  ):
+    stem = stems[n]
+    for q in range( len( stem ) ):        command += ' %d' % (stem[q][0] + 1)
+    for q in range( len( stem ) ):        command += ' %d' % (stem[ len(stem) - q - 1][1] + 1)
+
+for n in range( motif_count ):
+    motif_res = motifs[n]
+    for m in motif_res: command += ' %d' % (m+1)
+
+
 if torsions_exists: command += ' -vall_torsions %s ' % torsions_file
 if data_exists:
     command += ' -data_file '+data_file
