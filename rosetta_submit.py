@@ -2,7 +2,7 @@
 
 from sys import argv,exit
 from os import system
-from os.path import basename,dirname,expanduser
+from os.path import basename,dirname,expanduser,exists
 import string
 
 if len( argv ) < 4:
@@ -29,6 +29,7 @@ tot_jobs = 0
 universe = 'vanilla';
 fid_condor.write('+TGProject = TG-MCB090153\n')
 fid_condor.write('universe = %s\n' % universe)
+fid_condor.write('notification = never\n')
 
 HOMEDIR = expanduser('~')
 
@@ -43,7 +44,7 @@ for line in  lines:
     command_line = command_line.replace( '-out::file::silent ', '-out::file::silent '+dir)
     command_line = command_line.replace( 'macosgcc', 'linuxgcc')
     command_line = command_line.replace( 'Users', 'home')
-
+    command_line = command_line.replace( '~/', HOMEDIR+'/')
     command_line = command_line.replace( '/home/rhiju',HOMEDIR)
 
     cols = string.split( command_line )
@@ -72,6 +73,9 @@ for line in  lines:
         tot_jobs += 1
 
     EXE = cols[ 0 ]
+    if not exists( EXE ):
+        EXE = HOMEDIR + '/src/mini/bin/'+EXE
+        assert( exists( EXE ) )
     arguments = string.join( cols[ 1: ] )
     fid_condor.write('\nexecutable = %s\n' % EXE )
     fid_condor.write('arguments = %s\n' % arguments)
