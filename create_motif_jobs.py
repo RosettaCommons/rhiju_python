@@ -96,6 +96,20 @@ for line in lines:
                 pair_map[ res2 ] = res1
                 all_pairs.append( [res1,res2] )
                 assert ( sequence[res1] in complement[ sequence[res2] ] )
+    elif line.count( '(' ) > 0:         #maybe dot/bracket notation (((...)))
+        print 'DBN: ', line
+        left_brackets = []
+        for i in range( len(line) ):
+            if line[i] == '(':  left_brackets.append( i )
+            if line[i] == ')':
+                res1 = left_brackets[-1]
+                res2 = i
+                del( left_brackets[-1] )
+                pair_map[ res1 ] = res2
+                pair_map[ res2 ] = res1
+                all_pairs.append( [res1,res2] )
+                assert ( sequence[res1] in complement[ sequence[res2] ] )
+        assert( len (left_brackets) == 0 )
     else:
         try:
             cols = string.split( line[:-1] )
