@@ -63,7 +63,7 @@ if argv.count('-segments'):
         for j in range( segment_residues[2*i], segment_residues[2*i+1]+1 ):
             subset_residues.append( j )
 
-    print subset_residues
+    #print subset_residues
 
 use_excise = 0
 excise_residues = []

@@ -3,6 +3,19 @@
 import string
 from sys import argv,exit
 from os import system
+from os.path import exists, expanduser
+
+EXE_DIR =  expanduser('~')+'/src/rosetta_TRUNK/rosetta_source/bin/'
+
+if not exists( EXE_DIR ):
+    print 'Need to set EXE_DIR in '+argv[0]+' to match an existing directory'
+    exit( 0 )
+
+EXE_extension = '.linuxgccrelease'
+rna_helix_exe = EXE_DIR + '/rna_helix'+EXE_extension
+if not exists( rna_helix_exe ):
+    print 'Cannot find '+rna_helix_exe+'.  Different extension than .linuxgccrelease?'
+    exit( 0 )
 
 fasta_file = argv[1]
 params_file = argv[2]
@@ -97,7 +110,7 @@ for line in lines:
                 all_pairs.append( [res1,res2] )
                 assert ( sequence[res1] in complement[ sequence[res2] ] )
     elif line.count( '(' ) > 0:         #maybe dot/bracket notation (((...)))
-        print 'DBN: ', line
+        print line
         left_brackets = []
         for i in range( len(line) ):
             if line[i] == '(':  left_brackets.append( i )
@@ -125,7 +138,7 @@ for line in lines:
     if line[:13] == 'CUTPOINT_OPEN':
         cutpoints_original = map( lambda x:int(x), string.split( line[14:] ) )
 
-print pair_map
+#print pair_map
 
 # Parse out stems
 already_in_stem = {}
@@ -199,7 +212,7 @@ for i in range( numres ):
             k += 1
             cutpoints.append( pair_map[k] )
 
-        print 'AFTER FIRST HELIX: ', motif_res
+        #print 'AFTER FIRST HELIX: ', motif_res
 
         k = i
         while ( k not in motif_res and k < numres):
@@ -237,7 +250,7 @@ for i in range( numres ):
             # Next non-helical part..
             k = pair_map[ stem_start ] + 1
 
-            print 'AFTER NEXT HELIX: ', motif_res
+            #print 'AFTER NEXT HELIX: ', motif_res
 
         motif_res.sort()
 
@@ -250,15 +263,16 @@ for i in range( numres ):
         motif_stem_sets.append( motif_stem_set )
         motif_cutpoints.append( cutpoints )
         motif_res_maps.append( motif_res_map )
-        print 'CUTPOINTS ', cutpoints
+        #print 'CUTPOINTS ', cutpoints
 
 #print motifs
 #print motif_stem_sets
 #print motif_cutpoints
 
 # Output stem definition jobs
-fid_README_STEMS = open( 'README_STEMS','w')
-print 'INPUT_RES',
+readme_stems_file = 'README_STEMS'
+fid_README_STEMS = open( readme_stems_file,'w')
+#print 'INPUT_RES',
 for i in range( stem_count ):
 
     # Fasta
@@ -271,14 +285,15 @@ for i in range( stem_count ):
 
     for k in range( stem_length ):
         fid.write( sequence[stem_res[k][0]] )
-        print stem_res[k][0]+1,
+        #print stem_res[k][0]+1,
     for k in range( stem_length ):
         fid.write( sequence[stem_res[stem_length-k-1][1]] )
-        print stem_res[stem_length-k-1][1]+1,
+        #print stem_res[stem_length-k-1][1]+1,
 
-    print
+    #print
     fid.write('\n')
     fid.close()
+    print 'Created: ', tag
 
     # pdb_file
     if native_exists:
@@ -294,15 +309,38 @@ for i in range( stem_count ):
 
     outfile = 'stem%d_%s.out' % (i+1, fasta_file.replace('.fasta',''))
     stem_out_files.append( outfile )
-    command = 'rna_assemble_test.macosgccrelease -database  /Users/rhiju/minirosetta_database -nstruct 1 -build_helix_test -fasta %s -out:file:silent %s' % (tag, outfile)
+    command = '%s/rna_helix%s  -database  %s/../../rosetta_database/ -fasta %s -out:file:silent %s' % (EXE_DIR, EXE_extension, EXE_DIR, tag, outfile)
     fid_README_STEMS.write(command+'\n')
 
-print
+#print
 
 fid_README_STEMS.close()
+print 'Created: ', readme_stems_file
+print ' This has the command lines that you need to make helical stems'
+print
+
+
+
+def make_tag_with_dashes( int_vector ):
+    tag = ''
+
+    start_res = int_vector[0]
+    for i in range( 1, len(int_vector)+1 ):
+        if i==len( int_vector)  or  int_vector[i] != int_vector[i-1]+1:
+
+            stop_res = int_vector[i-1]
+            if stop_res > start_res:
+                tag += ' %d-%d' % (start_res, stop_res )
+            else:
+                tag += ' %d' % (stop_res )
+
+            if ( i < len( int_vector) ): start_res = int_vector[i]
+
+    return tag
 
 # Output motif jobs
-fid_README_MOTIFS = open( 'README_MOTIFS','w')
+readme_motifs_file = 'README_MOTIFS'
+fid_README_MOTIFS = open( readme_motifs_file,'w')
 for i in range( motif_count ):
 
     # Fasta
@@ -317,6 +355,7 @@ for i in range( motif_count ):
         fid.write( sequence[motif_res[k]] )
     fid.write('\n')
     fid.close()
+    print 'Created: ', motif_fasta_file
 
     # params file
     motif_stem_set = motif_stem_sets[ i ]
@@ -332,7 +371,7 @@ for i in range( motif_count ):
         motif_stem = motif_stem_set[ k ]
         fid.write( 'STEM   ' )
         for n in range( len( motif_stem ) ):
-            fid.write( ' PAIR %d %d W W A'  % \
+            fid.write( '  PAIR %d %d W W A'  % \
                        ( motif_res_map[ motif_stem[n][0] ]+1,
                          motif_res_map[ motif_stem[n][1] ]+1 ) )
         fid.write( '\n' )
@@ -359,8 +398,8 @@ for i in range( motif_count ):
 
     motif_cutpoint.sort()
 
-    print motif_res
-    print motif_cutpoint
+    #print motif_res
+    #print motif_cutpoint
 
     if ( len( motif_cutpoint ) > 1 ):
         fid.write( 'CUTPOINT_OPEN ' )
@@ -369,6 +408,7 @@ for i in range( motif_count ):
                 fid.write( ' %d' % (motif_res_map[ motif_cutpoint[k] ]+1) )
     fid.write('\n')
     fid.close()
+    print 'Created: ', motif_params_file
 
     # pdb_file
     native_tag = ''
@@ -378,7 +418,9 @@ for i in range( motif_count ):
         command += ' motif%d_' % (i+1)
         print command
         system( command )
-        native_tag = '-native motif%d_%s' % (i+1, native_pdb_file )
+        native_pdb_file_subset =  'motif%d_%s' % (i+1, native_pdb_file )
+        native_tag = '-native %s ' % native_pdb_file_subset
+        print 'Created: ', native_pdb_file_subset
 
     if data_exists:
         motif_data_file = 'motif%d_%s' % ( i+1, data_file )
@@ -396,6 +438,7 @@ for i in range( motif_count ):
                     fid_data.write( ' %d' % (motif_res_map[ k-1 ] + 1) )
             fid_data.write( '\n' )
         fid_data.close()
+        print 'Created: ', motif_data_file
 
     cst_found = 0;
 
@@ -408,29 +451,31 @@ for i in range( motif_count ):
                 fid_cst.write( '%s %d %s %d %s\n' % (cst[0], motif_res_map[cst[1]-1]+1,cst[2],motif_res_map[cst[3]-1]+1,cst[4]) )
                 cst_found = 1
         fid_cst.close()
+        print 'Created: ', motif_cst_file
 
     motif_out_file = motif_params_file.replace( '.params','.out')
     motif_out_files.append( motif_out_file )
     NSTRUCT = 100
-    command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -params_file %s -nstruct %d -out:file:silent %s -cycles 5000 -mute all -close_loops -close_loops_after_each_move -minimize_rna' % \
-        ( native_tag, motif_fasta_file, motif_params_file, NSTRUCT, motif_out_file )
+    command = '%s/rna_denovo%s -database  %s/../../rosetta_database %s -fasta %s -params_file %s -nstruct %d -out:file:silent %s -cycles 5000 -mute all -close_loops -close_loops_after_each_move -minimize_rna' % \
+        ( EXE_DIR, EXE_extension, EXE_DIR, native_tag, motif_fasta_file, motif_params_file, NSTRUCT, motif_out_file )
 
     if data_exists: command += ' -data_file %s ' % motif_data_file
     if cst_exists and cst_found: command += ' -cst_file %s ' % motif_cst_file
     if torsions_exists: command += ' -vall_torsions %s ' % torsions_file
 
     # new -- forcing exactly the same stems in all motifs.
-    command += ' -close_loops -in:file:silent_struct_type rna -in:file:silent '
+    command += ' -in:file:silent_struct_type rna -in:file:silent '
     for n in which_stems: command += ' stem%d_%s.out' % (n+1, fasta_file.replace('.fasta',''))
 
     command += ' -chunk_res '
-    for m in stem_chunk_res: command += ' %d' % m
+    command += ' '+make_tag_with_dashes( stem_chunk_res )
 
     fid_README_MOTIFS.write( command+'\n' )
 
-
 fid_README_MOTIFS.close()
-
+print 'Created: ', readme_motifs_file
+print ' This has the command lines that you need to make interhelical motifs, like hairpin loops and internal junctions.'
+print
 
 # Output assembly job
 #Where are the jumps and chainbreaks?
@@ -452,14 +497,13 @@ for i in range( motif_count ):
 
     possible_cutpoints =  [ motif_stem[ 0 ][ 0 ], motif_stem[ 1 ][ 1 ] ]
     possible_cutpoints.sort()
-    print possible_cutpoints
+    #print possible_cutpoints
     if ( possible_cutpoints[0] not in cutpoints):
         cutpoints.append( possible_cutpoints[ 0 ] )
 
 
 params_file = fasta_file.replace('.fasta','_assemble.params' )
 fid = open( params_file, 'w')
-
 
 if len( cutpoints ) > 0:
     fid.write( 'CUTPOINT_CLOSED ' )
@@ -483,6 +527,8 @@ for i in range( stem_count ):
                      stem_res[-1][1] + 1 ) )
 
 fid.close()
+print 'Created: ', params_file
+
 ########
 assemble_cst_file = params_file.replace('.params','.cst')
 if cst_exists:
@@ -496,34 +542,38 @@ if cst_exists:
     for cst in cst_info:
             fid.write( '%s %d %s %d %s \n' % (cst[0], cst[1], cst[2], cst[3], cst[4]) )
 
-
 fid.close()
+print 'Created: ', assemble_cst_file
 
 
 #########
-fid = open( 'README_ASSEMBLE', 'w' )
+readme_assemble_file = 'README_ASSEMBLE'
+fid = open( readme_assemble_file, 'w' )
 
 native_tag = ''
 if native_exists: native_tag = '-native '+native_pdb_file
 
 outfile = params_file.replace( '.params','.out' )
-command = 'rna_denovo.macosgccrelease -database  /Users/rhiju/minirosetta_database %s -fasta %s -in:file:silent_struct_type binary_rna  -cycles 10000 -nstruct 200 -out:file:silent %s -params_file %s -cst_file %s -close_loops  -in:file:silent ' % \
-( native_tag, fasta_file, outfile, params_file, assemble_cst_file )
+command = '%s/rna_denovo%s -database  %s/../../rosetta_database %s -fasta %s -in:file:silent_struct_type binary_rna  -cycles 10000 -nstruct 200 -out:file:silent %s -params_file %s -cst_file %s -close_loops  -in:file:silent ' % \
+( EXE_DIR, EXE_extension, EXE_DIR, native_tag, fasta_file, outfile, params_file, assemble_cst_file )
 
 for stem_out_file in stem_out_files:
     command += ' '+stem_out_file
 for motif_out_file in motif_out_files:
     command += ' '+motif_out_file
 
+chunk_res = []
 command += ' -chunk_res '
 for n in range( len( stems )  ):
     stem = stems[n]
-    for q in range( len( stem ) ):        command += ' %d' % (stem[q][0] + 1)
-    for q in range( len( stem ) ):        command += ' %d' % (stem[ len(stem) - q - 1][1] + 1)
+    for q in range( len( stem ) ):        chunk_res.append(stem[q][0] + 1)
+    for q in range( len( stem ) ):        chunk_res.append(stem[ len(stem) - q - 1][1] + 1)
 
 for n in range( motif_count ):
     motif_res = motifs[n]
-    for m in motif_res: command += ' %d' % (m+1)
+    for m in motif_res: chunk_res.append(m+1)
+
+command += make_tag_with_dashes( chunk_res )
 
 
 if torsions_exists: command += ' -vall_torsions %s ' % torsions_file
@@ -532,5 +582,8 @@ if data_exists:
 
 fid.write( command+'\n')
 fid.close()
+print 'Created: ', readme_assemble_file
+print ' This has the command lines that you need to make full-length structures after making the individual stems and interhelical motifs'
+print
 
 
