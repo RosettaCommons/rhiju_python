@@ -1,9 +1,16 @@
 #!/usr/bin/python
+# Script for creating RNA helices and inter-helix junctions/loop ('motifs')
+# and then assembling them together.
+# (C) Rhiju Das 2008-2011
 
 import string
 from sys import argv,exit
 from os import system
 from os.path import exists, expanduser
+
+if len( argv ) < 2:
+    print argv[0], ' <sequence.fasta>  <secstruct file> [<native.pdb> <constraints.cst> <torsions.torsions>]'
+    exit( 0 )
 
 EXE_DIR =  expanduser('~')+'/src/rosetta_TRUNK/rosetta_source/bin/'
 
@@ -13,6 +20,9 @@ if not exists( EXE_DIR ):
 
 EXE_extension = '.linuxgccrelease'
 rna_helix_exe = EXE_DIR + '/rna_helix'+EXE_extension
+if not exists( rna_helix_exe ):
+    EXE_extension = '.macosgccrelease'
+    rna_helix_exe = EXE_DIR + '/rna_helix'+EXE_extension
 if not exists( rna_helix_exe ):
     print 'Cannot find '+rna_helix_exe+'.  Different extension than .linuxgccrelease?'
     exit( 0 )
@@ -139,6 +149,23 @@ for line in lines:
         cutpoints_original = map( lambda x:int(x), string.split( line[14:] ) )
 
 #print pair_map
+
+def make_tag_with_dashes( int_vector ):
+    tag = ''
+
+    start_res = int_vector[0]
+    for i in range( 1, len(int_vector)+1 ):
+        if i==len( int_vector)  or  int_vector[i] != int_vector[i-1]+1:
+
+            stop_res = int_vector[i-1]
+            if stop_res > start_res:
+                tag += ' %d-%d' % (start_res, stop_res )
+            else:
+                tag += ' %d' % (stop_res )
+
+            if ( i < len( int_vector) ): start_res = int_vector[i]
+
+    return tag
 
 # Parse out stems
 already_in_stem = {}
