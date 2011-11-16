@@ -30,7 +30,7 @@ FINAL_NUMBER = parse_options( argv, "final_number", 100 )
 SCORE_WEIGHTS = parse_options( argv, "weights", "score12_no_hb_env_dep.wts" )
 PACK_WEIGHTS = parse_options( argv, "pack_weights", "pack_no_hb_env_dep.wts" )
 NSTRUCT = parse_options( argv, "nstruct", 100 )
-FILTER_RMSD = parse_options( argv, "filter_rmsd", -1.0 )
+RMSD_SCREEN = parse_options( argv, "rmsd_screen", -1.0 )
 CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 0.25 )
 CLUSTER_RADIUS_SAMPLE = parse_options( argv, "cluster_radius_sample", 0.1 )
 AUTO_TUNE = parse_options( argv, "auto_tune", 0 )
@@ -600,8 +600,8 @@ args += ' -extrachi_cutoff 0 -ex1 -ex2' # These may be redundant actually.
 
 args += ' -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
 
-if ( FILTER_RMSD > 0.0 ):
-    args += ' -filter_rmsd %8.3f' % FILTER_RMSD
+if ( RMSD_SCREEN > 0.0 ):
+    args += ' -rmsd_screen %8.3f' % RMSD_SCREEN
 
 if add_peptide_plane: args += ' -add_peptide_plane'
 if filter_native_big_bins:  args+= ' -filter_native_big_bins' # this is defunct now, I think
