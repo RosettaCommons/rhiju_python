@@ -5,9 +5,12 @@ from os import system
 from os.path import basename,dirname,expanduser,exists
 import string
 
-if len( argv ) < 4:
-    print argv[0]+' <text file with rosetta command> <outdir> <# jobs>'
+def Help():
+    print argv[0]+' <text file with rosetta command> <outdir> <# jobs>  [# hours]'
     exit()
+
+if len( argv ) < 4:
+    Help()
 
 infile = argv[1]
 outdir = argv[2]
@@ -16,6 +19,10 @@ try:
 except:
     print 'NEED TO SUPPLY NUMBER OF JOBS'
 
+nhours = 16
+if len( argv ) > 4:
+    nhours = int( argv[4] )
+    if ( nhours > 168 ):  Help()
 
 lines = open(infile).readlines()
 
@@ -66,7 +73,7 @@ for line in  lines:
         outfile = '/dev/null'
         errfile = '/dev/null'
 
-        command =  'bsub -W 16:0 -o %s -e %s ' % (outfile, errfile )
+        command =  'bsub -W %d:0 -o %s -e %s ' % (nhours, outfile, errfile )
         command += command_line.replace( '$(Process)', '%d' % i )
         fid.write( command + '\n')
 
