@@ -2,7 +2,7 @@
 from sys import argv
 from os import system
 from parse_options import parse_options
-from os.path import exists, basename
+from os.path import exists, basename, dirname
 import string
 
 
@@ -26,6 +26,12 @@ assert( len( executable ) > 0)
 assert( len( arguments ) > 0 )
 
 cols = arguments.split()
+pos = cols.index( '-out:file:silent' )
+outfile = cols[pos+1]
+if not exists( dirname( outfile ) ):
+    print 'Making directory: ', dirname( outfile )
+    system( 'mkdir -p '+dirname(outfile) )
+
 pos = cols.index( '-database' )
 database_original = cols[ pos + 1 ]
 if len( database ) == 0: database = database_original
