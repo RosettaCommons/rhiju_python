@@ -20,7 +20,7 @@ for line in lines:
         executable = executable.replace( ' ','')[:-1]
     if line[:9] == 'arguments':
         arguments = string.split( line, '=' )[1]
-        arguments = arguments.replace( '$Process', '0' )
+        arguments = arguments.replace( '$(Process)', '0' )
 
 assert( len( executable ) > 0)
 assert( len( arguments ) > 0 )
