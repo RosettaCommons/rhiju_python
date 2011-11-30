@@ -5,9 +5,14 @@ from os.path import exists
 from os import system, chdir, getcwd
 from get_sequence import get_sequence
 from make_tag import make_tag, make_tag_with_dashes
+from parse_options import parse_options
 import string
 
 args = argv
+
+loop_force_Nsquared = parse_options( args, "loop_force_Nsquared", 0 )
+nstruct = parse_options( args, "nstruct", 1000 )
+
 fasta_file = args[1]
 loops_file = args[2]
 pdb_file   = args[3]
@@ -112,14 +117,17 @@ for n in range( len( loops ) ):
         assert( exists( puzzle_prepack_silent_file ) )
 
     readme_setup_file = 'README_SETUP'
-    if not exists( readme_setup_file ):
+    if True or not exists( readme_setup_file ):
         fid = open( readme_setup_file, 'w' )
         fid.write( 'rm -rf STEP* *~ CONDOR core.* SLAVE*  \n' )
-        command = 'grinder_dagman.py  -loop_start_pdb %s -fasta %s -cluster_radius 0.25 -final_number 1000   -denovo 1   -loop_res `seq %d %d` -weights score12.wts ' % (start_pdb_file, puzzle_fasta_file, loop_start_in_puzzle, loop_stop_in_puzzle)
+        command = 'grinder_dagman.py  -loop_start_pdb %s -fasta %s -cluster_radius 0.25 -final_number %d   -denovo 1   -loop_res `seq %d %d` -weights score12.wts ' % (start_pdb_file, puzzle_fasta_file, nstruct, loop_start_in_puzzle, loop_stop_in_puzzle)
         #if ( near_native ): command += ' -rmsd_screen %8.3f -cst_file %s ' % ( 2.0, native_cst_file )
         #if ( no_hb_env_dep ): command = command.replace( 'score12.wts', 'score12_no_hb_env_dep.wts' )
-
+        if (loop_force_Nsquared): command += ' -loop_force_Nsquared'
         command += '\n'
+
+        print command
+
         fid.write( command )
         fid.close()
 
