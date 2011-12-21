@@ -27,6 +27,8 @@ for outfile in outfiles:
         if len( globfiles ) == 0: globfiles = glob( outfile + '/*out'  )
         #print globfiles
 
+        globfiles.sort()
+
         for file in globfiles:
             tag = basename( file ).replace('.out','')
             if tag not in which_files_to_cat.keys():

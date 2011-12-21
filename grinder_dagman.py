@@ -21,7 +21,8 @@ sequence_lines = open( fasta_file  ).readlines()[1:]
 sequence = string.join(  map( lambda x : x[:-1], sequence_lines) ,  '' )
 NRES = len( sequence )
 NRES = parse_options( argv, "nres_to_model", NRES )
-
+EXE = parse_options( argv, "exe", "" )
+DB = parse_options( argv, "database", "" )
 MIN_RES = parse_options( argv, "min_res", 1 )
 MAX_RES = parse_options( argv, "max_res", NRES )
 ZIGZAG = parse_options( argv, "zigzag", 0 )
@@ -35,6 +36,8 @@ CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 0.25 )
 CLUSTER_RADIUS_SAMPLE = parse_options( argv, "cluster_radius_sample", 0.1 )
 AUTO_TUNE = parse_options( argv, "auto_tune", 0 )
 filter_native_big_bins = parse_options( argv, "filter_native_big_bins", 0 )
+move_all_jumps = parse_options( argv, "move_all_jumps", 0 )
+move_jumps_between_chains = parse_options( argv, "move_jumps_between_chains", 0 )
 score_diff_cut = parse_options( argv, "score_diff_cut", 10.0 )
 max_res_to_add_denovo = parse_options( argv, "denovo", 0 )
 USE_MINI_TEMP = parse_options( argv, "use_mini_TEMP", 0 )
@@ -83,6 +86,7 @@ loop_force_Nsquared = parse_options( argv, "loop_force_Nsquared", 0 )
 override = parse_options( argv, "override", 0 )
 new_loop_close = parse_options( argv, "new_loop_close", 0 )
 cutpoints_open = parse_options( argv, "cutpoint_open", [ -1 ] )
+cutpoints_closed  = parse_options( argv, "cutpoint_closed", [ -1 ] )
 only_go_midway = parse_options( argv, "only_go_midway", 0 )
 centroid = parse_options( argv, "centroid", 0 )
 DO_CCD = not parse_options( argv,'no_ccd',0 )
@@ -109,7 +113,6 @@ if len( loop_start_full_outfile ) > 0:
     LOOP = 1
 
 
-
 for template_pdb in template_pdbs: assert( exists( template_pdb ) )
 for frag_file in frag_files: assert( exists( frag_file ) )
 if add_peptide_plane:
@@ -126,12 +129,15 @@ HOMEDIR = expanduser('~rhiju')
 
 MINI = "mini"
 if USE_MINI_TEMP: MINI = "mini_TEMP"
-EXE = HOMEDIR+'/src/'+MINI+'/bin/stepwise_protein_test.macosgccrelease'
-if not( exists( EXE )):
-    EXE = HOMEDIR+'/src/'+MINI+'/bin/stepwise_protein_test.linuxgccrelease'
+
+if len( EXE ) == 0:
+    EXE = HOMEDIR+'/src/'+MINI+'/bin/stepwise_protein_test.macosgccrelease'
+    if not( exists( EXE )):
+        EXE = HOMEDIR+'/src/'+MINI+'/bin/stepwise_protein_test.linuxgccrelease'
 assert( exists( EXE ) )
 
-DB = HOMEDIR+'/minirosetta_database'
+if len( DB ) == 0:  DB = HOMEDIR+'/minirosetta_database'
+
 assert( exists( DB ) )
 
 PYDIR = HOMEDIR+'/python'
@@ -180,6 +186,7 @@ def make_condor_submit_file( condor_submit_file, arguments, queue_number, univer
     fid.write('+TGProject = TG-MCB090153\n')
     fid.write('universe = %s\n' % universe)
     fid.write('executable = %s\n' % EXE )
+
     fid.write('arguments = %s\n' % arguments)
 
     sub_job_tag = basename( condor_submit_file ).replace('.condor','')
@@ -529,8 +536,8 @@ if START_FROM_PDB:
         #start_res_for_input_pdb.append( reorder_to_be_contiguous( start_res_for_this_pdb ) )
         start_res_for_input_pdb.append( start_res_for_this_pdb )
 
-    #print assumed_start_sequence
-    #print full_actual_start_sequence
+    #print assumed_start_sequence, len( assumed_start_sequence)
+    #print full_actual_start_sequence, len( full_actual_start_sequence )
     assert( assumed_start_sequence == full_actual_start_sequence )
     #################################
 
@@ -605,6 +612,8 @@ if ( RMSD_SCREEN > 0.0 ):
 
 if add_peptide_plane: args += ' -add_peptide_plane'
 if filter_native_big_bins:  args+= ' -filter_native_big_bins' # this is defunct now, I think
+if move_all_jumps:  args+= ' -move_all_jumps'
+if move_jumps_between_chains:  args+= ' -move_jumps_between_chains'
 
 if len( cst_file ) > 0:
     assert( exists( cst_file ) )
@@ -629,10 +638,13 @@ if len( calc_rms_res ) > 0:
     args += make_tag_with_dashes( calc_rms_res )
 if len( jump_res ) > 0:
     args += ' -jump_res '
-    args += make_tag_with_dashes( jump_res )
+    args += make_tag( jump_res )
 if len( cutpoints_open ) > 0:
     args += ' -cutpoint_open '
     args += make_tag_with_dashes( cutpoints_open )
+if len( cutpoints_closed ) > 0:
+    args += ' -cutpoint_closed '
+    args += make_tag_with_dashes( cutpoints_closed )
 if centroid:
     args += ' -centroid '
     #args += ' -centroid -skip_minimize '
@@ -640,6 +652,13 @@ if len( secstruct ) > 0:
     args += ' -secstruct '+secstruct
 if disable_sampling_of_loop_takeoff:
     args += ' -disable_sampling_of_loop_takeoff'
+
+def add_cutpoint_closed( args, cutpoint ):
+    if args.find( '-cutpoint_closed' ) > -1:
+        args = args.replace( '-cutpoint_closed', '-cutpoint_closed %d' % cutpoint )
+    else:
+        args += ' -cutpoint_closed %d' % cutpoint
+    return args
 
 args += ' -mute all' # trying to cut down on disk space!
 
@@ -1041,7 +1060,7 @@ for L in range( min_length, max_length + 1 ):
                     args2 += make_tag_with_dashes( wrap_range_and_add_satellite(i_prev, j_prev+1, NRES, start_res_for_input_pdb ) )
 
                     args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
-                    args2 += " -cutpoint_closed %d " % (j+1)
+                    args2 = add_cutpoint_closed( args2, j+1 )
                     args2 += " -global_optimize"
 
                     prev_job_tags = [ job_tag ]
@@ -1072,7 +1091,7 @@ for L in range( min_length, max_length + 1 ):
                     args2 += make_tag_with_dashes( wrap_range_and_add_satellite(loop_end+1, j_prev+1, NRES, start_res_for_input_pdb ) )
 
                     args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
-                    args2 += " -cutpoint_closed %d " % (j+1)
+                    args2 = add_cutpoint_closed( args2, j+1 )
 
                     args2 += " -global_optimize"
 
@@ -1110,7 +1129,8 @@ for L in range( min_length, max_length + 1 ):
                         args2 += make_tag_with_dashes( wrap_range_and_add_satellite(loop_end+1, j_prev+1, NRES, start_res_for_input_pdb ) )
 
                         if ( i_prev > i ):  args2 += " -bridge_res " + make_tag( range( i, i_prev ) )
-                        args2 += " -cutpoint_closed %d " % (j)
+                        args2 = add_cutpoint_closed( args2, j )
+                        #args2 += " -ccd_close_res %d" % j
                         args2 += " -ccd_close"
                         args2 += " -global_optimize"
 
@@ -1137,7 +1157,8 @@ for L in range( min_length, max_length + 1 ):
 
                         args2 += " -sample_res %d" % ( j )
                         if ( i_prev > i ):  args2 += " -bridge_res " + make_tag( range( i, i_prev ) )
-                        args2 += " -cutpoint_closed %d " % (j)
+                        args2 = add_cutpoint_closed( args2, j )
+                        #args2 += " -ccd_close_res %d" % j
                         args2 += " -ccd_close"
 
                         args2 += " -global_optimize"
@@ -1164,7 +1185,8 @@ for L in range( min_length, max_length + 1 ):
 
                         args2 += " -sample_res %d" % (i_prev-1)
                         if ( i_prev > i+1 ):  args2 += " -bridge_res " + make_tag( range( i, i_prev-1 ) )
-                        args2 += " -cutpoint_closed %d " % (cutpoint_at_Cterm)
+                        args2 = add_cutpoint_closed( args2, cutpoint_at_Cterm )
+                        #args2 += " -ccd_close_res %d" % cutpoint_at_Cterm
                         args2 += " -ccd_close"
 
                         args2 += " -global_optimize"
@@ -1210,7 +1232,7 @@ for L in range( min_length, max_length + 1 ):
                             if ( j not in fixed_res ): args2 += " %d" % j
                             args2 +=" %d" % (j+1)
                             args2 += " -bridge_res %d %d %d" % (j+2,j+3,j+4)
-                            args2 += " -cutpoint_closed %d " % (j+1)
+                            args2 = add_cutpoint_closed( args2, j+1 )
 
                             setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                                  fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -1233,7 +1255,7 @@ for L in range( min_length, max_length + 1 ):
                             args2 += " -global_optimize"
 
                             args2 += " -bridge_res %d %d %d" % (j,j+1,j+2)
-                            args2 += " -cutpoint_closed %d " % (j+1)
+                            args2 = add_cutpoint_closed( args2, j+1 )
 
                             setup_dirs_and_condor_file_and_tags( overall_job_tag, sub_job_tag, prev_job_tags, args2, decoy_tag, \
                                                                  fid_dag, job_tags, all_job_tags, jobs_done, real_compute_job_tags, combine_files)
@@ -1448,8 +1470,7 @@ for L in range( min_length, max_length + 1 ):
         args_cluster = ' -cluster_test -silent_read_through_errors -in:file:silent %s  -in:file:silent_struct_type binary  -database %s  %s -out:file:silent %s -nstruct %d %s -score_diff_cut %8.3f' % (string.join( combine_files ), DB,  cluster_tag, outfile_cluster, FINAL_NUMBER, cluster_by_all_atom_rmsd_tag, score_diff_cut )
 
         if FIX_CALC_RMS_TAG:
-            args_cluster += ' -working_res'
-            for m in res_to_be_modeled: args_cluster += ' %d' % m
+            args_cluster += ' -working_res' + make_tag_with_dashes( res_to_be_modeled )
 
         condor_submit_cluster_file = 'CONDOR/REGION_%d_%d/cluster.condor' % (i,j)
 

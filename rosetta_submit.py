@@ -44,7 +44,7 @@ for line in  lines:
 
     if len(line) == 0: continue
     if line[0] == '#': continue
-    if string.split( line[0]) == []: continue
+    #if string.split( line[0]) == []: continue
 
     dir = outdir + '/$(Process)/'
     command_line = line[:-1].replace( '-out:file:silent ', '-out:file:silent '+dir)
@@ -55,6 +55,9 @@ for line in  lines:
     command_line = command_line.replace( '/home/rhiju',HOMEDIR)
 
     cols = string.split( command_line )
+
+    if len( cols ) == 0: continue
+
     if '-total_jobs' in cols:
         pos = cols.index( '-total_jobs' )
         cols[ pos+1 ] = '%d' % n_jobs

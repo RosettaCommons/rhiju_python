@@ -8,6 +8,8 @@ from parse_options import parse_options
 args = argv
 no_hb_env_dep = parse_options( args, "no_hb_env_dep", 0 )
 near_native = parse_options( args, "near_native", 0 )
+loop_force_Nsquared = parse_options( args, "loop_force_Nsquared", 0 )
+nstruct = parse_options( args, "nstruct", 1000 )
 
 job_list = args[1]
 lines = open( job_list ).readlines()
@@ -28,6 +30,8 @@ for line in lines:
     if not exists( pdb + '/'+pdb+'.loop' ):
         puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+
+        print loop_file
 
         if not exists( loop_file  ):
             puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
@@ -75,8 +79,8 @@ for line in lines:
         assert( exists( native_cst_file ) )
 
     prepack_start_file = 'region_%d_%d_sample.cluster.out' % (loop_stop+1, loop_start-1 )
-    if near_native and not exists( prepack_start_file ):
-        checkpath = '/home/vanlang/SEPT_27_2011_RHIJU_STUFF/projects/loops/swa/%s/%s.gz' % (pdb,prepack_start_file)
+    if not exists( prepack_start_file ):
+        checkpath = '/home/vanlang/projects/loops/swa/%s/%s.gz' % (pdb,prepack_start_file)
         print checkpath
         assert(  exists( checkpath  ) )
         system( 'rsync '+checkpath+' .' )
@@ -87,9 +91,10 @@ for line in lines:
     if not exists( readme_setup_file ):
         fid = open( readme_setup_file, 'w' )
         fid.write( 'rm -rf STEP* *~ CONDOR core.* SLAVE*  \n' )
-        command = 'grinder_dagman.py  -loop_start_pdb %s  -native %s -fasta %s -cluster_radius 0.25 -final_number 1000   -denovo 1   -loop_res `seq %d %d` -weights score12.wts -disable_sampling_of_loop_takeoff  ' % (noloop_start_pdb, pdb_file, fasta_file, loop_start, loop_stop)
+        command = 'grinder_dagman.py  -loop_start_pdb %s  -native %s -fasta %s -cluster_radius 0.25 -final_number %d  -denovo 1   -loop_res `seq %d %d` -weights score12.wts -disable_sampling_of_loop_takeoff  ' % (noloop_start_pdb, pdb_file, fasta_file, nstruct, loop_start, loop_stop)
         if ( near_native ): command += ' -rmsd_screen %8.3f -cst_file %s ' % ( 2.0, native_cst_file )
         if ( no_hb_env_dep ): command = command.replace( 'score12.wts', 'score12_no_hb_env_dep.wts' )
+        if (loop_force_Nsquared): command += ' -loop_force_Nsquared'
 
         command += '\n'
         fid.write( command )
