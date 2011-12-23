@@ -62,10 +62,6 @@ infiles = argv[1:]
 for infile in infiles:
     tags = []
 
-    new_outfile = infile.replace( '.out', '.top%d.out' % NSTRUCT_IN )
-    if ( scorecol_name_defined ): new_outfile = new_outfile.replace( '.out', '%s.out' % scorecol_name )
-    print 'Creating: ', new_outfile
-
     firstlines = popen('head -n 3 '+infile).readlines()
     scoretags = string.split( firstlines[1] )
     IS_OUTFILE = 1
@@ -141,20 +137,18 @@ for infile in infiles:
 
 
     if not IS_OUTFILE:
-        command = 'head -n 1 '+infile + ' > '+new_outfile
+        command = 'head -n 1 '+infile
         system(command)
     elif (firstlines[2][:6] == 'REMARK' ):
-        command = 'head -n 3 '+infile + ' > '+new_outfile
+        command = 'head -n 3 '+infile
         system(command)
     else:
-        command = 'head -n 2 '+infile + ' > '+new_outfile
+        command = 'head -n 2 '+infile
         system(command)
 
     count = 1
     fid = open( infile )
     line = fid.readline()
-
-    fid_out = open( new_outfile, 'a' )
 
     writeout = 0
     while line:
@@ -165,8 +159,7 @@ for infile in infiles:
 	    else:
 		writeout = 0
         if writeout:
-            #print line[:-1]
-            fid_out.write( line )
+            print line[:-1]
         line = fid.readline()
 
     command = 'rm '+templist_name

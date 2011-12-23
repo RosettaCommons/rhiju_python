@@ -31,15 +31,20 @@ for line in lines:
         puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
 
-        print loop_file
 
         if not exists( loop_file  ):
             puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
             loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
-            print loop_file
-            assert( exists( loop_file ) )
+
+        if not exists( loop_file  ):
+            puzzle_dir_test = PUZZLE_DIR + '../functional/'
+            loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+
+        print loop_file
+        assert( exists( loop_file ) )
 
         pdb_file = puzzle_dir_test + 'start/%s_min.pdb' % pdb
+        if not exists( pdb_file ): pdb_file = puzzle_dir_test + 'start/%s_H_stripsidechain.pdb' % pdb
         assert( exists( pdb_file ) )
 
         system( 'rsync '+loop_file+' '+pdb )
@@ -52,6 +57,7 @@ for line in lines:
 
     loop_file = pdb+'.loop'
     pdb_file  = pdb+'_min.pdb'
+    if not exists( pdb_file ): pdb_file = '%s_H_stripsidechain.pdb' % pdb
 
     noloop_start_pdb = 'noloop_'+pdb_file
 
@@ -79,7 +85,7 @@ for line in lines:
         assert( exists( native_cst_file ) )
 
     prepack_start_file = 'region_%d_%d_sample.cluster.out' % (loop_stop+1, loop_start-1 )
-    if not exists( prepack_start_file ):
+    if not exists( prepack_start_file ) and exists( '/home/vanlang/projects/loops/swa/%s/' % pdb):
         checkpath = '/home/vanlang/projects/loops/swa/%s/%s.gz' % (pdb,prepack_start_file)
         print checkpath
         assert(  exists( checkpath  ) )
