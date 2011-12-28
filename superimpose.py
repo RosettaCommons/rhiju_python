@@ -63,6 +63,11 @@ if args.count('-copy_resnum'):
     del args[args.index('-copy_resnum')]
     COPY_RESNUM = 1
 
+DUMP = 0
+if args.count('-dump'):
+    del args[args.index('-dump')]
+    DUMP = 1
+
 
 RENUMBER_ATOMS = 0
 if args.count('-renumber_atoms'):
@@ -86,7 +91,8 @@ else:
     slice = 0
 
 
-subset_residues = []
+subset_residues1 = []
+subset_residues2 = []
 use_subset = 0
 
 if args.count('-subset'):
@@ -95,18 +101,48 @@ if args.count('-subset'):
     use_subset = 1
     #stderr.write( 'using a subset of residues: '  )
     goodint = 1
+    subset_residues = []
     while goodint:
         try:
             subset_residue = int(args[pos])
             del args[pos]
             subset_residues.append( subset_residue )
-            #subset_residues.append( subset_residue - 1 )
-            #subset_residues.append( subset_residue + 1)
-            #stderr.write('%d ' % subset_residue )
+        except:
+            goodint = 0
+
+    subset_residues1 = subset_residues
+    subset_residues2 = subset_residues
+    #stderr.write( '\n'  )
+
+if args.count('-subset1'):
+    pos = args.index('-subset1')
+    del args[pos]
+    use_subset = 1
+    #stderr.write( 'using a subset of residues: '  )
+    goodint = 1
+    while goodint:
+        try:
+            subset_residue = int(args[pos])
+            del args[pos]
+            subset_residues1.append( subset_residue )
         except:
             goodint = 0
 
     #stderr.write( '\n'  )
+
+if args.count('-subset2'):
+    pos = args.index('-subset2')
+    del args[pos]
+    use_subset = 1
+    #stderr.write( 'using a subset of residues: '  )
+    goodint = 1
+    while goodint:
+        try:
+            subset_residue = int(args[pos])
+            del args[pos]
+            subset_residues2.append( subset_residue )
+        except:
+            goodint = 0
 
 if args.count('-1'):
     del args[args.index('-1')]
@@ -137,7 +173,7 @@ for pdb in pdb_list[1:]:
 
         command = '~rhiju/python/pdbslice.py '+pdb1
         command += ' -subset '
-        for i in subset_residues:
+        for i in subset_residues1:
             command += ' %d ' % i
         command += ' blah_ '
         system(command)
@@ -145,7 +181,7 @@ for pdb in pdb_list[1:]:
 
         command = '~rhiju/python/pdbslice.py '+pdb
         command += ' -subset '
-        for i in subset_residues:
+        for i in subset_residues2:
             command += ' %d ' % i
         command += ' blah_ '
         system(command)
@@ -234,7 +270,7 @@ for pdb in pdb_list[1:]:
                     atom_count = atom_count + 1
                     print '%s%5d%s'%(line[:6],atom_count,line[11:-1])
 
-                    if (line[12:16]==' CA ' or line[12:16]==' C4*') and CALC_PER_RESIDUE_DEVIATIONS: model0_xyzs.append( [float(line[30:38]), float(line[38:46]), float(line[46:54])] )
+                    if (line[12:16]==' CA ' or line[12:16]==' C4*' or line[12:16]==' C4''') and CALC_PER_RESIDUE_DEVIATIONS: model0_xyzs.append( [float(line[30:38]), float(line[38:46]), float(line[46:54])] )
 
                     if COPY_RESNUM:
                         resnum = line[22:26]
@@ -256,6 +292,10 @@ for pdb in pdb_list[1:]:
     model_count = model_count+1
     data = open(pdb,'r')
     line = data.readline()
+
+    if DUMP:
+        sup_model_filename = pdb.replace( '.pdb','' ) + '.sup.pdb'
+        fid_model = open( sup_model_filename, 'w' )
 
     prev_resnum = ''
     rescount = -1
@@ -285,11 +325,14 @@ for pdb in pdb_list[1:]:
 
 
                 if RENUMBER_ATOMS:
-                    print '%s%5d%s%8.3f%8.3f%8.3f%s'\
+                    new_line = '%s%5d%s%8.3f%8.3f%8.3f%s'\
                           %(line[:6],atom_count,line[11:30],pos[0],pos[1],pos[2],line[54:-1])
                 else:
-                    print '%s%s%8.3f%8.3f%8.3f%s'\
+                    new_line = '%s%s%8.3f%8.3f%8.3f%s'\
                           %(line[:6],line[6:30],pos[0],pos[1],pos[2],line[54:-1])
+                print new_line
+                if DUMP: fid_model.write( new_line+'\n' )
+
         elif line[:6] == 'CONECT': print line[:-1]
         elif line[:6] == 'ENDMDL':break
         line = data.readline()
@@ -305,6 +348,9 @@ for pdb in pdb_list[1:]:
     data.close()
 
     print 'ENDMDL'
+    if DUMP:
+        fid_model.close()
+        stderr.write(  'Created: %s\n' % sup_model_filename )
 
     all_per_res_dev.append( per_res_dev )
 

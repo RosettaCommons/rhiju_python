@@ -44,7 +44,7 @@ def get_disulf( pdb_file ):
     ( positions1, which_res1, atom_names1, totres) = get_positions( lines, [ " SG " ] )
     ( positions2, which_res2, atom_names2, totres) = get_positions( lines, [ " SG " ] )
     SEQ_SEP_CUTOFF = 1
-    DIST_CUT = 4
+    DIST_CUT = 2.9
 
     disulf_pairs = []
 
@@ -53,7 +53,7 @@ def get_disulf( pdb_file ):
         res1 = which_res1[ i ]
         atom1 = atom_names1[ i ]
 
-        for j in range( len( which_res2) ):
+        for j in range( i, len( which_res2) ):
 
             res2 = which_res2[ j ]
             atom2 = atom_names2[ j ]
@@ -62,6 +62,7 @@ def get_disulf( pdb_file ):
 
             dist = get_dist( positions1[ i ], positions2[ j ] )
 
-            if ( dist < DIST_CUT ): disulf_pairs.append( [res1, res2] )
+            if ( dist < DIST_CUT ):
+                disulf_pairs.append( [res1, res2] )
 
     return disulf_pairs

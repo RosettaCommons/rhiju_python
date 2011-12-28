@@ -99,6 +99,13 @@ infiles = argv[1:]
 
 HOMEDIR = expanduser('~')
 
+MINI_DIR = HOMEDIR + '/src/mini/bin/'
+DB = HOMEDIR+'/minirosetta_database'
+
+if exists( HOMEDIR+'/src/rosetta_protein_rna/rosetta_source/bin/' ):
+    MINI_DIR = HOMEDIR + '/src/rosetta_protein_rna/rosetta_source/bin/'
+    DB = HOMEDIR + '/src/rosetta_protein_rna/rosetta_database/'
+
 for infile in infiles:
     tags = []
 
@@ -120,12 +127,14 @@ for infile in infiles:
 
 
     binary_silentfile = 0
-    remark_tags = string.split( popen('head -n 3 '+infile).readlines()[-1] )
-    if remark_tags.count('BINARY_SILENTFILE'):
-        binary_silentfile = 1
-    remark_tags = string.split( popen('head -n 4 '+infile).readlines()[-1] )
-    if remark_tags.count('BINARY'):
-        binary_silentfile = 1
+    remark_lines = popen('head -n 7 '+infile).readlines()
+    for line in remark_lines:
+        if ( len( line ) > 6 and line[:6] == "REMARK" ):
+            remark_tags = line.split()
+            if remark_tags.count('BINARY_SILENTFILE'):
+                binary_silentfile = 1
+            if remark_tags.count('BINARY'):
+                binary_silentfile = 1
 
     coarse = 0
     if remark_tags.count('COARSE'):
@@ -200,21 +209,26 @@ for infile in infiles:
 
 
     # Centroid readout?
-    MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
+    MINI_EXE = MINI_DIR+'extract_pdbs.linuxgccrelease'
     if not exists( MINI_EXE):
-        MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
+        MINI_EXE = MINI_DIR+'/extract_pdbs.macosgccrelease'
 
-    command = '%s -in:file:silent  %s   -in:file:tags %s -database %s/minirosetta_database/ -out:file:residue_type_set centroid ' % \
-                  ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
+    command = '%s -in:file:silent  %s   -in:file:tags %s -database %s -out:file:residue_type_set centroid ' % \
+                  ( MINI_EXE, outfilename, string.join( tags ), DB )
 
     # Check if this is an RNA run.
     fid = open( infile, 'r')
     line = fid.readline(); # Should be the sequence.
     rna = 0
-    if (line.count('a') or line.count('c') or
-        line.count('g') or line.count('u')):
-        command  += ' -enable_dna -enable_rna '
-        rna = 1
+    sequence = string.split(line)[-1]
+    rna = 1
+    for c in sequence:
+        if not ( c == 'a' or c == 'c' or c == 'u' or c == 'g'):
+            rna = 0
+            break
+    if rna:     command  += ' -enable_dna -enable_rna '
+
+
 #        command = command.replace('rosetta++','rosetta_rna')
 
     # Check if this is full atom.
@@ -228,16 +242,16 @@ for infile in infiles:
         #if not exists( MINI_EXE ):
         #    MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.macosgccrelease'
 
-        command = '%s -database %s/minirosetta_database/ -in::file::silent %s -tags %s  -extract' % \
-                  ( MINI_EXE, HOMEDIR, outfilename, string.join( tags ) )
+        command = '%s -database %s -in::file::silent %s -tags %s  -extract' % \
+                  ( MINI_EXE, DB, outfilename, string.join( tags ) )
 
         if binary_silentfile:
             silent_struct_type = 'binary_rna'
         else:
             silent_struct_type = 'rna'
 
-        command = '%s -database %s/minirosetta_database/ -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  ' % \
-                  ( MINI_EXE, HOMEDIR,outfilename, string.join( tags ), silent_struct_type )
+        command = '%s -database %s -in:file:silent %s -in:file:tags %s -in:file:silent_struct_type %s  ' % \
+                  ( MINI_EXE, DB,outfilename, string.join( tags ), silent_struct_type )
 
         if coarse:
             command += " -out:file:residue_type_set coarse_rna "
@@ -248,12 +262,13 @@ for infile in infiles:
 
     elif ( binary_silentfile ):
 
-        MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.linuxgccrelease'
+        MINI_EXE = MINI_DIR+'extract_pdbs.linuxgccrelease'
         if not exists( MINI_EXE):
-            MINI_EXE = HOMEDIR+'/src/mini/bin/extract_pdbs.macosgccrelease'
+            MINI_EXE = MINI_DIR+'/extract_pdbs.macosgccrelease'
 
-        command = '%s -in:file:silent  %s  -in:file:silent_struct_type binary  -in:file:tags %s -database %s/minirosetta_database/  ' % \
-                  ( MINI_EXE, outfilename, string.join( tags ), HOMEDIR )
+
+        command = '%s -in:file:silent  %s  -in:file:silent_struct_type binary  -in:file:tags %s -database %s  ' % \
+                  ( MINI_EXE, outfilename, string.join( tags ), DB )
         if output_virtual: command += " -output_virtual "
 
         if (scoretags.count('vdw')): command += ' -out:file:residue_type_set centroid '
