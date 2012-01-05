@@ -5,6 +5,11 @@ from sys import argv
 from os import system
 
 files = argv[1:]
+
+chain = 'A'
+if len( argv ) > 2:
+    chain = argv[2]
+
 system( 'mkdir -p original' )
 
 for pdb in files:
@@ -21,7 +26,7 @@ for pdb in files:
     print
     print 'Fetched: original/%s.pdb' % string.upper( pdb )
 
-    command = 'get_pdb.py original/%s.pdb A' % string.upper( pdb )
+    command = 'get_pdb.py original/%s.pdb %s' % ( string.upper( pdb ), chain )
     print command
     system( command )
 

@@ -74,7 +74,7 @@ for pdbname in pdbnames:
         if chainids[i] == '_':
             chainids[i] = ' '
 
-    goodnames = [' rA',' rC',' rG',' rU']
+    goodnames = [' rA',' rC',' rG',' rU',' MG']
     for line in lines:
         if len(line)>5 and line[:6]=='ENDMDL':
             num_model += 1
@@ -83,7 +83,7 @@ for pdbname in pdbnames:
         if (line[21] in chainids or ignore_chain):
             line_edit = line
 
-            if line[0:3] == 'TER':
+            if line[0:3] == 'TER' and False:
                 continue
             elif (line[0:6] == 'HETATM') & (line[17:20]=='MSE'): #Selenomethionine
                 line_edit = 'ATOM  '+line[6:17]+'MET'+line[20:]
@@ -94,6 +94,8 @@ for pdbname in pdbnames:
                         line_edit = line_edit[0:76]+' S'+line_edit[78:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='5BU'): #Selenomethionine
                 line_edit = 'ATOM  '+line[6:17]+'  U'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]==' MG'): #Selenomethionine
+                line_edit = 'ATOM  '+line[6:17]+' MG'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='OMC'): #Selenomethionine
                 line_edit = 'ATOM  '+line[6:17]+'  C'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='5MC'):

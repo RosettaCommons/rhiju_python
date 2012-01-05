@@ -2,6 +2,16 @@
 
 from sys import stdout,argv
 
+longer_names={'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
+              'CYS': 'C', 'GLU': 'E', 'GLN': 'Q', 'GLY': 'G',
+              'HIS': 'H', 'ILE': 'I', 'LEU': 'L', 'LYS': 'K',
+              'MET': 'M', 'PHE': 'F', 'PRO': 'P', 'SER': 'S',
+              'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V',
+              ' rA': 'a', ' rC': 'c', ' rG': 'g', ' rU': 'u'
+              }
+
+name3 = {}
+for n in longer_names.keys(): name3[  longer_names[ n ] ] = n
 
 actualpdbname = argv[1]
 newsequence = argv[2]
@@ -56,7 +66,9 @@ for line in lines:
         if removechain:
             line_edit = line_edit[0:21]+' '+line_edit[22:]
 
-        line_edit = line_edit[0:17]+ '  '+new_sequence[count-1]+line_edit[20:]
+        newres = 'XXX'
+        if new_sequence[count-1] in name3.keys(): newres = name3[new_sequence[count-1]]
+        line_edit = line_edit[0:17]+newres+line_edit[20:]
         outid.write(line_edit)
 
 

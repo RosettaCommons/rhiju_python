@@ -7,7 +7,7 @@ def stripchain(actualpdbname, out, startchain, newchain, chainspecified):
 #    out = open(actualpdbname_newchain,'w')
     for i in range( len(lines)):
         line = lines[i]
-        if line.count('ATOM') and (line[21:22] == startchain or not chainspecified):
+        if (line.count('ATOM') or line.count( 'HETATM')) and (line[21:22] == startchain or not chainspecified):
             line = line[0:21]+newchain+line[22:]
             out.write(line)
     out.close()
