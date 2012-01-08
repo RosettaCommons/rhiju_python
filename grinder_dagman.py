@@ -30,7 +30,7 @@ N_SAMPLE = parse_options( argv, "n_sample", 18 )
 FINAL_NUMBER = parse_options( argv, "final_number", 100 )
 SCORE_WEIGHTS = parse_options( argv, "weights", "score12_no_hb_env_dep.wts" )
 PACK_WEIGHTS = parse_options( argv, "pack_weights", "pack_no_hb_env_dep.wts" )
-NSTRUCT = parse_options( argv, "nstruct", 100 )
+NSTRUCT = parse_options( argv, "nstruct", 400 )
 RMSD_SCREEN = parse_options( argv, "rmsd_screen", -1.0 )
 CLUSTER_RADIUS = parse_options( argv, "cluster_radius", 0.25 )
 CLUSTER_RADIUS_SAMPLE = parse_options( argv, "cluster_radius_sample", 0.1 )
@@ -48,6 +48,7 @@ native_pdb = parse_options( argv, "native", "" )
 template_pdbs = parse_options( argv, "s", [""] )
 template_input_res = parse_options( argv, "input_res", [-1] )
 cst_file = parse_options( argv, "cst_file", "" )
+disulfide_file = parse_options( argv, "disulfide_file", "" )
 pathway_file = parse_options( argv, "pathway_file", "" )
 cluster_by_all_atom_rmsd = parse_options( argv, "cluster_by_all_atom_rmsd", 0 )
 add_peptide_plane = parse_options( argv, "add_peptide_plane", 0 ) #Now defunct!
@@ -607,6 +608,10 @@ args += ' -extrachi_cutoff 0 -ex1 -ex2' # These may be redundant actually.
 
 args += ' -score:weights %s -pack_weights %s' % (SCORE_WEIGHTS, PACK_WEIGHTS )
 
+ # prevents the occasional automatic disulfide check from ruining things.
+ # only disulfides that show up will be the ones specified by -disulfide_file
+args += ' -in:detect_disulf false'
+
 if ( RMSD_SCREEN > 0.0 ):
     args += ' -rmsd_screen %8.3f' % RMSD_SCREEN
 
@@ -618,6 +623,9 @@ if move_jumps_between_chains:  args+= ' -move_jumps_between_chains'
 if len( cst_file ) > 0:
     assert( exists( cst_file ) )
     args += ' -cst_file %s' % cst_file
+if len( disulfide_file ) > 0:
+    assert( exists( disulfide_file ) )
+    args += ' -disulfide_file %s' % disulfide_file
 if len( align_pdb ) > 0:
     assert( exists( align_pdb ) )
     args += ' -align_pdb %s' % align_pdb
@@ -831,7 +839,7 @@ for L in range( min_length, max_length + 1 ):
 
         overall_job_tag = 'REGION_%d_%d' % (i,j)
 
-        print 'Do region ==> ',i,j,
+        print 'Do region ==> %3d %3d   ' %(i,j) ,
 
         # This job is maybe already done...
         outfile_cluster = overall_job_tag.lower()+'_sample.cluster.out'

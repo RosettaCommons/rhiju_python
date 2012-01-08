@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from sys import argv
-from os.path import exists
+from os.path import exists,basename
 from os import system, chdir, getcwd
 from parse_options import parse_options
 
@@ -27,31 +27,40 @@ for line in lines:
     pdb = line[:-1]
     if not exists( pdb ): system( 'mkdir -p '+pdb )
 
-    if not exists( pdb + '/'+pdb+'.loop' ):
-        puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
+    puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
+    loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+
+    if not exists( loop_file  ):
+        puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
 
+    if not exists( loop_file  ):
+        puzzle_dir_test = PUZZLE_DIR + '../functional/'
+        loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
 
-        if not exists( loop_file  ):
-            puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
-            loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+    #print loop_file
+    assert( exists( loop_file ) )
 
-        if not exists( loop_file  ):
-            puzzle_dir_test = PUZZLE_DIR + '../functional/'
-            loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+    pdb_file = puzzle_dir_test + 'start/%s_min.pdb' % pdb
+    if not exists( pdb_file ): pdb_file = puzzle_dir_test + 'start/%s_H_stripsidechain.pdb' % pdb
+    assert( exists( pdb_file ) )
 
-        print loop_file
-        assert( exists( loop_file ) )
-
-        pdb_file = puzzle_dir_test + 'start/%s_min.pdb' % pdb
-        if not exists( pdb_file ): pdb_file = puzzle_dir_test + 'start/%s_H_stripsidechain.pdb' % pdb
-        assert( exists( pdb_file ) )
-
+    if not exists( pdb+'/'+ basename(loop_file) ):
         system( 'rsync '+loop_file+' '+pdb )
-        system( 'rsync '+pdb_file+' '+pdb )
-
         print( 'Copied '+loop_file )
+
+    if not exists( pdb+'/'+ basename(pdb_file) ):
+        system( 'rsync '+pdb_file+' '+pdb )
         print( 'Copied '+pdb_file )
+
+    pdb_original_file = puzzle_dir_test + 'start/%s.pdb' % pdb
+    if exists( pdb_original_file ) and not exists( pdb+'/'+basename(pdb_original_file ) ):
+        system( 'rsync '+pdb_original_file+' '+pdb )
+        print( 'Copied '+pdb_original_file )
+
+    disulfide_file = puzzle_dir_test + 'start/%s.disulfides' % pdb
+    if exists( disulfide_file ) and not exists( pdb+'/'+basename(disulfide_file ) ):
+        system( 'rsync '+disulfide_file+' '+pdb )
 
     chdir( pdb )
 
@@ -81,18 +90,25 @@ for line in lines:
 
     native_cst_file = pdb+'_coordinate2.0.cst'
     if near_native and not exists( native_cst_file ):
-        system( 'generate_CA_constraints.py %s_min.pdb  -cst_res %s -coord_cst -anchor_res 1 -fade > %s ' % (pdb,make_tag( range( loop_start, loop_stop+1) ), native_cst_file ) )
+        system( 'generate_CA_constraints.py %s  -cst_res %s -coord_cst -anchor_res 1 -fade > %s ' % (pdb_file,make_tag( range( loop_start, loop_stop+1) ), native_cst_file ) )
         assert( exists( native_cst_file ) )
 
     prepack_start_file = 'region_%d_%d_sample.cluster.out' % (loop_stop+1, loop_start-1 )
-    if not exists( prepack_start_file ) and exists( '/home/vanlang/projects/loops/swa/%s/' % pdb):
+    if not exists( prepack_start_file ) and \
+        (exists( '/home/vanlang/projects/loops/swa/%s/' % pdb) or exists( '/scratch/users/vanlang/projects/loops/swa/%s/' % pdb) ):
         checkpath = '/home/vanlang/projects/loops/swa/%s/%s.gz' % (pdb,prepack_start_file)
-        print checkpath
-        assert(  exists( checkpath  ) )
-        system( 'rsync '+checkpath+' .' )
-        system( 'gunzip '+prepack_start_file+'.gz' )
-        assert( exists( prepack_start_file ) )
+        if exists( checkpath ):
+            print checkpath
+            system( 'rsync '+checkpath+' .' )
+            system( 'gunzip '+prepack_start_file+'.gz' )
+        else:
+            checkpath = '/scratch/users/vanlang/projects/loops/swa/%s/%s' % (pdb,prepack_start_file)
+            if exists( checkpath ):
+                print checkpath
+                system( 'rsync '+checkpath+' .' )
+        #assert( exists( prepack_start_file ) )
 
+    disulfide_file = pdb+'.disulfides'
     readme_setup_file = 'README_SETUP'
     if not exists( readme_setup_file ):
         fid = open( readme_setup_file, 'w' )
@@ -101,6 +117,9 @@ for line in lines:
         if ( near_native ): command += ' -rmsd_screen %8.3f -cst_file %s ' % ( 2.0, native_cst_file )
         if ( no_hb_env_dep ): command = command.replace( 'score12.wts', 'score12_no_hb_env_dep.wts' )
         if (loop_force_Nsquared): command += ' -loop_force_Nsquared'
+        if (exists( disulfide_file ) ):
+            command += ' -disulfide_file '+disulfide_file
+            command += ' -exe ~/src/rosetta_TRUNK/rosetta_source/bin/stepwise_protein_test.linuxgccrelease -database ~/src/rosetta_TRUNK/rosetta_database'
 
         command += '\n'
         fid.write( command )
