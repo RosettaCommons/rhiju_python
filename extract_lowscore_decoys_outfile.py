@@ -58,16 +58,18 @@ if not scorecol_defined:
 
 
 infiles = argv[1:]
+score_plus_lines = []
+firstlines = []
+IS_OUTFILE = 1
 
 for infile in infiles:
-    tags = []
 
-    firstlines = popen('head -n 3 '+infile).readlines()
-    scoretags = string.split( firstlines[1] )
-    IS_OUTFILE = 1
-    if firstlines[0].find( "SEQUENCE" ) < 0  and   firstlines[0].find("SCORE:") >= 0:
-        IS_OUTFILE = 0
-        scoretags = string.split( firstlines[0] )
+    if len( firstlines ) == 0:
+        firstlines = popen('head -n 3 '+infile).readlines()
+        scoretags = string.split( firstlines[1] )
+        if firstlines[0].find( "SEQUENCE" ) < 0  and   firstlines[0].find("SCORE:") >= 0:
+            IS_OUTFILE = 0
+            scoretags = string.split( firstlines[0] )
 
     scoretag=''
     if scorecol_defined:
@@ -84,21 +86,10 @@ for infile in infiles:
     else:
         scorecols  = [scorecol]
 
-    #   print 'grep SCORE '+infile+' |  sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1)
-
-    NSTRUCT = NSTRUCT_IN
-    if (NSTRUCT < 1.0 ):
-        NUMDECOYS = int( string.split(popen('grep SCORE '+infile+' | wc').readlines()[0])[0] ) - 1
-        NSTRUCT = round( NSTRUCT_IN * NUMDECOYS )
-
-    #lines = popen('grep SCORE '+infile+' | grep -v NATIVE | grep -v RT | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
-
     # Make the list of decoys to extract
     command = 'grep SCORE '+infile+' | grep -v NATIVE'
     lines = popen( command ).readlines()
-    #stderr.write( '%s %d\n' % ( command, len( lines ) ) )
 
-    score_plus_lines = []
     for line in lines:
         cols = string.split( line )
         score = 0.0
@@ -107,63 +98,76 @@ for infile in infiles:
         except:
             continue
         if REVERSE: score *= -1
-        score_plus_lines.append( ( score, line ))
+        score_plus_lines.append( ( score, line, infile ))
 
-    score_plus_lines.sort()
+score_plus_lines.sort()
 
-    #stderr.write( '%d' % len(score_plus_lines[:NSTRUCT]) )
+NSTRUCT = NSTRUCT_IN
+if (NSTRUCT < 1.0 ):
+    NUMDECOYS = len( score_plus_lines )
+    NSTRUCT = round( NSTRUCT_IN * NUMDECOYS )
+else:
+    NSTRUCT = int( NSTRUCT )
 
-    #stderr.write( '%d %d %d \n' % (NSTRUCT,int( NSTRUCT),len(lines) ) )
+tags_for_infile = {}
+for infile in infiles: tags_for_infile[ infile ] = []
 
-    lines = map( lambda x:x[-1], score_plus_lines[:int(NSTRUCT)] )
+for score_plus_line in score_plus_lines[:NSTRUCT]:
+    line = score_plus_line[1]
+    cols = string.split(line)
+    tag = cols[-1]
 
-    #lines = popen('grep SCORE: '+infile+' | grep -v NATIVE | grep -v rms | sort -k %d -n %s | head -n %d' % (abs(SCORECOL)+1, REVERSE, NSTRUCT+1) ).readlines()
+    infile = score_plus_line[2]
+    tags_for_infile[ infile ].append( tag )
 
-    templist_name = 'temp.%s.list'% basename(infile)
+if not IS_OUTFILE:
+    command = 'head -n 1 '+infile
+    system(command)
+elif (firstlines[2][:6] == 'REMARK' ):
+    command = 'head -n 3 '+infile
+    system(command)
+else:
+    command = 'head -n 2 '+infile
+    system(command)
 
-    fid = open(templist_name,'w')
-    count = 0
-    for line in lines:
-        cols = string.split(line)
-        tag = cols[-1]
-        if tag.find('desc') < 0:
-            fid.write(tag+'\n')
-            tags.append(tag)
-            count = count+1
-        if count >= NSTRUCT:
-            break
-    outfilename = infile
-    fid.close()
+# following basically stolen from cat_outfiles.py
+n = -1
+for infile in infiles:
 
+    n += 1
 
-    if not IS_OUTFILE:
-        command = 'head -n 1 '+infile
-        system(command)
-    elif (firstlines[2][:6] == 'REMARK' ):
-        command = 'head -n 3 '+infile
-        system(command)
-    else:
-        command = 'head -n 2 '+infile
-        system(command)
+    ok_tags = tags_for_infile[ infile ]
+    if len( ok_tags ) == 0: continue
 
-    count = 1
-    fid = open( infile )
-    line = fid.readline()
+    data = open(infile,'r')
+    line = data.readline() # Skip first two lines
+    line = data.readline()
 
     writeout = 0
     while line:
-        cols = string.split(line)
-	if (len(cols)>1 and cols[0]=='SCORE:'):
-	    if tags.count(cols[-1]) > 0:
-		writeout = 1
-	    else:
-		writeout = 0
-        if writeout:
-            print line[:-1]
-        line = fid.readline()
+        line = data.readline()[:-1]
+        if len( line ) < 2: continue
+        if line[:9] == 'SEQUENCE:': continue # Should not be any more sequence lines!
+        cols = string.split( line )
+        tag = cols[-1]
 
-    command = 'rm '+templist_name
-    #    print(command)
-    system(command)
+        if cols[0][:5] == "SCORE":
+            if ok_tags.count( tag ) > 0: writeout = 1
+            else: writeout = 0
 
+        if not writeout: continue
 
+        if (n>0):
+            tagcols = string.split( tag, '_')
+            try:
+                tagnum = int( tagcols[-1] )
+                tagcols[-1] = '%04d_%06d' %  ( n, tagnum )
+                newtag = string.join( tagcols,'_')
+                description_index = line.find( tag )
+                line = line[:description_index] + newtag
+            except:
+                continue
+
+        print line
+
+    data.close()

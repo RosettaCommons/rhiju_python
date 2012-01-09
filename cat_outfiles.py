@@ -64,7 +64,7 @@ for i in range(1, len(outfiles)):
             tagcols = string.split(tag,'_')
             try:
                 tagnum = int( tagcols[-1] )
-                tagcols[-1] = '%03d_%06d' %  ( i, tagnum )
+                tagcols[-1] = '%04d_%06d' %  ( i, tagnum )
                 newtag = string.join( tagcols,'_')
 
                 line = line[:description_index] + newtag
