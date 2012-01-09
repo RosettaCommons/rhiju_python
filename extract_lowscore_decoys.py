@@ -216,9 +216,21 @@ for infile in infiles:
     command = '%s -in:file:silent  %s   -in:file:tags %s -database %s -out:file:residue_type_set centroid ' % \
                   ( MINI_EXE, outfilename, string.join( tags ), DB )
 
+    old_rosetta = 0
+    scorelabels = string.split( popen( 'head -n 2 '+outfilename ).readlines()[-1] )
+    if "SCORE" in scorelabels:
+        EXE = HOMEDIR+'/src/rosetta++/rosetta.gcc'
+        if not exists( EXE ):
+            EXE = 'rm boinc* ros*txt; '+HOMEDIR+'/src/rosetta++/rosetta.mactelboincgraphics '
+        assert( exists( EXE ) )
+        command = '%s -extract -l %s -paths %s/src/rosetta++/paths.txt -s %s %s %s '% (EXE, templist_name, HOMEDIR,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
+        old_rosetta = 1
+        print "OLD_ROSETTA", old_rosetta
+
     # Check if this is an RNA run.
     fid = open( infile, 'r')
     line = fid.readline(); # Should be the sequence.
+    print line
     rna = 0
     sequence = string.split(line)[-1]
     rna = 1
@@ -229,7 +241,9 @@ for infile in infiles:
     if rna:     command  += ' -enable_dna -enable_rna '
 
 
-#        command = command.replace('rosetta++','rosetta_rna')
+        #        command = command.replace('rosetta++','rosetta_rna')
+    print "RNA? ", rna
+
 
     # Check if this is full atom.
     lines = popen('head -n 8 '+outfilename).readlines()
@@ -237,7 +251,7 @@ for infile in infiles:
         command += ' -fa_input'
 
     # Hey this could be a new mini RNA file
-    if rna:
+    if rna and not old_rosetta:
         #MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.linuxgccrelease'
         #if not exists( MINI_EXE ):
         #    MINI_EXE = HOMEDIR+'/src/mini/bin/rna_extract.macosgccrelease'
@@ -272,15 +286,6 @@ for infile in infiles:
         if output_virtual: command += " -output_virtual "
 
         if (scoretags.count('vdw')): command += ' -out:file:residue_type_set centroid '
-
-    old_rosetta = 0
-    scorelabels = string.split( popen( 'head -n 2 '+outfilename ).readlines()[-1] )
-    if "SCORE" in scorelabels:
-        EXE = HOMEDIR+'/rosetta++/rosetta.gcc'
-        if not exists( EXE ):
-            EXE = 'rm boinc* ros*txt; '+HOMEDIR+'/rosetta++/rosetta.mactelboincgraphics '
-            command = '%s -extract -l %s -paths %s/paths.txt -s %s %s %s '% (EXE, templist_name, HOMEDIR,outfilename, terminiflag, startpdbflag+extract_first_chain_tag)
-        old_rosetta = 1
 
 
     print(command)

@@ -34,7 +34,7 @@ fid_condor = open( condor_file,'w')
 tot_jobs = 0
 
 universe = 'vanilla';
-fid_condor.write('+TGProject = TG-MCB090153\n')
+fid_condor.write('+TGProject = "TG-MCB090153"\n')
 fid_condor.write('universe = %s\n' % universe)
 fid_condor.write('notification = never\n')
 
@@ -89,7 +89,7 @@ for line in  lines:
     arguments = string.join( cols[ 1: ] )
     fid_condor.write('\nexecutable = %s\n' % EXE )
     fid_condor.write('arguments = %s\n' % arguments)
-    fid_condor.write('Queue %d' % n_jobs )
+    fid_condor.write('Queue %d\n' % n_jobs )
 
 fid.close()
 fid_condor.close()
