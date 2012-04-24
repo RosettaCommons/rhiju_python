@@ -21,7 +21,14 @@ def make_tag( int_vector ):
 
 CWD = getcwd()
 
-SCORE_DIFF_CUT = 5;
+print 'Working directory:', CWD
+print 'Script command', string.join( argv )
+
+
+# Changed later -- originally used SCORE_DIFF_CUT = 5;
+SCORE_DIFF_CUT = 40;
+NSTRUCT = 20;
+
 for line in lines:
     loop_tag = line[:-1]
 
@@ -42,6 +49,7 @@ for line in lines:
     assert( exists( native_pdb ) )
 
     cluster_silent_file = basename(loop_silent_file).replace( '.out', '.cluster1.0A.out' )
+
     if not exists( cluster_silent_file ):
 
         input_res = []
@@ -50,8 +58,8 @@ for line in lines:
 
         EXE = '/home/rhiju/src/mini/bin/stepwise_protein_test.linuxgccrelease'
         #assert( exists(EXE) )
-        if not exists( EXE ): EXE =  'stepwise_protein_test.macosgccrelease'
-        command =  '%s  -database ~/minirosetta_database -in:file:silent %s -calc_rms_res %d-%d -cluster_test -cluster:radius 1.0 -out:file:silent %s -score_diff_cut %8.3f' % ( EXE, loop_silent_file, loop_start, loop_stop, cluster_silent_file, SCORE_DIFF_CUT )
+        if not exists( EXE ): EXE =  '/Users/rhiju/src/mini/bin/stepwise_protein_test.macosgccrelease'
+        command =  '%s  -database ~/minirosetta_database -in:file:silent %s -calc_rms_res %d-%d -cluster_test -cluster:radius 1.0 -out:file:silent %s -score_diff_cut %8.3f -in:file:silent_struct_type binary -nstruct %d' % ( EXE, loop_silent_file, loop_start, loop_stop, cluster_silent_file, SCORE_DIFF_CUT, NSTRUCT )
         print command
         system( command )
 
@@ -74,7 +82,6 @@ for line in lines:
     chdir( CWD )
 
 
-
 chdir( loop_model_dir )
 for line in lines:
     loop_tag = line[:-1]
@@ -87,12 +94,17 @@ for line in lines:
     n_less_than_score_cut2 = 0
     score_min  = 0
     TIGHT_SCORE_CUT = 2.5
+    scores = []
     for pline in plines[1:]:
         score = float( string.split( pline )[1] )
+        scores.append( score )
         if score_min == 0: score_min = score
         if ( score <= score_min + TIGHT_SCORE_CUT ): n_less_than_score_cut2 += 1
 
-    print '%s   n<%5.1f: %2d    n<%5.1f: %2d' % ( loop_tag, SCORE_DIFF_CUT, n_less_than_score_cut , TIGHT_SCORE_CUT, n_less_than_score_cut2 )
+    scores.sort()
+    score_gap = scores[1] - scores[0]
+
+    print '%s   n<%5.1f: %2d    n<%5.1f: %2d   score_gap:%5.2f' % ( loop_tag, SCORE_DIFF_CUT, n_less_than_score_cut , TIGHT_SCORE_CUT, n_less_than_score_cut2, score_gap )
     print '==================================='
 
     fields = ['score','all_rms','backbone_rms','rms']
