@@ -82,6 +82,11 @@ for line in lines:
     chdir( CWD )
 
 
+all_score_gap = []
+all_best_rms = []
+all_top_score_rms = []
+all_tag = []
+
 chdir( loop_model_dir )
 for line in lines:
     loop_tag = line[:-1]
@@ -112,6 +117,8 @@ for line in lines:
     col_idx = []
     for field in fields: col_idx.append( cols.index( field ) )
 
+    best_rms = 9999
+    top_score_rms = 0
     for pline in plines[:6]:
         cols = pline.split()
         for i in col_idx:
@@ -119,4 +126,31 @@ for line in lines:
         print
 
 
+        try:
+            rms =  float( cols[ col_idx[-1] ] )
+        except:
+            continue
+
+        if rms < best_rms: best_rms = rms
+        if ( top_score_rms == 0 ): top_score_rms = rms
+
+    all_score_gap.append( score_gap )
+    all_best_rms.append( best_rms )
+    all_top_score_rms.append( top_score_rms )
+    all_tag.append( loop_tag )
+
 chdir( CWD )
+
+
+cluster_summary_file = job_list.replace( '.txt', '_cluster_summary.txt' )
+print
+print 'Making ... ', cluster_summary_file
+fid = open( cluster_summary_file, 'w' )
+
+
+
+fid.write( '%4s  %6s  %6s  %6s\n' % ( 'ID','rms1','rms5','Egap'));
+for i in range( len( all_tag ) ):
+    fid.write( '%4s  %6.2f  %6.2f  %6.2f\n' % ( all_tag[i], all_top_score_rms[i], all_best_rms[i], all_score_gap[i]) );
+
+fid.close()
