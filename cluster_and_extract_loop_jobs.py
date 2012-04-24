@@ -24,7 +24,6 @@ CWD = getcwd()
 print 'Working directory:', CWD
 print 'Script command', string.join( argv )
 
-
 # Changed later -- originally used SCORE_DIFF_CUT = 5;
 SCORE_DIFF_CUT = 40;
 NSTRUCT = 20;
@@ -46,7 +45,10 @@ for line in lines:
     loop_stop = int( cols[1] )
 
     native_pdb = '%s_min.pdb' % loop_tag
-    assert( exists( native_pdb ) )
+    if not exists( native_pdb ): native_pdb = '%s.pdb' % loop_tag
+    if not exists( native_pdb ):
+        print 'Could not find ', native_pdb
+        exit( 0 )
 
     cluster_silent_file = basename(loop_silent_file).replace( '.out', '.cluster1.0A.out' )
 
@@ -86,7 +88,7 @@ all_score_gap = []
 all_best_rms = []
 all_top_score_rms = []
 all_tag = []
-
+all_top_score = []
 chdir( loop_model_dir )
 for line in lines:
     loop_tag = line[:-1]
@@ -107,7 +109,8 @@ for line in lines:
         if ( score <= score_min + TIGHT_SCORE_CUT ): n_less_than_score_cut2 += 1
 
     scores.sort()
-    score_gap = scores[1] - scores[0]
+    score_gap = 999
+    if len( scores ) > 1: score_gap = scores[1] - scores[0]
 
     print '%s   n<%5.1f: %2d    n<%5.1f: %2d   score_gap:%5.2f' % ( loop_tag, SCORE_DIFF_CUT, n_less_than_score_cut , TIGHT_SCORE_CUT, n_less_than_score_cut2, score_gap )
     print '==================================='
@@ -132,15 +135,54 @@ for line in lines:
             continue
 
         if rms < best_rms: best_rms = rms
-        if ( top_score_rms == 0 ): top_score_rms = rms
+        if ( top_score_rms == 0 ):
+            top_score_rms = rms
 
     all_score_gap.append( score_gap )
     all_best_rms.append( best_rms )
     all_top_score_rms.append( top_score_rms )
+    all_top_score.append( scores[0] )
     all_tag.append( loop_tag )
 
 chdir( CWD )
 
+
+
+print 'Extracting best rms models...'
+# also extract best rms model (not best cluster)
+all_best_best_rms = []
+for line in lines:
+    loop_tag = line[:-1]
+    chdir( loop_tag )
+    loop_silent_score_file = 'region_FINAL.sc'
+
+    if not( exists( loop_silent_score_file ) ):
+        loop_silent_file = 'region_FINAL.out'
+        command = 'grep SCORE %s > %s ' % (loop_silent_file, loop_silent_score_file )
+        print command
+        system( command )
+    assert( exists( loop_silent_score_file ) )
+
+    plines = open( loop_silent_score_file ).readlines()
+
+    fields = ['score','all_rms','backbone_rms','rms']
+    cols = plines[0].split()
+    col_idx = []
+    for field in fields: col_idx.append( cols.index( field ) )
+
+    best_rms = 9999
+    top_score_rms = 0
+    for pline in plines:
+        cols = pline.split()
+        try:
+            rms =  float( cols[ col_idx[-1] ] )
+        except:
+            continue
+        if rms < best_rms: best_rms = rms
+
+    all_best_best_rms.append( best_rms )
+
+    chdir( CWD )
 
 cluster_summary_file = job_list.replace( '.txt', '_cluster_summary.txt' )
 print
@@ -148,9 +190,10 @@ print 'Making ... ', cluster_summary_file
 fid = open( cluster_summary_file, 'w' )
 
 
-
-fid.write( '%4s  %6s  %6s  %6s\n' % ( 'ID','rms1','rms5','Egap'));
+fid.write( '%4s  %6s  %6s  %6s  %6s     %6s\n' % ( 'ID','bstrms', 'rms1','rms5','Egap','E'));
 for i in range( len( all_tag ) ):
-    fid.write( '%4s  %6.2f  %6.2f  %6.2f\n' % ( all_tag[i], all_top_score_rms[i], all_best_rms[i], all_score_gap[i]) );
+    fid.write( '%4s  %6.2f  %6.2f  %6.2f  %6.2f    %8.2f\n' % ( all_tag[i], all_best_best_rms[i], all_top_score_rms[i], all_best_rms[i], all_score_gap[i],all_top_score[i]) );
 
 fid.close()
+print
+system( 'cat '+cluster_summary_file )
