@@ -34,6 +34,8 @@ for line in lines:
     chdir( loop_tag )
 
     loop_silent_file = 'region_FINAL.out'
+    if not exists( loop_silent_file ):
+        loop_silent_file = '%s_kic.out' % loop_tag
 
     sequence = open( '%s.fasta' % loop_tag ).readlines()[-1][:-1]
     in_loop = []
@@ -116,10 +118,14 @@ for line in lines:
     print '%s   n<%5.1f: %2d    n<%5.1f: %2d   score_gap:%5.2f' % ( loop_tag, SCORE_DIFF_CUT, n_less_than_score_cut , TIGHT_SCORE_CUT, n_less_than_score_cut2, score_gap )
     print '==================================='
 
-    fields = ['score','all_rms','backbone_rms','rms']
     cols = plines[0].split()
     col_idx = []
-    for field in fields: col_idx.append( cols.index( field ) )
+    try:
+        fields = ['score','all_rms','backbone_rms','rms']
+        for field in fields: col_idx.append( cols.index( field ) )
+    except:
+        fields = ['score','looprms','loopcarms']
+        for field in fields: col_idx.append( cols.index( field ) )
 
     best_rms = 9999
     best_cluster_num = 0
@@ -150,7 +156,7 @@ for line in lines:
     all_top_score.append( scores[0] )
     all_tag.append( loop_tag )
 
-    chdir( CWD )
+chdir( CWD )
 
 
 
@@ -160,10 +166,13 @@ all_best_best_rms = []
 for line in lines:
     loop_tag = line[:-1]
     chdir( loop_tag )
-    loop_silent_score_file = 'region_FINAL.sc'
+
+    loop_silent_file = 'region_FINAL.out'
+    if not exists( loop_silent_file ):
+        loop_silent_file = '%s_kic.out' % loop_tag
+    loop_silent_score_file = loop_silent_file.replace( '.out','.sc' )
 
     if not( exists( loop_silent_score_file ) ):
-        loop_silent_file = 'region_FINAL.out'
         command = 'grep SCORE %s > %s ' % (loop_silent_file, loop_silent_score_file )
         print command
         system( command )
@@ -171,10 +180,14 @@ for line in lines:
 
     plines = open( loop_silent_score_file ).readlines()
 
-    fields = ['score','all_rms','backbone_rms','rms']
     cols = plines[0].split()
     col_idx = []
-    for field in fields: col_idx.append( cols.index( field ) )
+    try:
+        fields = ['score','all_rms','backbone_rms','rms']
+        for field in fields: col_idx.append( cols.index( field ) )
+    except:
+        fields = ['score','looprms','loopcarms']
+        for field in fields: col_idx.append( cols.index( field ) )
 
     best_rms = 9999
     top_score_rms = 0
