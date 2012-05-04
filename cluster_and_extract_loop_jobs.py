@@ -86,6 +86,7 @@ for line in lines:
 
 all_score_gap = []
 all_best_rms = []
+all_best_cluster_num = []
 all_top_score_rms = []
 all_tag = []
 all_top_score = []
@@ -121,30 +122,35 @@ for line in lines:
     for field in fields: col_idx.append( cols.index( field ) )
 
     best_rms = 9999
+    best_cluster_num = 0
     top_score_rms = 0
-    for pline in plines[:6]:
+    for c in range( 5 ):
+        if c+1 >= len( plines ): continue
+        pline = plines[ c+1 ]
         cols = pline.split()
         for i in col_idx:
             print '%12s' % cols[i],
         print
-
 
         try:
             rms =  float( cols[ col_idx[-1] ] )
         except:
             continue
 
-        if rms < best_rms: best_rms = rms
+        if rms < best_rms:
+            best_rms = rms
+            best_cluster_num = c+1
         if ( top_score_rms == 0 ):
             top_score_rms = rms
 
     all_score_gap.append( score_gap )
     all_best_rms.append( best_rms )
+    all_best_cluster_num.append( best_cluster_num )
     all_top_score_rms.append( top_score_rms )
     all_top_score.append( scores[0] )
     all_tag.append( loop_tag )
 
-chdir( CWD )
+    chdir( CWD )
 
 
 
@@ -190,9 +196,9 @@ print 'Making ... ', cluster_summary_file
 fid = open( cluster_summary_file, 'w' )
 
 
-fid.write( '%4s  %6s  %6s  %6s  %6s     %6s\n' % ( 'ID','bstrms', 'rms1','rms5','Egap','E'));
+fid.write( '%4s  %6s  %6s  %6s  %s    %6s     %6s\n' % ( 'ID','bstrms', 'rms1','rms5','n','Egap','E'));
 for i in range( len( all_tag ) ):
-    fid.write( '%4s  %6.2f  %6.2f  %6.2f  %6.2f    %8.2f\n' % ( all_tag[i], all_best_best_rms[i], all_top_score_rms[i], all_best_rms[i], all_score_gap[i],all_top_score[i]) );
+    fid.write( '%4s  %6.2f  %6.2f  %6.2f  %d    %6.2f   %8.2f\n' % ( all_tag[i], all_best_best_rms[i], all_top_score_rms[i], all_best_rms[i], all_best_cluster_num[i], all_score_gap[i],all_top_score[i]) );
 
 fid.close()
 print
