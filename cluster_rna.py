@@ -31,10 +31,12 @@ RMS_THRESHOLD = 2.5
 numfiles = len( outfiles )
 
 HOMEDIR = expanduser('~')
-CLUSTER_EXE = HOMEDIR+'/src/mini/bin/cluster.macosgccrelease'
+CLUSTER_EXE = HOMEDIR+'/src/rosetta_TRUNK/rosetta_source/bin/cluster.macosgccrelease'
 if not( exists( CLUSTER_EXE ) ):
-    CLUSTER_EXE = HOMEDIR+'/src/mini/bin/cluster.linuxgccrelease'
+    CLUSTER_EXE = HOMEDIR+'/src/rosetta_TRUNK/rosetta_source/bin/cluster.linuxgccrelease'
 assert( exists( CLUSTER_EXE) )
+
+DATABASE = HOMEDIR+'/src/rosetta_TRUNK/rosetta_database/'
 
 RNA_TEST_EXE = CLUSTER_EXE.replace( 'cluster','rna_test' )
 assert( exists( RNA_TEST_EXE) )
@@ -166,7 +168,7 @@ for outfile in outfiles:
                 binary_tag = ' -in:file:silent_struct_type binary_rna '
             else:
                 binary_tag = ' -in:file:silent_struct_type rna'
-            command = '%s -database ~/minirosetta_database  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts  -mute all %s -radius %f -sort_groups_by_energy -remove_singletons > %s' % ( CLUSTER_EXE, outfile_scorecut, binary_tag,  RMS_THRESHOLD, cluster_logfile )
+            command = '%s -database %s  -in:file:silent %s -in:file:fullatom -score:weights rna_hires.wts  -mute all %s -radius %f -sort_groups_by_energy -remove_singletons > %s' % ( CLUSTER_EXE, DB, outfile_scorecut, binary_tag,  RMS_THRESHOLD, cluster_logfile )
             print( command )
             system( command )
 
