@@ -137,7 +137,7 @@ for infile in infiles:
                 binary_silentfile = 1
 
     coarse = 0
-    if remark_tags.count('COARSE'):
+    if exists( 'remark_tags') and remark_tags.count('COARSE'):
         coarse = 1
 
     assert(infile[-3:] == 'out')
@@ -241,8 +241,8 @@ for infile in infiles:
     if rna:     command  += ' -enable_dna -enable_rna '
 
 
-        #        command = command.replace('rosetta++','rosetta_rna')
-    print "RNA? ", rna
+    #        command = command.replace('rosetta++','rosetta_rna')
+    #print "RNA? ", rna
 
 
     # Check if this is full atom.

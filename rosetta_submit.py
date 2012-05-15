@@ -83,6 +83,7 @@ for line in  lines:
         tot_jobs += 1
 
     EXE = cols[ 0 ]
+    if not exists( EXE ): EXE = EXE.replace( 'linux', 'macos' )
     if not exists( EXE ):
         EXE = HOMEDIR + '/src/mini/bin/'+EXE
         assert( exists( EXE ) )

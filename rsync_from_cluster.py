@@ -17,7 +17,8 @@ if len(argv)<2:
 
 cluster_in = argv[1]
 (cluster,remotedir) = cluster_check( cluster_in )
-if len( cluster ) == 0:
+
+if cluster == 'unknown':
     Help()
 
 extra_args = argv[2:]
@@ -37,7 +38,11 @@ clusterdir = remotedir+clusterdir
 #print(command)
 #system(command)
 
-command = 'rsync -avzL '+cluster+':'+clusterdir+'/'+string.join(extra_args)+' '+dir+' --exclude="condor*log"'
+
+cluster_prefix = cluster+':'
+if len(cluster) == 0: cluster_prefix = ''
+
+command = 'rsync -avzL '+cluster_prefix+clusterdir+'/'+string.join(extra_args)+' '+dir+' --exclude="condor*log"'
 print(command)
 system(command)
 

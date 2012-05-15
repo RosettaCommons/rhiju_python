@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from sys import argv
-from os.path import exists,basename
+from os.path import exists,basename,expanduser
 from os import system, chdir, getcwd
 from parse_options import parse_options
 
@@ -14,7 +14,7 @@ nstruct = parse_options( args, "nstruct", 1000 )
 job_list = args[1]
 lines = open( job_list ).readlines()
 
-PUZZLE_DIR = '/home/rhiju/projects/loops/mandell/'
+PUZZLE_DIR = expanduser('~rhiju')+'/projects/loops/mandell/'
 CWD = getcwd()
 
 def make_tag( int_vector ):
@@ -27,18 +27,23 @@ for line in lines:
     pdb = line[:-1]
     if not exists( pdb ): system( 'mkdir -p '+pdb )
 
-    puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
+    puzzle_dir_test = PUZZLE_DIR + '../difficult/'
     loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+
+    if not exists( loop_file  ):
+        puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
+        loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
 
     if not exists( loop_file  ):
         puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
 
+
     if not exists( loop_file  ):
         puzzle_dir_test = PUZZLE_DIR + '../functional/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
 
-    #print loop_file
+    print loop_file
     assert( exists( loop_file ) )
 
     pdb_file = puzzle_dir_test + 'start/%s_min.pdb' % pdb
@@ -110,7 +115,7 @@ for line in lines:
 
     disulfide_file = pdb+'.disulfides'
     readme_setup_file = 'README_SETUP'
-    if not exists( readme_setup_file ):
+    if True or not exists( readme_setup_file ):
         fid = open( readme_setup_file, 'w' )
         fid.write( 'rm -rf STEP* *~ CONDOR core.* SLAVE*  \n' )
         command = 'grinder_dagman.py  -loop_start_pdb %s  -native %s -fasta %s -cluster_radius 0.25 -final_number %d  -denovo 1   -loop_res `seq %d %d` -weights score12.wts -disable_sampling_of_loop_takeoff  ' % (noloop_start_pdb, pdb_file, fasta_file, nstruct, loop_start, loop_stop)
@@ -130,6 +135,18 @@ for line in lines:
     #fid.write( 'echo "HELLO WORLD" >> region_FINAL.out \n' )
     fid.write( 'rm -rf blah.* \n' )
     fid.write( 'bsub -W 96:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py -j 400 protein_build.dag \n' )
+    fid.close()
+
+
+    readme_qsub_file = 'README_QSUB'
+    fid = open( readme_qsub_file, 'w' )
+    fid.write('#!/bin/bash\n')
+    fid.write('#PBS -o pseudo_dagman_PBS.out\n')
+    fid.write('#PBS -e pseudo_dagman_PBS.err\n')
+    fid.write('#PBS -l walltime=48:00:00\n')
+    fid.write('\n')
+    fid.write('cd $PBS_O_WORKDIR\n')
+    fid.write('/home/rhiju/SWA_dagman_python2/SWA_pseudo_dagman_continuous_2.py -j 420 protein_build.dag  > blah.out 2> blah.err\n')
     fid.close()
 
     chdir( CWD )

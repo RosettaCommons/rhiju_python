@@ -18,7 +18,7 @@ if len(argv)<2:
 cluster_in = argv[1]
 (cluster,remotedir) = cluster_check( cluster_in )
 
-if len( cluster ) == 0:
+if cluster == 'unknown':
     Help()
 
 extra_args = argv[2:]
@@ -38,7 +38,10 @@ command = 'ssh ' + cluster + ' mkdir -p '+clusterdir
 print(command)
 system(command)
 
-command = 'rsync -avzL '+dir+' '+cluster+':'+clusterdir+' '+string.join(extra_args)
+cluster_prefix = cluster+':'
+if len(cluster) == 0: cluster_prefix = ''
+
+command = 'rsync -avzL '+dir+' '+cluster_prefix+clusterdir+' '+string.join(extra_args)
 print(command)
 system(command)
 

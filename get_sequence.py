@@ -2,7 +2,14 @@
 
 import string
 from os.path import exists,basename
-from amino_acids import longer_names
+
+longer_names={'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
+              'CYS': 'C', 'GLU': 'E', 'GLN': 'Q', 'GLY': 'G',
+              'HIS': 'H', 'ILE': 'I', 'LEU': 'L', 'LYS': 'K',
+              'MET': 'M', 'PHE': 'F', 'PRO': 'P', 'SER': 'S',
+              'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V',
+              ' rA': 'a', ' rC': 'c', ' rG': 'g', ' rU': 'u'
+              }
 
 def get_sequence( pdbname, removechain = 0 ):
 
