@@ -71,7 +71,7 @@ def extract_model( outfile, model, start_model_name ):
         i = int( outfile.split( '_' )[2] )
         j = int( outfile.split( '_' )[1] )
         for n in range(1,i+1): command += ' %d' % n
-        for n in range(j+1,len(sequence)+1): command += ' %d' % n
+        for n in range(j,len(sequence)+1): command += ' %d' % n
         #print command
         system( command )
     except:
