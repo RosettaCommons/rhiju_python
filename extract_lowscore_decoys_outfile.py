@@ -10,10 +10,12 @@ import string
 def Help():
     print
     print 'Usage: '+argv[0]+' <silent out file 1> < silent file 2> ... <N> '
-    print '  Will extract N decoys with lowest score from each silent file.'
+    print '  Will extract N models with lowest score from each silent file.'
     print '  If you want to select based on another column, say 12 (Rg), the'
     print '    last arguments should be -12 <N>  (for lowest Rg) or +12 <N>'
     print '    (for highest Rg).'
+    print '  If N is a float, it will be treated as a score cutoff, rather than'
+    print '    desired number of models.'
     print
 
     exit()
@@ -23,11 +25,20 @@ if len(argv)<2:
     Help()
 
 
+SCORE_CUTOFF = 0
+
 try:
-    NSTRUCT_IN = float(argv[-1])
+    NSTRUCT = float(argv[-1])
+
+    if argv[-1].count( '.' ) > 0: # user specified a float...
+        SCORE_CUTOFF = NSTRUCT
+        NSTRUCT = 0
+    else:
+        NSTRUCT = int( NSTRUCT )
+
     del(argv[-1])
 except:
-    NSTRUCT_IN = 2
+    NSTRUCT = 2
 
 scorecol_defined = 0
 try:
@@ -93,32 +104,38 @@ for infile in infiles:
     for line in lines:
         cols = string.split( line )
         score = 0.0
+
         try:
             for scorecol in scorecols: score += float( cols[ abs(scorecol) ] )
         except:
             continue
+
+        if ( NSTRUCT == 0 ):
+            if REVERSE:
+                if (score < SCORE_CUTOFF ): continue
+            else:
+                if (score > SCORE_CUTOFF ): continue
+
         if REVERSE: score *= -1
         score_plus_lines.append( ( score, line, infile ))
 
 score_plus_lines.sort()
 
-NSTRUCT = NSTRUCT_IN
-if (NSTRUCT < 1.0 ):
-    NUMDECOYS = len( score_plus_lines )
-    NSTRUCT = round( NSTRUCT_IN * NUMDECOYS )
-else:
-    NSTRUCT = int( NSTRUCT )
-
 tags_for_infile = {}
 for infile in infiles: tags_for_infile[ infile ] = []
 
-for score_plus_line in score_plus_lines[:NSTRUCT]:
+
+count = 0
+for score_plus_line in score_plus_lines:
     line = score_plus_line[1]
     cols = string.split(line)
     tag = cols[-1]
 
     infile = score_plus_line[2]
     tags_for_infile[ infile ].append( tag )
+
+    count += 1
+    if ( NSTRUCT > 0 and count > NSTRUCT ): break
 
 if not IS_OUTFILE:
     command = 'head -n 1 '+infile
