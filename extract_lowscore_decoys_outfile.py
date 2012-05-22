@@ -124,7 +124,6 @@ score_plus_lines.sort()
 tags_for_infile = {}
 for infile in infiles: tags_for_infile[ infile ] = []
 
-
 count = 0
 for score_plus_line in score_plus_lines:
     line = score_plus_line[1]
@@ -135,7 +134,9 @@ for score_plus_line in score_plus_lines:
     tags_for_infile[ infile ].append( tag )
 
     count += 1
-    if ( NSTRUCT > 0 and count > NSTRUCT ): break
+    if ( NSTRUCT > 0 and count >= NSTRUCT ): break
+
+stderr.write( 'Extracting %d models from %s\n' % (count, string.join( infiles,' ' ) ) )
 
 if not IS_OUTFILE:
     command = 'head -n 1 '+infile
