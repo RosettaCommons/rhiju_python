@@ -24,24 +24,27 @@ def make_tag( int_vector ):
 
 for line in lines:
 
-    pdb = line[:-1]
-    if not exists( pdb ): system( 'mkdir -p '+pdb )
+    tag = line[:-1]
+    pdb = tag[:4]
+
+    workdir = tag
+    if not exists( workdir ): system( 'mkdir -p '+workdir )
 
     puzzle_dir_test = PUZZLE_DIR + '../difficult/'
-    loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+    loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
 
     if not exists( loop_file  ):
         puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
-        loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+        loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
 
     if not exists( loop_file  ):
         puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
-        loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+        loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
 
 
     if not exists( loop_file  ):
         puzzle_dir_test = PUZZLE_DIR + '../functional/'
-        loop_file = puzzle_dir_test + 'loops/%s.loop' % pdb
+        loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
 
     print loop_file
     assert( exists( loop_file ) )
@@ -50,26 +53,26 @@ for line in lines:
     if not exists( pdb_file ): pdb_file = puzzle_dir_test + 'start/%s_H_stripsidechain.pdb' % pdb
     assert( exists( pdb_file ) )
 
-    if not exists( pdb+'/'+ basename(loop_file) ):
-        system( 'rsync '+loop_file+' '+pdb )
+    if not exists( workdir+'/'+ basename(loop_file) ):
+        system( 'rsync '+loop_file+' '+workdir )
         print( 'Copied '+loop_file )
 
-    if not exists( pdb+'/'+ basename(pdb_file) ):
-        system( 'rsync '+pdb_file+' '+pdb )
+    if not exists( workdir+'/'+ basename(pdb_file) ):
+        system( 'rsync '+pdb_file+' '+workdir )
         print( 'Copied '+pdb_file )
 
     pdb_original_file = puzzle_dir_test + 'start/%s.pdb' % pdb
-    if exists( pdb_original_file ) and not exists( pdb+'/'+basename(pdb_original_file ) ):
-        system( 'rsync '+pdb_original_file+' '+pdb )
+    if exists( pdb_original_file ) and not exists( workdir+'/'+basename(pdb_original_file ) ):
+        system( 'rsync '+pdb_original_file+' '+workdir )
         print( 'Copied '+pdb_original_file )
 
     disulfide_file = puzzle_dir_test + 'start/%s.disulfides' % pdb
-    if exists( disulfide_file ) and not exists( pdb+'/'+basename(disulfide_file ) ):
-        system( 'rsync '+disulfide_file+' '+pdb )
+    if exists( disulfide_file ) and not exists( workdir+'/'+basename(disulfide_file ) ):
+        system( 'rsync '+disulfide_file+' '+workdir )
 
-    chdir( pdb )
+    chdir( workdir )
 
-    loop_file = pdb+'.loop'
+    loop_file = tag+'.loop'
     pdb_file  = pdb+'_min.pdb'
     if not exists( pdb_file ): pdb_file = '%s_H_stripsidechain.pdb' % pdb
 
@@ -100,14 +103,14 @@ for line in lines:
 
     prepack_start_file = 'region_%d_%d_sample.cluster.out' % (loop_stop+1, loop_start-1 )
     if not exists( prepack_start_file ) and \
-        (exists( '/home/vanlang/projects/loops/swa/%s/' % pdb) or exists( '/scratch/users/vanlang/projects/loops/swa/%s/' % pdb) ):
-        checkpath = '/home/vanlang/projects/loops/swa/%s/%s.gz' % (pdb,prepack_start_file)
+        (exists( '/home/vanlang/projects/loops/swa/%s/' % workdir ) or exists( '/scratch/users/vanlang/projects/loops/swa/%s/' % workdir ) ):
+        checkpath = '/home/vanlang/projects/loops/swa/%s/%s.gz' % (workdir,prepack_start_file)
         if exists( checkpath ):
             print checkpath
             system( 'rsync '+checkpath+' .' )
             system( 'gunzip '+prepack_start_file+'.gz' )
         else:
-            checkpath = '/scratch/users/vanlang/projects/loops/swa/%s/%s' % (pdb,prepack_start_file)
+            checkpath = '/scratch/users/vanlang/projects/loops/swa/%s/%s' % (workdir,prepack_start_file)
             if exists( checkpath ):
                 print checkpath
                 system( 'rsync '+checkpath+' .' )
@@ -115,24 +118,23 @@ for line in lines:
 
     disulfide_file = pdb+'.disulfides'
     readme_setup_file = 'README_SETUP'
-    if True or not exists( readme_setup_file ):
-        fid = open( readme_setup_file, 'w' )
-        fid.write( 'rm -rf STEP* *~ CONDOR core.* SLAVE*  \n' )
-        command = 'grinder_dagman.py  -loop_start_pdb %s  -native %s -fasta %s -cluster_radius 0.25 -final_number %d  -denovo 1   -loop_res `seq %d %d` -weights score12.wts -disable_sampling_of_loop_takeoff  ' % (noloop_start_pdb, pdb_file, fasta_file, nstruct, loop_start, loop_stop)
-        if ( near_native ): command += ' -rmsd_screen %8.3f -cst_file %s ' % ( 2.0, native_cst_file )
-        if ( no_hb_env_dep ): command = command.replace( 'score12.wts', 'score12_no_hb_env_dep.wts' )
-        if (loop_force_Nsquared): command += ' -loop_force_Nsquared'
-        if (exists( disulfide_file ) ):
-            command += ' -disulfide_file '+disulfide_file
-            command += ' -exe ~/src/rosetta_TRUNK/rosetta_source/bin/stepwise_protein_test.linuxgccrelease -database ~/src/rosetta_TRUNK/rosetta_database'
 
-        command += '\n'
-        fid.write( command )
-        fid.close()
+    fid = open( readme_setup_file, 'w' )
+    fid.write( 'rm -rf STEP* *~ CONDOR core.* SLAVE*  \n' )
+    command = 'grinder_dagman.py  -loop_start_pdb %s  -native %s -fasta %s -cluster_radius 0.25 -final_number %d  -denovo 1   -loop_res `seq %d %d` -weights score12.wts -disable_sampling_of_loop_takeoff  ' % (noloop_start_pdb, pdb_file, fasta_file, nstruct, loop_start, loop_stop)
+    if ( near_native ): command += ' -rmsd_screen %8.3f -cst_file %s ' % ( 2.0, native_cst_file )
+    if ( no_hb_env_dep ): command = command.replace( 'score12.wts', 'score12_no_hb_env_dep.wts' )
+    if (loop_force_Nsquared): command += ' -loop_force_Nsquared'
+    if (exists( disulfide_file ) ):
+        command += ' -disulfide_file '+disulfide_file
+        command += ' -exe ~/src/rosetta_TRUNK/rosetta_source/bin/stepwise_protein_test.linuxgccrelease -database ~/src/rosetta_TRUNK/rosetta_database'
+
+    command += '\n'
+    fid.write( command )
+    fid.close()
 
     readme_sub_file = 'README_SUB'
     fid = open( readme_sub_file, 'w' )
-    #fid.write( 'echo "HELLO WORLD" >> region_FINAL.out \n' )
     fid.write( 'rm -rf blah.* \n' )
     fid.write( 'bsub -W 96:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py -j 400 protein_build.dag \n' )
     fid.close()
