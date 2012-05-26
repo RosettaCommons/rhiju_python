@@ -9,12 +9,13 @@ args = argv
 no_hb_env_dep = parse_options( args, "no_hb_env_dep", 0 )
 near_native = parse_options( args, "near_native", 0 )
 loop_force_Nsquared = parse_options( args, "loop_force_Nsquared", 0 )
-nstruct = parse_options( args, "nstruct", 1000 )
+nstruct = parse_options( args, "nstruct", 400 )
 
 job_list = args[1]
 lines = open( job_list ).readlines()
 
 PUZZLE_DIR = expanduser('~rhiju')+'/projects/loops/mandell/'
+puzzle_subdirs = ['plop_set','rosetta_set','../functional','../blind_test2']
 CWD = getcwd()
 
 def make_tag( int_vector ):
@@ -41,16 +42,17 @@ for line in lines:
         puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
 
-
     if not exists( loop_file  ):
         puzzle_dir_test = PUZZLE_DIR + '../functional/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
 
     print loop_file
+
     assert( exists( loop_file ) )
 
     pdb_file = puzzle_dir_test + 'start/%s_min.pdb' % pdb
     if not exists( pdb_file ): pdb_file = puzzle_dir_test + 'start/%s_H_stripsidechain.pdb' % pdb
+    if not exists( pdb_file ): pdb_file = puzzle_dir_test + 'start/%s.pdb' % pdb
     assert( exists( pdb_file ) )
 
     if not exists( workdir+'/'+ basename(loop_file) ):
@@ -75,6 +77,7 @@ for line in lines:
     loop_file = tag+'.loop'
     pdb_file  = pdb+'_min.pdb'
     if not exists( pdb_file ): pdb_file = '%s_H_stripsidechain.pdb' % pdb
+    if not exists( pdb_file ): pdb_file = '%s.pdb' % pdb
 
     noloop_start_pdb = 'noloop_'+pdb_file
 
@@ -136,7 +139,7 @@ for line in lines:
     readme_sub_file = 'README_SUB'
     fid = open( readme_sub_file, 'w' )
     fid.write( 'rm -rf blah.* \n' )
-    fid.write( 'bsub -W 96:0 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py -j 400 protein_build.dag \n' )
+    fid.write( 'bsub -W 96:0  -R hname!=node-4-1 -o blah.out -e blah.err SWA_pseudo_dagman_continuous.py -j 400 protein_build.dag \n' )
     fid.close()
 
 
