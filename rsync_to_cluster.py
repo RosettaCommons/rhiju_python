@@ -26,6 +26,7 @@ extra_args = argv[2:]
 dir = '.'
 clusterdir = abspath(dir).replace('/Users/rhiju/','')
 clusterdir = clusterdir.replace('/work/rhiju/','')
+clusterdir = clusterdir.replace('/scratch/users/rhiju/','')
 
 clusterdir = remotedir + clusterdir
 

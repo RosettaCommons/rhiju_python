@@ -30,12 +30,16 @@ if final_outfile == "":
 else:
     fid = open( final_outfile, "w" )
 
-data = open( outfiles[ 0 ] ).readlines()
-for line in data:
-    fid.write( line )
+#data = open( outfiles[ 0 ] ).readlines()
+#count = 0
+#for line in data:
+#    fid.write( line )
 
+sequence_line_found    = 0
+description_line_found = 0
+remark_line_found      = 0
 
-for i in range(1, len(outfiles)):
+for i in range( len(outfiles) ):
 
     if not exists( outfiles[i] ):
         stderr.write( 'Does not exist! '+outfiles[i] )
@@ -43,13 +47,26 @@ for i in range(1, len(outfiles)):
 
     data = open(outfiles[i],'r')
 
-    line = data.readline() # Skip first two lines
-    line = data.readline()
+    #line = data.readline() # Skip first two lines
+    #line = data.readline()
+    line = 1
 
     while line:
-        line = data.readline()[:-1]
 
-        if line[:9] == 'SEQUENCE:': continue # Should not be any more sequence lines!
+        line = data.readline()[:-1]
+        if not line: break
+
+        if line[:9] == 'SEQUENCE:':
+            if sequence_line_found: continue # Should not be any more sequence lines!
+            else: sequence_line_found = 1
+
+        if line.find( 'description' ) > -1:
+            if description_line_found: continue
+            else: description_line_found = 1
+
+        if line.find( 'REMARK' ) > -1:
+            if remark_line_found: continue
+            else: remark_line_found = 1
 
         description_index = line.find('S_')
         if description_index < 0:
@@ -57,8 +74,7 @@ for i in range(1, len(outfiles)):
         #if description_index < 0:
         #    description_index = line.find('_')
 
-
-        if description_index >= 0:
+        if description_index >= 0 and i > 0:
             tag = line[description_index:]
 
             tagcols = string.split(tag,'_')
@@ -74,6 +90,7 @@ for i in range(1, len(outfiles)):
         if len(line) < 1: continue
 
         fid.write( line+'\n' )
+
 
     data.close()
 

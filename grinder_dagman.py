@@ -128,7 +128,8 @@ if FRAGMENT_LIBRARY: assert( add_peptide_plane )   # Should peptide plane also b
 ###############################################################
 HOMEDIR = expanduser('~rhiju')
 
-MINI = "mini"
+#MINI = "mini"
+MINI = "rosetta_TRUNK/rosetta_source/"
 if USE_MINI_TEMP: MINI = "mini_TEMP"
 
 if len( EXE ) == 0:
@@ -137,7 +138,9 @@ if len( EXE ) == 0:
         EXE = HOMEDIR+'/src/'+MINI+'/bin/stepwise_protein_test.linuxgccrelease'
 assert( exists( EXE ) )
 
-if len( DB ) == 0:  DB = HOMEDIR+'/minirosetta_database'
+if len( DB ) == 0:
+    DB = HOMEDIR+'/src/rosetta_TRUNK/rosetta_database'
+    #DB = HOMEDIR+'/minirosetta_database'
 
 assert( exists( DB ) )
 
