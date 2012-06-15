@@ -33,11 +33,12 @@ for line in lines:
 
     chdir( loop_tag )
 
+    pdb = loop_tag[:4]
     loop_silent_file = 'region_FINAL.out'
     if not exists( loop_silent_file ):
-        loop_silent_file = '%s_kic.out' % loop_tag
+        loop_silent_file = '%s_kic.out' % pdb
 
-    sequence = open( '%s.fasta' % loop_tag ).readlines()[-1][:-1]
+    sequence = open( '%s.fasta' % pdb ).readlines()[-1][:-1]
     in_loop = []
     for m in range( len( sequence ) ): in_loop.append( 0 )
 
@@ -46,8 +47,8 @@ for line in lines:
     loop_start = int( cols[0] )
     loop_stop = int( cols[1] )
 
-    native_pdb = '%s_min.pdb' % loop_tag
-    if not exists( native_pdb ): native_pdb = '%s.pdb' % loop_tag
+    native_pdb = '%s_min.pdb' % pdb
+    if not exists( native_pdb ): native_pdb = '%s.pdb' % pdb
     if not exists( native_pdb ):
         print 'Could not find ', native_pdb
         exit( 0 )
@@ -167,9 +168,11 @@ for line in lines:
     loop_tag = line[:-1]
     chdir( loop_tag )
 
+    pdb = loop_tag[:4]
+
     loop_silent_file = 'region_FINAL.out'
     if not exists( loop_silent_file ):
-        loop_silent_file = '%s_kic.out' % loop_tag
+        loop_silent_file = '%s_kic.out' % pdb
     loop_silent_score_file = loop_silent_file.replace( '.out','.sc' )
 
     if not( exists( loop_silent_score_file ) ):
@@ -187,7 +190,9 @@ for line in lines:
         for field in fields: col_idx.append( cols.index( field ) )
     except:
         fields = ['score','looprms','loopcarms']
-        for field in fields: col_idx.append( cols.index( field ) )
+        for field in fields:
+            if field not in cols: print( loop_tag )
+            col_idx.append( cols.index( field ) )
 
     best_rms = 9999
     top_score_rms = 0
@@ -209,9 +214,9 @@ print 'Making ... ', cluster_summary_file
 fid = open( cluster_summary_file, 'w' )
 
 
-fid.write( '%4s  %6s  %6s  %6s  %s    %6s     %6s\n' % ( 'ID','bstrms', 'rms1','rms5','n','Egap','E'));
+fid.write( '%9s  %6s  %6s  %6s  %s    %6s     %6s\n' % ( 'ID','bstrms', 'rms1','rms5','n','Egap','E'));
 for i in range( len( all_tag ) ):
-    fid.write( '%4s  %6.2f  %6.2f  %6.2f  %d    %6.2f   %8.2f\n' % ( all_tag[i], all_best_best_rms[i], all_top_score_rms[i], all_best_rms[i], all_best_cluster_num[i], all_score_gap[i],all_top_score[i]) );
+    fid.write( '%9s  %6.2f  %6.2f  %6.2f  %d    %6.2f   %8.2f\n' % ( all_tag[i], all_best_best_rms[i], all_top_score_rms[i], all_best_rms[i], all_best_cluster_num[i], all_score_gap[i],all_top_score[i]) );
 
 fid.close()
 print
