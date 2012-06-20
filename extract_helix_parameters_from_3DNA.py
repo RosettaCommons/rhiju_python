@@ -4,6 +4,31 @@ import string
 from os.path import exists,basename
 from os import system
 
+def Help():
+    print
+    print argv[0]+ ' <input pdb OR list of input pdbs>'
+    print
+    print ' Runs 3DNA utilities find_pair & analyze, and then goes '
+    print '  through the outfile to pull out useful parameters'
+    print '  in file with name  *base_pair_step_stats.txt and *base_pair_stats.txt.  '
+    print
+    print ' File format of base_pair_step_stats has one line for each base pair step (i,j) to '
+    print '      (i+1,j-1) with the following parameters:'
+    print
+    print '   type(i) type(i+1) type(j) type(j-1)    [a,c,g,u = 1,2,3,4]'
+    print '   resnum(i) resnum(i+1) resnum(j) resnum(j-1) '
+    print '   shift slide rise tilt roll twist'
+    print '   delta(i) epsilon(i) zeta(i) alpha(i+1) beta(i+1) gamma(i+1)   chi(i) chi(i+1)'
+    print '   delta(j-1) epsilon(j-1) zeta(j-1) alpha(j) beta(j) gamma(j)   chi(j-1) chi(j)'
+    print '   shear(i,j) stretch(i,j) stagger(i,j) buckle(i,j) propeller(i,j) opening(i,j)'
+    print '   shear(i+1,j-1) stretch(i+1,j-1) stagger(i+1,j-1) buckle(i+1,j-1) propeller(i+1,j-1) opening(i+1,j-1)'
+    print
+    print 'R. Das, 2012'
+
+if len (argv )< 2:
+    Help()
+    exit()
+
 file_list = argv[1]
 
 if file_list[-4:] == '.pdb':
@@ -123,8 +148,8 @@ for file in X3DNA_outfiles:
 
         try:
             for k in range(6): check_if_parameter_defined = float( all_local_base_pair_step_params[n][k] )
-            for k in range(7): check_if_parameter_defined = float( all_torsions1[n][k] )
-            for k in range(7): check_if_parameter_defined = float( all_torsions2[n][k] )
+            for k in range(3,7): check_if_parameter_defined = float( all_torsions1[n][k] )
+            for k in range(4): check_if_parameter_defined = float( all_torsions2[n][k] )
         except:
             continue
 
@@ -192,7 +217,7 @@ for file in X3DNA_outfiles:
 
         fid_out1.write( '\n' )
 
-    #if PDB_READIN: #system( 'rm -rf '+outfile )
+    if PDB_READIN: system( 'rm -rf '+outfile )
 
 
 fid_out1.close()
