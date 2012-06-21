@@ -11,11 +11,14 @@ near_native = parse_options( args, "near_native", 0 )
 loop_force_Nsquared = parse_options( args, "loop_force_Nsquared", 0 )
 nstruct = parse_options( args, "nstruct", 400 )
 
+njobs = 412
+if near_native: njobs = 100
+
 job_list = args[1]
 lines = open( job_list ).readlines()
 
 PUZZLE_DIR = expanduser('~rhiju')+'/projects/loops/mandell/'
-puzzle_subdirs = ['plop_set','rosetta_set','../functional','../blind_test2']
+puzzle_subdirs = ['plop_set','../difficult','../symm','rosetta_set','../functional','../blind_test2']
 CWD = getcwd()
 
 def make_tag( int_vector ):
@@ -31,20 +34,10 @@ for line in lines:
     workdir = tag
     if not exists( workdir ): system( 'mkdir -p '+workdir )
 
-    puzzle_dir_test = PUZZLE_DIR + '../difficult/'
-    loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
-
-    if not exists( loop_file  ):
-        puzzle_dir_test = PUZZLE_DIR + 'plop_set/'
+    for subdir in puzzle_subdirs:
+        puzzle_dir_test = PUZZLE_DIR + '/' + subdir + '/'
         loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
-
-    if not exists( loop_file  ):
-        puzzle_dir_test = PUZZLE_DIR + 'rosetta_set/'
-        loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
-
-    if not exists( loop_file  ):
-        puzzle_dir_test = PUZZLE_DIR + '../functional/'
-        loop_file = puzzle_dir_test + 'loops/%s.loop' % tag
+        if exists( loop_file  ): break
 
     print loop_file
 
@@ -105,19 +98,29 @@ for line in lines:
         assert( exists( native_cst_file ) )
 
     prepack_start_file = 'region_%d_%d_sample.cluster.out' % (loop_stop+1, loop_start-1 )
-    if not exists( prepack_start_file ) and \
-        (exists( '/home/vanlang/projects/loops/swa/%s/' % workdir ) or exists( '/scratch/users/vanlang/projects/loops/swa/%s/' % workdir ) ):
-        checkpath = '/home/vanlang/projects/loops/swa/%s/%s.gz' % (workdir,prepack_start_file)
-        if exists( checkpath ):
+    search_directories = ['//home/vanlang/projects/loops/swa/','/scratch/users/vanlang/projects/loops/swa/','/scratch/users/rhiju/projects/loops/swa_difficult/','/scratch/users/rhiju/projects/loops/swa_difficult_Nsquared','/scratch/users/rhiju/projects/loops/swa/']
+    if not exists( prepack_start_file ):
+        found_search_dir = 0
+        for search_dir in search_directories:
+            if exists( search_dir+'/'+tag):
+                found_search_dir = 1
+                break
+        if found_search_dir:
+            checkpath = '%s/%s/%s.gz' % (search_dir,workdir,prepack_start_file)
             print checkpath
-            system( 'rsync '+checkpath+' .' )
-            system( 'gunzip '+prepack_start_file+'.gz' )
-        else:
-            checkpath = '/scratch/users/vanlang/projects/loops/swa/%s/%s' % (workdir,prepack_start_file)
             if exists( checkpath ):
                 print checkpath
                 system( 'rsync '+checkpath+' .' )
-        #assert( exists( prepack_start_file ) )
+                system( 'gunzip '+prepack_start_file+'.gz' )
+            else:
+                checkpath = '%s/%s/%s' % (search_dir,workdir,prepack_start_file)
+                if exists( checkpath ):
+                    print checkpath
+                    system( 'rsync '+checkpath+' .' )
+
+    if near_native and not( exists( prepack_start_file ) ):
+        print prepack_start_file, ' missing'
+        exit()
 
     disulfide_file = pdb+'.disulfides'
     readme_setup_file = 'README_SETUP'
@@ -151,7 +154,7 @@ for line in lines:
     fid.write('#PBS -l walltime=48:00:00\n')
     fid.write('\n')
     fid.write('cd $PBS_O_WORKDIR\n')
-    fid.write('/home/rhiju/SWA_dagman_python2/SWA_pseudo_dagman_continuous_2.py -j 420 protein_build.dag  > blah.out 2> blah.err\n')
+    fid.write('/home/rhiju/SWA_dagman_python2/SWA_pseudo_dagman_continuous_2.py -j %d protein_build.dag  > blah.out 2> blah.err\n' % njobs)
     fid.close()
 
     chdir( CWD )
