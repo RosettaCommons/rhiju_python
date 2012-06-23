@@ -688,6 +688,12 @@ if FIX_CALC_RMS_TAG and len( calc_rms_res ) > 0:
 cluster_by_all_atom_rmsd_tag = ''
 if cluster_by_all_atom_rmsd: cluster_by_all_atom_rmsd_tag = ' -cluster_by_all_atom_rmsd '
 
+def check_in_another_loop( i, loop_start, all_loop_res ):
+    for loop_res in all_loop_res:
+        if loop_res[0] == loop_start: continue
+        if i in loop_res: return True
+    return False
+
 
 ################################
 # MAIN LOOP
@@ -1156,6 +1162,8 @@ for L in range( min_length, max_length + 1 ):
                 for i_prev in [ i, i+1, i+2 ]:
                     job_tag = "REGION_%d_%d" % ( i_prev, j_prev )
                     if disable_sampling_of_loop_takeoff and ( j==loop_start-1 or i_prev==loop_end+1 ): continue
+                    if check_in_another_loop( i_prev, loop_start, all_loop_res ): continue # special case in multiloops
+                    if check_in_another_loop( j_prev, loop_start, all_loop_res ): continue # special case in multiloops
                     if job_tag in all_job_tags:
                         sub_job_tag = 'START_FROM_%s_CLOSE_LOOP_CCD' % ( job_tag )
 
@@ -1184,6 +1192,8 @@ for L in range( min_length, max_length + 1 ):
                     job_tag = "REGION_%d_%d" % ( i_prev, j_prev )
                     cutpoint_at_Cterm = i_prev-2
                     if disable_sampling_of_loop_takeoff and ( j ==loop_start-1 or cutpoint_at_Cterm==loop_end ): continue
+                    if check_in_another_loop( i_prev, loop_start, all_loop_res ): continue # special case in multiloops
+                    if check_in_another_loop( j_prev, loop_start, all_loop_res ): continue # special case in multiloops
                     if job_tag in all_job_tags:
                         sub_job_tag = 'START_FROM_%s_CLOSE_LOOP_CCD' % ( job_tag )
 
