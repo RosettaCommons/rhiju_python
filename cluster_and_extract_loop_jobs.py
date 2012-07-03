@@ -164,6 +164,7 @@ chdir( CWD )
 print 'Extracting best rms models...'
 # also extract best rms model (not best cluster)
 all_best_best_rms = []
+all_n_models = []
 for line in lines:
     loop_tag = line[:-1]
     chdir( loop_tag )
@@ -182,6 +183,7 @@ for line in lines:
     assert( exists( loop_silent_score_file ) )
 
     plines = open( loop_silent_score_file ).readlines()
+    all_n_models.append( len( plines ) - 1 )
 
     cols = plines[0].split()
     col_idx = []
@@ -214,9 +216,9 @@ print 'Making ... ', cluster_summary_file
 fid = open( cluster_summary_file, 'w' )
 
 
-fid.write( '%9s  %6s  %6s  %6s  %s    %6s     %6s\n' % ( 'ID','bstrms', 'rms1','rms5','n','Egap','E'));
+fid.write( '%9s  %6s  %6s  %6s  %s    %6s     %6s  %s\n' % ( 'ID','bstrms', 'rms1','rms5','n','Egap','E','num_models'));
 for i in range( len( all_tag ) ):
-    fid.write( '%9s  %6.2f  %6.2f  %6.2f  %d    %6.2f   %8.2f\n' % ( all_tag[i], all_best_best_rms[i], all_top_score_rms[i], all_best_rms[i], all_best_cluster_num[i], all_score_gap[i],all_top_score[i]) );
+    fid.write( '%9s  %6.2f  %6.2f  %6.2f  %d    %6.2f   %8.2f      %6d\n' % ( all_tag[i], all_best_best_rms[i], all_top_score_rms[i], all_best_rms[i], all_best_cluster_num[i], all_score_gap[i],all_top_score[i], all_n_models[i]) );
 
 fid.close()
 print
