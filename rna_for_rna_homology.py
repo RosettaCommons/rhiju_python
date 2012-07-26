@@ -32,9 +32,9 @@ class RNA:
 	self.basepr=[0]*(len(sequence)+1)
 	self.ntcom=[]
 
-	for i in range(0,len(sequence)+1):	    
+	for i in range(0,len(sequence)+1):
 	    self.ntcom.append(Centerofmass(0.0, 0.0, 0.0))
-	
+
 	self.ntmass=[0.0]*(len(sequence)+1)
 
 	for i in range(0,len(sequence)):
@@ -44,7 +44,7 @@ class RNA:
 		print "Error: invalid RNA sequence. Nucleotide", i+1, "=", sequence[i]
 		break
 
-		
+
     #Read a dot bracket notation string into the secondary structure array basepr[]
     def readdb(self, db, remove_noncanonical):
 	if len(db) != self.length:
@@ -55,7 +55,7 @@ class RNA:
 	for i in range(0,self.length):
 	    if db[i] == "(":
 		right[i] = True
-		
+
 	#pair with left facing brackets
 	for i in range(0,self.length):
 	    if db[i] == ")":
@@ -63,17 +63,17 @@ class RNA:
 		while right[j] == False and j >= 0:
 		    j -= 1
 		right[j] = False
-		
+
 		self.basepr[j+1] = i+1
 		self.basepr[i+1] = j+1
-	
+
 	#Handle pseudoknots with alternate brackets
 	#find right facing brackets
 	right = [False]*(self.length)
 	for i in range(0,self.length):
 	    if db[i] == "[":
 		right[i] = True
-		
+
 	#pair with left facing brackets
 	for i in range(0,self.length):
 	    if db[i] == "]":
@@ -81,10 +81,10 @@ class RNA:
 		while right[j] == False and j >= 0:
 		    j -= 1
 		right[j] = False
-		
+
 		self.basepr[j+1] = i+1
 		self.basepr[i+1] = j+1
-		
+
 	#Check for non-canonical pairs:
 	if remove_noncanonical:
 	    for i in range(1,self.length+1):
@@ -92,8 +92,8 @@ class RNA:
 		    if not self.canpair(self.seq[i], self.seq[self.basepr[i]]):
 			self.basepr[self.basepr[i]] = 0
 			self.basepr[i] = 0
-		
-    #read a pdb file and compute the centers of mass of each base. 
+
+    #read a pdb file and compute the centers of mass of each base.
     def readcoms(self, pdbfile):
 	currnuc = 0
 	prevres = ""
@@ -112,7 +112,7 @@ class RNA:
 		self.ntmass[int(currnuc)] += atomicmasses[column[2]]
 	for i in range(1, self.length+1):
 	    self.ntcom[i].divide(self.ntmass[i])
-	    
+
     #find the loop nucleotides in an RNA
     def findloops(self):
 	currentloop = 0
@@ -124,7 +124,7 @@ class RNA:
 	    elif self.basepr[i-1] == 0:
 		currentloop = currentloop + 1
 		self.loops.append([])
-		
+
     #Check for valid base pair
     def canpair(self, base1, base2):
 	if base1 not in ["a","c","g","u"]:

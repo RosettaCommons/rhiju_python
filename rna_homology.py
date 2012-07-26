@@ -28,12 +28,13 @@ def Usage():
     print "Usage: "
     print "rna_homology.py input.fasta template.pdb #_decoys prefix [conserved tertiary restraints]"
 
-rosetta_build = "default.linuxgccrelease"
-rosetta_root = "~/rosetta_TRUNK/"
+rosetta_build = "macosgccrelease"
+rosetta_root = "~/src/rosetta_TRUNK/"
 use_tertiary = False
 tertiary = ""
 
-import sys, os, math, rna_for_rna_homology, fasta_for_rna_homology
+import sys, fasta_for_rna_homology, rna_for_rna_homology, os, math
+
 
 if(len(sys.argv)  < 5 or len(sys.argv) > 6):
     Usage()
@@ -58,6 +59,24 @@ insert_pair_bases = []
 insert_pair_restraints = []
 do_not_remodel = []
 force_remodel = []
+
+# rhiju -- put this in a util py or something.
+def make_tag_with_dashes( int_vector ):
+    tag = ''
+
+    start_res = int_vector[0]
+    for i in range( 1, len(int_vector)+1 ):
+        if i==len( int_vector)  or  int_vector[i] != int_vector[i-1]+1:
+
+            stop_res = int_vector[i-1]
+            if stop_res > start_res:
+                tag += ' %d-%d' % (start_res, stop_res )
+            else:
+                tag += ' %d' % (stop_res )
+
+            if ( i < len( int_vector) ): start_res = int_vector[i]
+
+    return tag
 
 if(use_tertiary):
     print "Reading tertiary restraints from:", tertiary
@@ -96,11 +115,10 @@ wc_pair_mutation_pairs = []
 for base in infasta.wc_pair_mutations:
     wc_pair_mutation_pairs.append(infasta.rnas[0].basepr[base])
 
-
 #Remodel WC base pairs first.  This is done one base pair at a time to preserve homology with input pdb.
 print "Remodeling these pairs:\n", infasta.wc_pair_mutations, "\n", wc_pair_mutation_pairs
 
-os.system("rm "+prefix+".*.cut.out")
+os.system("rm -f "+prefix+".*.cut.out")
 
 for i in range(0,len(infasta.wc_pair_mutations)):
     mutstring = ".mut"+str(infasta.wc_pair_mutations[i])+"-"+str(infasta.rnas[0].basepr[infasta.wc_pair_mutations[i]])
@@ -119,8 +137,8 @@ for i in range(0,len(infasta.wc_pair_mutations)):
 	    outpdb.write(line)
     outpdb.close()
 
-    #os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
-    os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+#    os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+    os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
     prefix + mutstring + ".cut.out -database " + rosetta_root + "rosetta_database/ -s " + prefix + mutstring + \
     ".pdb")
 
@@ -162,17 +180,24 @@ for i in range(0,len(infasta.wc_pair_mutations)):
     outfasta.write(outseq+"\n")
     outfasta.close()
 
-    chunkstr = ""
+    chunk_res = []
     for j in range(1, len(infasta.rnas[0].seq)):
 	if j != infasta.wc_pair_mutations[i] and j != infasta.rnas[0].basepr[infasta.wc_pair_mutations[i]]:
-	    chunkstr += " " + str(j)
+            chunk_res.append( j )
+    chunkstr = make_tag_with_dashes( chunk_res )
 
     #Now actually mutate the base pair:
 
-    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta -native "+current_pdb+" -params_file " \
-    + prefix+mutstring+".prm -nstruct 4 -out::file::silent "+ \
-    prefix+mutstring+".out -cycles 2000 -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
-    ".cut.out -close_loops -dump -output_virtual -output_lores_silent_file -chunk_res"+chunkstr)
+#    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta -native "+current_pdb+" -params_file " \
+    #os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta  -params_file " \
+    #              + prefix+mutstring+".prm -nstruct 4 -out::file::silent "+ \
+    #              prefix+mutstring+".out -cycles 2000 -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
+    #              ".cut.out -close_loops -dump -output_virtual -output_lores_silent_file -chunk_res"+chunkstr)
+
+    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta  -params_file " \
+                  + prefix+mutstring+".prm -nstruct 1 -out::file::silent "+ \
+                  prefix+mutstring+".out -cycles 200  -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
+                  ".cut.out -close_loops -dump -output_virtual -output_lores_silent_file -chunk_res"+chunkstr)
 
 
 
@@ -232,8 +257,8 @@ if(use_tertiary):
 		outpdb.write(line)
 	outpdb.close()
 
-	#os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
-	os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+	#os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+	os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
 	prefix + mutstring + ".cut.out -database " + rosetta_root + "rosetta_database/ -s " + prefix + mutstring + \
 	".pdb")
 
@@ -244,9 +269,11 @@ if(use_tertiary):
 	outprm.write("ALLOW_INSERT "+str(infasta.alignnum0.index(tertiary_restraints[i][0]))+" "+str(infasta.alignnum0.index(tertiary_restraints[i][0]))+" "+\
 	str(infasta.alignnum0.index(tertiary_restraints[i][1]))+" "+str(infasta.alignnum0.index(tertiary_restraints[i][1]))+"\n")
 	if tertiary_restraints[i][0] > 1 and tertiary_restraints[i][0] < infasta.rnas[0].length:
-	    outprm.write("OBLIGATE PAIR "+str(infasta.alignnum0.index(tertiary_restraints[i][0])-1)+" "+str(infasta.alignnum0.index(tertiary_restraints[i][1])+1)+" X X X\n")
+	    #outprm.write("OBLIGATE PAIR "+str(infasta.alignnum0.index(tertiary_restraints[i][0])-1)+" "+str(infasta.alignnum0.index(tertiary_restraints[i][1])+1)+" X X X\n")
+	    outprm.write("OBLIGATE PAIR "+str(infasta.alignnum0.index(tertiary_restraints[i][0])-1)+" "+str(infasta.alignnum0.index(tertiary_restraints[i][1])+1)+" W W A\n")
 	if tertiary_restraints[i][1] > 1 and tertiary_restraints[i][1] < infasta.rnas[0].length:
-	    outprm.write("OBLIGATE PAIR "+str(infasta.alignnum0.index(tertiary_restraints[i][1])-1)+" "+str(infasta.alignnum0.index(tertiary_restraints[i][1])+1)+" X X X\n")
+	    #outprm.write("OBLIGATE PAIR "+str(infasta.alignnum0.index(tertiary_restraints[i][1])-1)+" "+str(infasta.alignnum0.index(tertiary_restraints[i][1])+1)+" X X X\n")
+	    outprm.write("OBLIGATE PAIR "+str(infasta.alignnum0.index(tertiary_restraints[i][1])-1)+" "+str(infasta.alignnum0.index(tertiary_restraints[i][1])+1)+" W W A\n")
 
 	if tertiary_restraints[i][0] > 1 and tertiary_restraints[i][0] < infasta.rnas[0].length:
 	    outprm.write("CUTPOINT_CLOSED "+str(infasta.alignnum0.index(tertiary_restraints[i][0]))+"\n")
@@ -275,14 +302,17 @@ if(use_tertiary):
 	outfasta.write(outseq+"\n")
 	outfasta.close()
 
-	chunkstr = ""
+        chunk_res = []
 	for j in range(1, len(infasta.rnas[0].seq)):
 	    if j != tertiary_restraints[i][0] and j != tertiary_restraints[i][1]:
-		chunkstr += " " + str(j)
+                chunk_res.append( j )
+        chunkstr = make_tag_with_dashes( chunk_res )
+
 
 	#Now actually mutate the base pair:
 
-	os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta -native "+current_pdb+" -params_file " \
+#	os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta -native "+current_pdb+" -params_file " \
+	os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta  -params_file " \
 	+ prefix+mutstring+".prm -nstruct 10 -out::file::silent "+ \
 	prefix+mutstring+".out -cycles 5000 -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
 	".cut.out -close_loops -chunk_res"+chunkstr)
@@ -332,8 +362,8 @@ if(use_tertiary):
 		    outpdb.write(line)
 	    outpdb.close()
 
-	    #os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
-	    os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+            #os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+	    os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
 	    prefix + mutstring + ".cut.out -database " + rosetta_root + "rosetta_database/ -s " + prefix + mutstring + \
 	    ".pdb")
 
@@ -360,14 +390,18 @@ if(use_tertiary):
 	    outfasta.write(outseq+"\n")
 	    outfasta.close()
 
-	    chunkstr = ""
+	    chunk_res = []
 	    for j in range(1, len(infasta.rnas[0].seq)):
 		if j != infasta.alignnum0.index(do_not_remodel[i]):
 		    chunkstr += " " + str(j)
+                    chunk_res.append( j )
+            chunkstr = make_tag_with_dashes( chunk_res )
+
 
 	    #Now actually mutate the base pair:
 
-	    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta -native "+current_pdb+" -params_file " \
+            #	    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta -native "+current_pdb+" -params_file " \
+	    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta  -params_file " \
 	    + prefix+mutstring+".prm -nstruct 20 -out::file::silent "+ \
 	    prefix+mutstring+".out -cycles 10000 -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
 	    ".cut.out -close_loops -chunk_res"+chunkstr)
@@ -1192,8 +1226,8 @@ for i in range(len(final_regions)):
 
     #Convert this PDB to a silent file
 
-    #os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
-    os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+    #os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+    os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
     prefix + loopstr + ".cut.out -database " + rosetta_root + "rosetta_database/ -s " + prefix + loopstr + \
     ".cut.pdb")
 
@@ -1266,6 +1300,8 @@ for i in range(len(final_regions)):
 		else:
 		    k+=1
 
+            helix_chunk_5p_res = []
+            helix_chunk_3p_res = []
 	    for n in range(k):
 
 		if paired_bases[n]-n-1 in final_regions[i] and infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[n]-n-1)] == 0:
@@ -1273,8 +1309,11 @@ for i in range(len(final_regions)):
 
 		fiveprimeseq += infasta.rnas[1].seq[new_alignnum[i].index(paired_bases[n])]
 		threeprimeseq = infasta.rnas[1].seq[infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[n])]] + threeprimeseq
-		helix_chunk_5p_str += str(paired_bases[n]) + " "
-		helix_chunk_3p_str = " " +  str(new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[n])]]) + helix_chunk_3p_str
+		helix_chunk_5p_res.append( paired_bases[n] )
+		helix_chunk_3p_res.append(new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[n])]])
+            helix_chunk_5p_str =  make_tag_with_dashes( helix_chunk_5p_res )
+            helix_chunk_3p_str =  make_tag_with_dashes( reversed(helix_chunk_3p_res) )
+
 	    if paired_bases[k-1] + 1 not in paired_bases and new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[k-1])]] - 1 not in paired_bases:
 
 		outprm.write("OBLIGATE PAIR "+str(paired_bases[k-1])+" "+str(new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[k-1])]])+" W W A\n")
@@ -1292,7 +1331,7 @@ for i in range(len(final_regions)):
 	    os.system("rna_helix."+rosetta_build+" -fasta " + prefix+loopstr+".helix"+str(helix_count)+".fasta -database "+rosetta_root+"rosetta_database/" \
 	    +" -out:file:silent "+prefix+loopstr+".helix"+str(helix_count)+".out")
 
-	    helix_chunk_str += helix_chunk_5p_str + helix_chunk_3p_str + " "
+	    helix_chunk_str += helix_chunk_5p_str + " " + helix_chunk_3p_str + " "
 	#done making helices
 
     insertstr = ""
@@ -1325,10 +1364,11 @@ for i in range(len(final_regions)):
     outfasta.write(outseq+"\n")
     outfasta.close()
 
-    chunkstr = ""
+    chunk_res = []
     for j in range(1, len(outseq)+1):
 	if j not in final_regions[i]:
-	    chunkstr += " " + str(j)
+            chunk_res.append( j )
+    chunkstr = make_tag_with_dashes( chunk_res )
 
     chunkstr += " " + helix_chunk_str
 
@@ -1372,8 +1412,8 @@ for i in range(len(final_regions)):
 	cleanpdb.close()
 
 	os.system("rm "+prefix+loopstr+"."+str(j)+".out")
-	#os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
-	os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+        #os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
+	os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
 	prefix+loopstr+"."+str(j)+".out -database " + rosetta_root + "rosetta_database/ -s " + prefix+loopstr+"."+str(j)+".pdb")
 
 
@@ -1433,13 +1473,14 @@ for line in open(prefix+".loop0.out.1.pdb","r"):
 nonlooppdb.close()
 
 os.system("rm "+prefix+".nonloop.out")
-#os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
-os.system("convert_pdb_to_silent_file."+rosetta_build+" -output_silent_file "+ \
+#os.system("convert_pdb_to_silent_file."+rosetta_build+" -output_silent_file "+ \
+os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
 prefix+".nonloop.out -database " + rosetta_root + "rosetta_database/ -s " + prefix+".nonloop.pdb")
 
-chunkstr = ""
+chunk_res = []
 for i in range(len(nonloop_nucs)):
-    chunkstr += str(nonloop_nucs[i]) + " "
+    chunk_res.append( nonloop_nucs[i] )
+chunkstr = make_tag_with_dashes( chunk_res )
 
 for i in range(len(local_regions)):
     changed_loop_nucs = local_regions[i] + local_pairs[i] + local_pairs_plus[i]
@@ -1451,9 +1492,11 @@ for i in range(len(local_regions)):
 	    continue
 	else:
 	    j += 1
-    loop_chunkstr = ""
+
+    loop_chunk_res = []
     for j in range(len(changed_loop_nucs)):
-	loop_chunkstr += str(changed_loop_nucs[j]) + " "
+	loop_chunk_res.append( changed_loop_nucs[j] )
+    loop_chunkstr = " " + make_tag_with_dashes( loop_chunk_res )
     chunkstr += loop_chunkstr
 
 

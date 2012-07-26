@@ -1,19 +1,19 @@
 #!/usr/bin/python
 
-#This class is for reading and processing fasta format sequence alignment of multiple RNAs.  It may also contain a dot-bracket format 
+#This class is for reading and processing fasta format sequence alignment of multiple RNAs.  It may also contain a dot-bracket format
 #secondary structure common to all the sequences in the file.
 
 import rna, sys
 
 class Fasta_RNA:
-    
+
     def __init__(self, fastafile):
 	print "reading", fastafile
 	align = ""
 	self.rnas=[]
 	self.alignments=[]
 	self.labels=[]
-	
+
 	for line in open(fastafile, "r"):
 	    if line[0] == ">":  #new alignment
 		if len(align) > 1:
@@ -23,22 +23,22 @@ class Fasta_RNA:
 		self.labels.append(line)
 	    elif line[0] == "a" or line[0] == "g" or line[0] == "c" or line[0] == "u" or line[0] == "." or line[0] == "-" or line[0] == "(" or line[0] == "[":
 		align += line
-	
+
 	if len(align) > 2:
 	    self.alignments.append(align)
 	    align=""
-	    
+
 	for i in range(1, len(self.alignments)):
 	    if len(self.alignments[i]) != len(self.alignments[0]):
 		print "Error: alignments[",i,"] and alignments[0] are not the same length!"
 		sys.exit()
-	    
+
     #Initialize the list of rna objects.  Give them sequences, structures, and find the loops.
     def init_rnas(self):
 
 	#find the secondary structure, if present
 	self.structurenum = -1
-	
+
 	for i in range(0, len(self.alignments)):
 	    if "." in self.alignments[i] and "(" in self.alignments[i] and ")" in self.alignments[i]:
 		self.structurenum = i
@@ -50,7 +50,7 @@ class Fasta_RNA:
 		struct = ""
 		for j in range(0, len(self.alignments[i])):
 		    if self.alignments[i][j] == "a" or self.alignments[i][j] == "g" or self.alignments[i][j] == "c" or self.alignments[i][j] == "u":
-			seq += self.alignments[i][j] 
+			seq += self.alignments[i][j]
 			if self.structurenum >= 0:
 			    struct += self.alignments[self.structurenum][j]
 
@@ -59,7 +59,7 @@ class Fasta_RNA:
 		if self.structurenum >= 0:
 		    self.rnas[i].readdb(struct, False)
 		    self.rnas[i].findloops()
-		
+
     #make two lists that list which nucleotide number in the 0th RNA corresponds to which number in the 1st, and vice versa
     def align_by_number(self, i, j):
 	self.alignnum0 = []
@@ -79,7 +79,7 @@ class Fasta_RNA:
 	self.alignnum0.insert(0,0)
 	self.alignnum1.insert(0,0)
 
-    #Find the differences between two alignments. 
+    #Find the differences between two alignments.
     def finddifferences(self, i, j):
 	self.wc_pair_mutations = []
 	self.insertions = []
@@ -90,12 +90,12 @@ class Fasta_RNA:
 	self.deletions_in_template = []
 	self.loop_mutations = []
 	self.template_to_check = []
-	
+
 	tempseq = ""
 	targseq = ""
-	
-	for k in range(0,len(self.alignments[i])):	    
-	    
+
+	for k in range(0,len(self.alignments[i])):
+
 	    if self.alignments[i][k] in ["a","c", "g", "u"]:
 		tempseq = tempseq + self.alignments[i][k]
 	    if self.alignments[j][k] in ["a","c", "g", "u"]:
@@ -107,7 +107,7 @@ class Fasta_RNA:
 		elif self.rnas[i].basepr[len(tempseq)] > 0 and self.rnas[i].basepr[len(tempseq)] not in self.wc_pair_mutations:
 		    self.wc_pair_mutations.append(self.rnas[i].basepr[len(tempseq)])
 
-		    
+
 	    elif self.alignments[i][k] in ["a","c", "g", "u"] and self.alignments[j][k] in [".","-"]:
 		if k>0 and k < len(self.alignments[i])-1:
 		    if self.rnas[i].basepr[len(tempseq)] > 0 and len(tempseq) < self.rnas[i].length and len(tempseq) > 1:
@@ -139,5 +139,5 @@ class Fasta_RNA:
 	    and self.alignments[j][k] in ["a","c", "g", "u"] and self.rnas[i].basepr[len(tempseq)] == 0:
 		self.loop_mutations.append(len(targseq))
 		self.template_to_check.append(len(tempseq))
-		
+
 
