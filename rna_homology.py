@@ -33,14 +33,16 @@ rosetta_root = "~/src/rosetta_TRUNK/"
 use_tertiary = False
 tertiary = ""
 
-import sys, fasta_for_rna_homology, rna_for_rna_homology, os, math
+import sys, os, math
+import fasta_for_rna_homology, rna_for_rna_homology
+from util_for_rna_homology import make_tag_with_dashes
 
 
 if(len(sys.argv)  < 5 or len(sys.argv) > 6):
     Usage()
     sys.exit()
 
-infasta = fasta.Fasta_RNA(sys.argv[1])
+infasta = fasta_for_rna_homology.Fasta_RNA(sys.argv[1])
 infasta.init_rnas()
 infasta.rnas[0].readcoms(sys.argv[2])
 numdecoys = int(sys.argv[3])
@@ -59,24 +61,6 @@ insert_pair_bases = []
 insert_pair_restraints = []
 do_not_remodel = []
 force_remodel = []
-
-# rhiju -- put this in a util py or something.
-def make_tag_with_dashes( int_vector ):
-    tag = ''
-
-    start_res = int_vector[0]
-    for i in range( 1, len(int_vector)+1 ):
-        if i==len( int_vector)  or  int_vector[i] != int_vector[i-1]+1:
-
-            stop_res = int_vector[i-1]
-            if stop_res > start_res:
-                tag += ' %d-%d' % (start_res, stop_res )
-            else:
-                tag += ' %d' % (stop_res )
-
-            if ( i < len( int_vector) ): start_res = int_vector[i]
-
-    return tag
 
 if(use_tertiary):
     print "Reading tertiary restraints from:", tertiary

@@ -3,7 +3,7 @@
 #This class is for reading and processing fasta format sequence alignment of multiple RNAs.  It may also contain a dot-bracket format
 #secondary structure common to all the sequences in the file.
 
-import rna, sys
+import rna_for_rna_homology, sys
 
 class Fasta_RNA:
 
@@ -19,7 +19,7 @@ class Fasta_RNA:
 		if len(align) > 1:
 		    self.alignments.append(align)
 		    align=""
-		    self.rnas.append(rna.RNA())
+		    self.rnas.append(rna_for_rna_homology.RNA())
 		self.labels.append(line)
 	    elif line[0] == "a" or line[0] == "g" or line[0] == "c" or line[0] == "u" or line[0] == "." or line[0] == "-" or line[0] == "(" or line[0] == "[":
 		align += line
