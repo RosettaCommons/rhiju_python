@@ -117,13 +117,14 @@ class RNA:
     def findloops(self):
 	currentloop = 0
 	self.loops = []
-	self.loops.append([])
+	self.loops.append([]) # Ask Matt: Why do we start with a null loop?
 	for i in range(1, self.length+1):
 	    if self.basepr[i] == 0:
 		self.loops[currentloop].append(i)
 	    elif self.basepr[i-1] == 0:
 		currentloop = currentloop + 1
 		self.loops.append([])
+        print 'LOOPS: ', self.loops
 
     #Check for valid base pair
     def canpair(self, base1, base2):

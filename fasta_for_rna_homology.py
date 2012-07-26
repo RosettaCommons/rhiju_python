@@ -22,7 +22,7 @@ class Fasta_RNA:
 		    self.rnas.append(rna_for_rna_homology.RNA())
 		self.labels.append(line)
 	    elif line[0] == "a" or line[0] == "g" or line[0] == "c" or line[0] == "u" or line[0] == "." or line[0] == "-" or line[0] == "(" or line[0] == "[":
-		align += line
+		align += line[:-1]  # remove end-of-line character
 
 	if len(align) > 2:
 	    self.alignments.append(align)
@@ -32,6 +32,10 @@ class Fasta_RNA:
 	    if len(self.alignments[i]) != len(self.alignments[0]):
 		print "Error: alignments[",i,"] and alignments[0] are not the same length!"
 		sys.exit()
+
+        # Let's go ahead and print out what we found
+        for align in self.alignments:
+            print align
 
     #Initialize the list of rna objects.  Give them sequences, structures, and find the loops.
     def init_rnas(self):
@@ -51,6 +55,9 @@ class Fasta_RNA:
 		for j in range(0, len(self.alignments[i])):
 		    if self.alignments[i][j] == "a" or self.alignments[i][j] == "g" or self.alignments[i][j] == "c" or self.alignments[i][j] == "u":
 			seq += self.alignments[i][j]
+
+                        # this may be a problem if user doesn't align gaps/inserts in secondary structure correctly
+                        #  probably should code in a consistency check..
 			if self.structurenum >= 0:
 			    struct += self.alignments[self.structurenum][j]
 
@@ -71,6 +78,7 @@ class Fasta_RNA:
 		tempseq += self.alignments[i][k]
 	    if self.alignments[j][k] in ["a","c", "g", "u"]:
 		targseq += self.alignments[j][k]
+
 	    if self.alignments[i][k] in ["a","c", "g", "u"]:
 		self.alignnum0.append(len(targseq))
 	    if self.alignments[j][k] in ["a","c", "g", "u"]:

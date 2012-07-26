@@ -99,12 +99,21 @@ wc_pair_mutation_pairs = []
 for base in infasta.wc_pair_mutations:
     wc_pair_mutation_pairs.append(infasta.rnas[0].basepr[base])
 
-#Remodel WC base pairs first.  This is done one base pair at a time to preserve homology with input pdb.
-print "Remodeling these pairs:\n", infasta.wc_pair_mutations, "\n", wc_pair_mutation_pairs
+##########################################################################################################
+# 1. Remodel WC base pairs first.  This is done one base pair at a time to preserve homology with input pdb.
+##########################################################################################################
+if len( infasta.wc_pair_mutations )  > 0:
+    print "####################################################################################"
+    print "Remodeling these pairs:\n", infasta.wc_pair_mutations, "\n", wc_pair_mutation_pairs
+    print "####################################################################################"
 
 os.system("rm -f "+prefix+".*.cut.out")
 
 for i in range(0,len(infasta.wc_pair_mutations)):
+
+    print "###############################"
+    print "Remodel pair:",infasta.wc_pair_mutations[i],"--",infasta.rnas[0].basepr[infasta.wc_pair_mutations[i]]
+    print "###############################"
     mutstring = ".mut"+str(infasta.wc_pair_mutations[i])+"-"+str(infasta.rnas[0].basepr[infasta.wc_pair_mutations[i]])
     outpdb = open(prefix+mutstring+".pdb","w")
     currnuc = 0
@@ -178,11 +187,11 @@ for i in range(0,len(infasta.wc_pair_mutations)):
     #              prefix+mutstring+".out -cycles 2000 -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
     #              ".cut.out -close_loops -dump -output_virtual -output_lores_silent_file -chunk_res"+chunkstr)
 
+    # rhiju hack for speed...
     os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta  -params_file " \
                   + prefix+mutstring+".prm -nstruct 1 -out::file::silent "+ \
                   prefix+mutstring+".out -cycles 200  -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
                   ".cut.out -close_loops -dump -output_virtual -output_lores_silent_file -chunk_res"+chunkstr)
-
 
 
     #Extract the structure with the lowest RMS to the native structure (or the previous mutant)
@@ -201,8 +210,11 @@ for i in range(0,len(infasta.wc_pair_mutations)):
     #now perform this procedure on the next base pair using the PDB from the previous mutant
     current_pdb = prefix+mutstring+".1.pdb"
 
-#Second, we remodel the user-defined conserved tertiary interactions, if they need remodeling.
-#The user specifying these when the sequence is unchanged will prevent them from being remodeled in a loop calculation.
+
+##########################################################################################################
+# 2. Second, we remodel the user-defined conserved tertiary interactions, if they need remodeling.
+#     The user specifying these when the sequence is unchanged will prevent them from being remodeled in a loop calculation.
+##########################################################################################################
 if(use_tertiary):
     for i in range(0,len(tertiary_restraints)):
 	col1 = 0
@@ -302,7 +314,6 @@ if(use_tertiary):
 	".cut.out -close_loops -chunk_res"+chunkstr)
 
 
-
 	#Extract the structure with the lowest RMS to the native structure (or the previous mutant)
 	os.system("extract_lowscore_decoys.py "+prefix+mutstring+".out 1")
 
@@ -381,16 +392,13 @@ if(use_tertiary):
                     chunk_res.append( j )
             chunkstr = make_tag_with_dashes( chunk_res )
 
-
 	    #Now actually mutate the base pair:
-
+            # remove native for now
             #	    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta -native "+current_pdb+" -params_file " \
 	    os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+mutstring+".mut.fasta  -params_file " \
 	    + prefix+mutstring+".prm -nstruct 20 -out::file::silent "+ \
 	    prefix+mutstring+".out -cycles 10000 -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + mutstring+ \
 	    ".cut.out -close_loops -chunk_res"+chunkstr)
-
-
 
 	    #Extract the structure with the lowest RMS to the native structure (or the previous mutant)
 	    os.system("extract_lowscore_decoys.py "+prefix+mutstring+".out 1")
@@ -408,7 +416,9 @@ if(use_tertiary):
 	    #now perform this procedure on the next base pair using the PDB from the previous mutant
 	    current_pdb = prefix+mutstring+".1.pdb"
 
-#Deletions at or continuous from either the 5' or the 3' ends require no remodeling.  They will just be deleted.
+###########################################################################################################################
+# 3. Deletions at or continuous from either the 5' or the 3' ends require no remodeling.  They will just be deleted.
+###########################################################################################################################
 five_prime_dele=0
 three_prime_dele=infasta.rnas[0].length+1
 for i in range(1,infasta.rnas[0].length+1):
@@ -446,10 +456,13 @@ if five_prime_dele > 0 or three_prime_dele < infasta.rnas[0].length+1:
     outpdb.close()
     current_pdb = prefix+".delete5p3p.pdb"
 
-#Next is remodeling loops. This takes place in two stages.  First is identifying which nucleotides need to be remodeled.
-#Second is identifying which nucleotides need to be remodeled simultaneously.
-#If two "loop regions" have at least two nucleotides with their COMs within 5.0 A of each other, they will be remodeled simultaneously.
 
+###########################################################################################################################
+# 4. Next is remodeling loops. This takes place in two stages.  First is identifying which nucleotides need to be remodeled.
+#    Second is identifying which nucleotides need to be remodeled simultaneously.
+#    If two "loop regions" have at least two nucleotides with their centroids within 5.0 A of each other,
+#    they will be remodeled simultaneously.
+###########################################################################################################################
 scratch_loop_regions = []
 scratch_loop_regions.append([])
 curr_region = 0
@@ -468,16 +481,22 @@ if(use_tertiary):
 
 template_tertiary_bases.sort()
 
+print "######################################################"
 print "Starting analysis of which bases need to be remodeled."
+print "######################################################"
 
+###############################################################################################################################
 #Insertions.  Insertions trigger the two neighboring bases, but only if those bases have not yet been set to be remodeled by another mutation.
+if len( infasta.insertions ) > 0: print "Scanning through potential insert positions: ", infasta.insertions
 for insert in infasta.insertions:
     redundant_base = False
 
     for region in scratch_loop_regions:
 	if insert in region:
+            # Already slated for remodeling
 	    redundant_base = True
 	    break
+
     if not redundant_base:
 	scratch_loop_regions[curr_region].append(insert)
 	#Don't append this base to scratch_delete as it doesn't correspond to any template base
@@ -489,12 +508,12 @@ for insert in infasta.insertions:
 
 	moving_base = False
 	still_5p_base = insert - 1
+
 	if insert-1 not in do_not_remodel and still_5p_base not in tertiary_bases and still_5p_base > 0:
 	    scratch_loop_regions[curr_region].append(insert-1)
 	    scratch_delete[curr_region].append(infasta.alignnum0.index(insert-1))
 
 	    still_5p_base = insert-2
-
 
 	    if (still_5p_base in infasta.insertions or still_5p_base in infasta.loop_mutations or still_5p_base in infasta.deletions \
 	    or still_5p_base in infasta.insertions_plus or still_5p_base in infasta.insertions_minus or still_5p_base in infasta.deletions_plus or still_5p_base in force_remodel) \
@@ -570,19 +589,32 @@ for insert in infasta.insertions:
 	    if redundant_pair:
 		break
 
-	if still_5p_base > 0 and still_3p_base <= infasta.rnas[1].length and not redundant_pair:
-	    obligate_pairs[curr_region].append(still_5p_base)
-	    obligate_pairs[curr_region].append(still_3p_base)
+	if not redundant_pair:
+            if still_5p_base > 0 and still_3p_base <= infasta.rnas[1].length:
+                obligate_pairs[curr_region].append(still_5p_base)
+                obligate_pairs[curr_region].append(still_3p_base)
+            elif still_5p_base < 1:
+                assert( still_3p_base <= infasta.rnas[1].length)
+                obligate_pairs[curr_region].append( -999 ) # fake number -- signal below that this is not really a 'pair', but the 3' residue is a terminus.
+                obligate_pairs[curr_region].append(still_3p_base)
+            else:
+                assert( still_5p_base > 0)
+                obligate_pairs[curr_region].append(still_5p_base)
+                obligate_pairs[curr_region].append( -999 ) # fake number -- signal below that this is not really a 'pair', but the 5' residue is a terminus.
+
 
 	curr_region += 1
 	scratch_loop_regions.append([])
 	obligate_pairs.append([])
 	scratch_delete.append([])
 
+
+###############################################################################################################################
 #Deletions.  Insertions trigger the nucleotides on either side to be remodeled.  Deletions at the ends are already gone.
 prevdele = 0
 
 deleted_bases = []
+if len( infasta.deletions ) > 0: print "Scanning through potential delete positions: ", infasta.deletions
 for i in range(len(infasta.deletions)):
 
     if infasta.deletions[i] not in deleted_bases:
@@ -689,32 +721,47 @@ for i in range(len(infasta.deletions)):
 	scratch_delete.append([])
 
 
+###############################################################################################################################
 #Mutations do not necessarily remodel the whole loop.  Only the mutated bases are remodeled
-
 i = 0
-for i in range(len(infasta.loop_mutations)):
+if len( infasta.loop_mutations ) > 0:
+    print "##################################################################"
+    print "Scanning through potential loop mutation positions: ", infasta.loop_mutations
+    print "##################################################################"
+
+
+# force_remodel used to be a different loop than infasta.loop_mutations -- now unifying with 'regular' loop mutations
+all_remodel = infasta.loop_mutations + force_remodel
+
+for i in range(len(all_remodel)):
+
     redundant_base = False
     for region in scratch_loop_regions:
 	if infasta.loop_mutations[i] in region:
+            # already slated for remodeling
 	    redundant_base = True
 	    break
-    if not redundant_base and infasta.loop_mutations[i] not in tertiary_bases:
-	scratch_loop_regions[curr_region].append(infasta.loop_mutations[i])
-	scratch_delete[curr_region].append(infasta.alignnum0.index(infasta.loop_mutations[i]))
 
-	end_mut = infasta.loop_mutations[i]+1
-	while end_mut in infasta.loop_mutations and end_mut not in tertiary_bases:
+    if not redundant_base and all_remodel[i] not in tertiary_bases:
+	scratch_loop_regions[curr_region].append(all_remodel[i])
+	scratch_delete[curr_region].append(infasta.alignnum0.index(all_remodel[i]))
+
+        # determine loop boundaries
+	end_mut = all_remodel[i]+1
+	while end_mut in all_remodel and end_mut not in tertiary_bases:
 	    scratch_loop_regions[curr_region].append(end_mut)
 	    scratch_delete[curr_region].append(infasta.alignnum0.index(end_mut))
 	    end_mut += 1
 
 	moving_base = False
-	still_5p_base = infasta.loop_mutations[i]-1
+	still_5p_base = all_remodel[i]-1
 	still_3p_base = end_mut
 
+        # is loop boundary itself moveable? If so move it back
+        # need to ask Matt about this -- why necessary?
 	if (still_5p_base in infasta.insertions or still_5p_base in infasta.loop_mutations or still_5p_base in infasta.deletions \
-	or still_5p_base in infasta.insertions_plus or still_5p_base in infasta.insertions_minus or still_5p_base in infasta.deletions_plus or still_5p_base in force_remodel) \
-	and still_5p_base not in do_not_remodel and still_5p_base not in tertiary_bases:
+                or still_5p_base in infasta.insertions_plus or still_5p_base in infasta.insertions_minus or still_5p_base in infasta.deletions_plus or still_5p_base in force_remodel) \
+                and still_5p_base not in do_not_remodel and still_5p_base not in tertiary_bases:
 	    moving_base = True
 	    still_5p_base -= 1
 	while moving_base and still_5p_base >= 0:
@@ -732,8 +779,8 @@ for i in range(len(infasta.loop_mutations)):
 		moving_base = in_region
 
 	if (still_3p_base in infasta.insertions or still_3p_base in infasta.loop_mutations or still_3p_base in infasta.deletions \
-	or still_3p_base in infasta.insertions_plus or still_3p_base in infasta.insertions_minus or still_3p_base in infasta.deletions_plus or still_3p_base in force_remodel) \
-	and still_3p_base not in do_not_remodel and still_3p_base not in tertiary_bases:
+                or still_3p_base in infasta.insertions_plus or still_3p_base in infasta.insertions_minus or still_3p_base in infasta.deletions_plus or still_3p_base in force_remodel) \
+                and still_3p_base not in do_not_remodel and still_3p_base not in tertiary_bases:
 	    moving_base = True
 	    still_3p_base += 1
 	while moving_base and still_3p_base <= infasta.rnas[1].length:
@@ -750,7 +797,6 @@ for i in range(len(infasta.loop_mutations)):
 			break
 		moving_base = in_region
 
-
 	redundant_pair = False
 	for pair_set in obligate_pairs:
 	    for k in range(0,len(pair_set),2):
@@ -773,89 +819,12 @@ for i in range(len(infasta.loop_mutations)):
 	obligate_pairs.append([])
 	scratch_delete.append([])
 
-#User-specified bases are remodeled
-
-i = 0
-for i in range(len(force_remodel)):
-    redundant_base = False
-    for region in scratch_loop_regions:
-	if force_remodel[i] in region:
-	    redundant_base = True
-	    break
-    if not redundant_base and force_remodel[i] not in indexed_tertiary_bases:
-	scratch_loop_regions[curr_region].append(force_remodel[i])
-	scratch_delete[curr_region].append(infasta.alignnum0.index(force_remodel[i]))
-
-	end_mut = force_remodel[i]+1
-	while end_mut in force_remodel and end_mut not in indexed_tertiary_bases:
-	    scratch_loop_regions[curr_region].append(end_mut)
-	    scratch_delete[curr_region].append(infasta.alignnum0.index(end_mut))
-	    end_mut += 1
-
-	moving_base = False
-	still_5p_base = force_remodel[i]-1
-	still_3p_base = end_mut
-
-	if (still_5p_base in infasta.insertions or still_5p_base in infasta.loop_mutations or still_5p_base in infasta.deletions \
-	or still_5p_base in infasta.insertions_plus or still_5p_base in infasta.insertions_minus or still_5p_base in infasta.deletions_plus or still_5p_base in force_remodel) \
-	and still_5p_base not in do_not_remodel and still_5p_base not in tertiary_bases:
-	    moving_base = True
-	    still_5p_base -= 1
-	while moving_base and still_5p_base >= 0:
-	    if (still_5p_base in infasta.insertions or still_5p_base in infasta.loop_mutations or still_5p_base in infasta.deletions \
-	    or still_5p_base in infasta.insertions_plus or still_5p_base in infasta.insertions_minus or still_5p_base in infasta.deletions_plus or still_5p_base in force_remodel) \
-	    and still_5p_base not in do_not_remodel and still_5p_base not in tertiary_bases:
-		still_5p_base -= 1
-	    else:
-		in_region = False
-		for region in scratch_loop_regions:
-		    if still_5p_base in region:
-			still_5p_base -= 1
-			in_region = True
-			break
-		moving_base = in_region
-
-	if (still_3p_base in infasta.insertions or still_3p_base in infasta.loop_mutations or still_3p_base in infasta.deletions \
-	or still_3p_base in infasta.insertions_plus or still_3p_base in infasta.insertions_minus or still_3p_base in infasta.deletions_plus or still_3p_base in force_remodel) \
-	and still_3p_base not in do_not_remodel and still_3p_base not in tertiary_bases:
-	    moving_base = True
-	    still_3p_base += 1
-	while moving_base and still_3p_base <= infasta.rnas[1].length:
-	    if (still_3p_base in infasta.insertions or still_3p_base in infasta.loop_mutations or still_3p_base in infasta.deletions \
-	    or still_3p_base in infasta.insertions_plus or still_3p_base in infasta.insertions_minus or still_3p_base in infasta.deletions_plus  or still_3p_base in force_remodel) \
-	    and still_3p_base not in do_not_remodel and still_3p_base not in tertiary_bases:
-		still_3p_base += 1
-	    else:
-		in_region = False
-		for region in scratch_loop_regions:
-		    if still_3p_base in region:
-			still_3p_base += 1
-			in_region = True
-			break
-		moving_base = in_region
-
-
-	redundant_pair = False
-	for pair_set in obligate_pairs:
-	    for k in range(0,len(pair_set),2):
-		if pair_set[k] == still_5p_base:
-		    redundant_pair = True
-		    break
-	    for k in range(1,len(pair_set),2):
-		if pair_set[k] == still_3p_base:
-		    redundant_pair = True
-		    break
-	    if redundant_pair:
-		break
-
-	if still_5p_base > 0 and still_3p_base <= infasta.rnas[1].length and not redundant_pair:
-	    obligate_pairs[curr_region].append(still_5p_base)
-	    obligate_pairs[curr_region].append(still_3p_base)
-
-	curr_region += 1
-	scratch_loop_regions.append([])
-	obligate_pairs.append([])
-	scratch_delete.append([])
+###############################################################################################################################
+#Check if loops in the template have nucleotides within 13 A of each other
+#If so, combine into a single region.  Many loops may be combined this way.
+#
+# Rhiju -- need to read this more carefully in complex cases (e.g., sarcin/ricin)
+#
 
 curr_region = 0
 local_regions = []
@@ -867,8 +836,7 @@ local_pairs.append([])
 delete_from_pdb = []
 delete_from_pdb.append([])
 
-#Check if loops in the template have nucleotides within 13 A of each other
-#If so, combine into a single region.  Nany loops may be combined this way.
+COM_CUTOFF = 11.0 # centroid/centroid distance cutoff
 for i in range(0,len(scratch_loop_regions)):
     for j in range(i+1, len(scratch_loop_regions)):
 	combine = False
@@ -907,9 +875,9 @@ for i in range(0,len(scratch_loop_regions)):
 		    if combine:
 			break
 		elif scratch_loop_regions[i][k] in infasta.alignnum0 and scratch_loop_regions[j][m] in infasta.alignnum0:
-		    if infasta.rnas[0].ntcom[infasta.alignnum0.index(scratch_loop_regions[i][k])].distance(infasta.rnas[0].ntcom[infasta.alignnum0.index(scratch_loop_regions[j][m])]) < 11.0:
+		    if infasta.rnas[0].ntcom[infasta.alignnum0.index(scratch_loop_regions[i][k])].distance(infasta.rnas[0].ntcom[infasta.alignnum0.index(scratch_loop_regions[j][m])]) < COM_CUTOFF:
 			combine = True
-			print "Region",i,"combined with",j,"because of distance in the crystal structure!"
+			print "Region",i,"combined with",j,"because of distance in the template crystal structure!"
 
 			break
 	    if combine:
@@ -1014,6 +982,12 @@ for i in range(0,len(scratch_loop_regions)):
 			delete_from_pdb[curr_region].append(base)
 
 
+# remove the empty set at the end -- if its still there.
+n = len( local_regions )
+if len(local_regions[n-1]) == 0:
+    del( local_regions[n-1] )
+    del( local_pairs[n-1] )
+    del( delete_from_pdb[n-1] )
 
 used_regions = []
 
@@ -1029,17 +1003,15 @@ for i in range(len(scratch_loop_regions)):
 	    delete_from_pdb.append(scratch_delete[i])
 
 
-#Each loop remodeling calculation on each local region will have a different sequence and potentially a different length.
-#Compute the alignment between the sequence that will be remodeled in each calculation against the target sequence
-# and adjust the numbers of the bases to be remodeled and restrained to be accordingly.
-
+###############################################################################################################################
+# Each loop remodeling calculation on each local region will have a different sequence and potentially a different length.
+# Compute the alignment between the sequence that will be remodeled in each calculation against the target sequence
+#  and adjust the numbers of the bases to be remodeled and restrained to be accordingly.
 final_regions = []
 final_pairs = []
 restrained_pairs = []
 new_alignment = []
 new_alignnum = []
-
-
 for i in range(len(local_regions)):
 
     final_pairs.append([])
@@ -1048,10 +1020,8 @@ for i in range(len(local_regions)):
     new_alignment.append([])
     new_alignnum.append([0])
 
-
     tempseq = ""
     targseq = ""
-
 
     wc_pair_complements = []
     for j in range(len(infasta.wc_pair_mutations)):
@@ -1063,25 +1033,24 @@ for i in range(len(local_regions)):
 	    tempseq += str(infasta.alignments[0][j])
 	if infasta.alignments[1][j] in ["a","c", "g", "u"]:
 	    targseq += str(infasta.alignments[1][j])
+
 	if (len(tempseq) <= five_prime_dele and infasta.alignments[1][j] not in ["a","c", "g", "u"]) \
 	or (len(tempseq) >= three_prime_dele and infasta.alignments[1][j] not in ["a","c", "g", "u"]):
 	    continue
 
+        # new_alignment is the sequence of the pose during the loop modeling calculation. It is what will go into the .fasta file for rna_denovo.
 	if (len(tempseq) in infasta.wc_pair_mutations or len(tempseq) in wc_pair_complements or len(tempseq) in template_tertiary_bases) and infasta.alignments[0][j] in ["a","c", "g", "u"]:
-	    new_alignment[i].append(infasta.alignments[1][j])
+	    new_alignment[i].append(infasta.alignments[1][j]) # target sequence
 	elif len(targseq) in local_regions[i] or len(targseq) in do_not_remodel:
-	    new_alignment[i].append(infasta.alignments[1][j])
+	    new_alignment[i].append(infasta.alignments[1][j]) # target sequence
 	elif (len(tempseq) > five_prime_dele or five_prime_dele == 0) and (len(tempseq) < three_prime_dele or three_prime_dele == 0 ):
-
-	    new_alignment[i].append(infasta.alignments[0][j])
+	    new_alignment[i].append(infasta.alignments[0][j]) # template sequence
 	elif (len(tempseq) <= five_prime_dele and infasta.alignments[1][j] in ["a","c", "g", "u"]) \
 	or (len(tempseq) >= three_prime_dele and infasta.alignments[1][j] in ["a","c", "g", "u"]):
-	    new_alignment[i].append(infasta.alignments[0][j])
-
+	    new_alignment[i].append(infasta.alignments[0][j]) # template sequence? what?
 
     targseq = ""
     newseq = ""
-
 
     for j in range(len(new_alignment[i])):
 	if new_alignment[i][j] in ["a","c", "g", "u"]:
@@ -1099,6 +1068,7 @@ for i in range(len(local_regions)):
 	    continue
 	else:
 	    j += 1
+
     #I need to remove redundancy in local_regions, too, in anticipation of the combination step.
     j = 0
     while j  < len(local_regions[i]):
@@ -1112,10 +1082,20 @@ for i in range(len(local_regions)):
     j = 0
     while j < len(local_pairs[i]):
 
-	if local_pairs[i][j] > 0 and local_pairs[i][j] < len(new_alignnum[i]) and local_pairs[i][j+1] < len(new_alignnum[i]):
+	#if local_pairs[i][j] > 0 and local_pairs[i][j] < len(new_alignnum[i]) and local_pairs[i][j+1] < len(new_alignnum[i]):
+        if local_pairs[i][j] < len(new_alignnum[i]) and local_pairs[i][j+1] < len(new_alignnum[i]):
 
-	    final_pairs[i].append(new_alignnum[i][local_pairs[i][j]])
-	    final_pairs[i].append(new_alignnum[i][local_pairs[i][j+1]])
+            # 5' terminus
+            if local_pairs[i][j] > 0:
+                final_pairs[i].append(new_alignnum[i][local_pairs[i][j]])
+            else:
+                final_pairs[i].append( -999 )
+
+            # 3' terminus
+            if local_pairs[i][j+1] > 0:
+                final_pairs[i].append(new_alignnum[i][local_pairs[i][j+1]])
+            else:
+                final_pairs[i].append( -999 )
 
 	    if infasta.rnas[1].basepr[j] > 0:
 		restrained_pairs[i].append(new_alignnum[i][j])
@@ -1132,9 +1112,10 @@ cutpoints = []
 for i in range(len(final_regions)):
     cutpoints.append([])
 
-#Will eventually need to add one extra nucleotide 5' and 3' of each obligate pair from the unchanged (or only WC pair mutation) part of the structure
-#It's basically an impossibility for such an extra nucleotide to be a deletion in the template, but the calculation of the numbering of this nucleotide
-#is done completley just in case.
+###########################################################################################################################################################
+# Will eventually need to add one extra nucleotide 5' and 3' of each obligate pair from the unchanged (or only WC pair mutation) part of the structure
+# It's basically an impossibility for such an extra nucleotide to be a deletion in the template, but the calculation of the numbering of this nucleotide
+# is done completley just in case.
 final_pairs_plus = []
 local_pairs_plus = []
 for i in range(len(final_pairs)):
@@ -1161,9 +1142,14 @@ for i in range(len(final_pairs)):
 		    break
 		else:
 		    offset += 1
+
+
+
+##########################################################################################################################################################
 # At long last, we've figured out which bases need to be remodeled, which need to be remodeled together,
 #  which bases at the ends of loops need to be restrained, and which need to be deleted from the pdb.
 # Time to write some input files and run the calculations.
+##########################################################################################################################################################
 
 for i in range(len(final_regions)):
     loopstr = ".loop"+str(i)
@@ -1183,13 +1169,17 @@ for i in range(len(final_regions)):
     print "deleted_bases",deleted_bases
     print "local_pairs",local_pairs"""
 
-
+    # rhiju to matt: why this offset? why not just use final_pairs_plus, defined above?
     for j in range(len(final_pairs[i])):
 	while final_pairs[i][j] in final_regions[i]:
 	    if j % 2 == 0:
 		final_pairs[i][j] -= 1
 	    else:
 		final_pairs[i][j] += 1
+
+    print
+    print 'final_regions --> ',  final_regions[i]
+    print 'final_pairs   --> ',  final_pairs[i]
 
     #First, delete remodeled residues from the PDB
     #current_pdb is the same as from the end of the base pair remodeling
@@ -1209,7 +1199,6 @@ for i in range(len(final_regions)):
     outpdb.close()
 
     #Convert this PDB to a silent file
-
     #os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
     os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
     prefix + loopstr + ".cut.out -database " + rosetta_root + "rosetta_database/ -s " + prefix + loopstr + \
@@ -1220,10 +1209,14 @@ for i in range(len(final_regions)):
     #write main prm file
     outprm = open(prefix+loopstr+".prm","w")
     for j in range(0,len(final_pairs[i]),2):
+        if final_pairs[i][j] < 1 or final_pairs[i][j+1] < 1: continue # this is a 'fake' final_pair, denoting a terminal fragment with only one boundary residue.
 	if infasta.rnas[1].basepr[local_pairs[i][j]] == local_pairs[i][j+1]:
 	    outprm.write("OBLIGATE PAIR " + str(final_pairs[i][j]) + " " + str(final_pairs[i][j+1]) + " W W A\n")
 	else:
-	    outprm.write("OBLIGATE PAIR " + str(final_pairs[i][j]) + " " + str(final_pairs[i][j+1]) + " X X X\n")
+            # The X X X was dangerous as it could lead to jump-atom connections that were not at the bases.
+            # This occasionally led to atom trees where fragment insertions went outside the loop! Horrible!
+	    #outprm.write("OBLIGATE PAIR " + str(final_pairs[i][j]) + " " + str(final_pairs[i][j+1]) + " X X X\n")
+	    outprm.write("OBLIGATE PAIR " + str(final_pairs[i][j]) + " " + str(final_pairs[i][j+1]) + " W W A\n")
 	outprm.write("CUTPOINT_CLOSED " + str(final_pairs[i][j+1]-1) + "\n")
 	cutpoints[i].append(final_pairs[i][j+1])
 
@@ -1258,7 +1251,7 @@ for i in range(len(final_regions)):
 
     helix_chunk_str = ""
     print paired_bases
-    os.system("rm "+prefix+loopstr+".helix*.out")
+    os.system("rm -f "+prefix+loopstr+".helix*.out")
 
     helix_count = 0
     while len(paired_bases) > 0:
@@ -1301,7 +1294,8 @@ for i in range(len(final_regions)):
 	    if paired_bases[k-1] + 1 not in paired_bases and new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[k-1])]] - 1 not in paired_bases:
 
 		outprm.write("OBLIGATE PAIR "+str(paired_bases[k-1])+" "+str(new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[k-1])]])+" W W A\n")
-		outprm.write("CUTPOINT_CLOSED "+str(new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[k-1])]]-1) + "\n")
+                # for now can we get away with not specifying cutpoints?
+		#outprm.write("CUTPOINT_CLOSED "+str(new_alignnum[i][infasta.rnas[1].basepr[new_alignnum[i].index(paired_bases[k-1])]]-1) + "\n")
 
 
 	    for n in range(k):
@@ -1321,7 +1315,9 @@ for i in range(len(final_regions)):
     insertstr = ""
     for base in final_regions[i]:
 	if base not in fixed_bases:
+            # why is this in there twice? Oh, its the silly nomenclature used in ALLOW_INSERT. Perhaps that should be deprecated.
 	    insertstr += str(base) + " " + str(base) + " "
+	    #insertstr += str(base)
 
     outprm.write("ALLOW_INSERT " + insertstr+"\n")
     outprm.close()
@@ -1366,19 +1362,24 @@ for i in range(len(final_regions)):
     avg_remodel /= len(final_regions)
 
     decoys_per_loop = max(2, int(math.ceil(float(numdecoys)**(1.0/float(len(final_regions))))))
+    decoys_per_loop_total = decoys_per_loop * 5 # was 10x in matt's original script.
     numcycles = 10000*len(final_regions[i])
 
 
+    #################################
     #Now actually mutate the loop:
+    #################################
     os.system("rna_denovo."+rosetta_build+" -fasta "+prefix+loopstr+".fasta -params_file " \
-    + prefix+loopstr+".prm -nstruct "+str(10*decoys_per_loop) +" -out::file::silent "+ \
-    prefix+loopstr+".out -cycles "+str(numcycles)+" -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + loopstr+ \
+                  + prefix+loopstr+".prm -nstruct "+str(decoys_per_loop_total) +" -out::file::silent "+ \
+                  prefix+loopstr+".out -cycles "+str(numcycles)+" -minimize_rna -database "+rosetta_root+"rosetta_database/ -in:file:silent " + prefix + loopstr+ \
     ".cut.out "+helix_file_list+" -close_loops -chunk_res"+chunkstr)
 
 
     #Extract the structure with the lowest score
     os.system("extract_lowscore_decoys.py "+prefix+loopstr+".out "+str(decoys_per_loop))
 
+    # Parenthetical note from Rhiju -- I think this script cannot currently handle modeling 5' and 3' terminal fragments simultaneously -- might be
+    #  worth refactoring.
 
     for j in range(1, decoys_per_loop+1):
 	currnuc = 0
@@ -1395,7 +1396,7 @@ for i in range(len(final_regions)):
 		cleanpdb.write(line)
 	cleanpdb.close()
 
-	os.system("rm "+prefix+loopstr+"."+str(j)+".out")
+	os.system("rm -f "+prefix+loopstr+"."+str(j)+".out") # the -f prevents a warning
         #os.system("convert_pdb_to_silent_file.linuxgccrelease  -output_silent_file "+ \
 	os.system("convert_pdb_to_silent_file."+rosetta_build+"  -output_silent_file "+ \
 	prefix+loopstr+"."+str(j)+".out -database " + rosetta_root + "rosetta_database/ -s " + prefix+loopstr+"."+str(j)+".pdb")
@@ -1471,7 +1472,7 @@ for i in range(len(local_regions)):
     changed_loop_nucs.sort()
     j = 0
     while j  < len(changed_loop_nucs):
-	if changed_loop_nucs.count(changed_loop_nucs[j]) > 1:
+	if changed_loop_nucs.count(changed_loop_nucs[j]) > 1 or  changed_loop_nucs[j] < 1:
 	    changed_loop_nucs.pop(j)
 	    continue
 	else:
@@ -1519,6 +1520,7 @@ for i in range(numdecoys):
     outprm = open(prefix+".final.prm","w")
     for j in range(len(local_regions)):
 	for k in range(0,len(local_pairs[j]),2):
+            if local_pairs[j][k] < 1 or local_pairs[j][k+1] < 1: continue # this is a 'fake' final_pair, denoting a terminal fragment with only one boundary residue.
 	    if infasta.rnas[1].basepr[local_pairs[j][k]] == local_pairs[j][k+1]:
 		outprm.write("STEM PAIR " + str(local_pairs[j][k]) + " " + str(local_pairs[j][k+1]) + " W W A\n")
 	    else:
@@ -1537,7 +1539,6 @@ for i in range(numdecoys):
 	paired_bases.sort()
 
 	helix_chunk_str = ""
-
 
 	helix_count = 0
 	while len(paired_bases) > 0:
