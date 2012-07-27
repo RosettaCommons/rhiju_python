@@ -19,6 +19,13 @@ try:
 except:
     print 'NEED TO SUPPLY NUMBER OF JOBS'
 
+
+save_logs = False
+if argv.count( '-save_logs' )>0:
+    save_logs = True
+    pos = argv.index( '-save_logs' )
+    del( argv[pos] )
+
 nhours = 16
 if len( argv ) > 4:
     nhours = int( argv[4] )
@@ -54,8 +61,11 @@ for line in  lines:
     #if string.split( line[0]) == []: continue
 
     dir = outdir + '/$(Process)/'
-    command_line = line[:-1].replace( '-out:file:silent ', '-out:file:silent '+dir)
+    command_line = line[:-1].replace( 'out:file:silent  ','out:file:silent ').replace( '-out:file:silent ', '-out:file:silent '+dir)
     command_line = command_line.replace( '-out::file::silent ', '-out::file::silent '+dir)
+    command_line = command_line.replace( '-out:file:o ', '-out:file:o '+dir)
+    command_line = command_line.replace( '-o ', '-o '+dir)
+    command_line = command_line.replace( '-seed_offset 0', '-seed_offset $(Process)')
     command_line = command_line.replace( 'macosgcc', 'linuxgcc')
     command_line = command_line.replace( 'Users', 'home')
     command_line = command_line.replace( '~/', HOMEDIR+'/')
@@ -74,15 +84,19 @@ for line in  lines:
         cols[ pos+1 ] = '$(Process)'
         command_line = string.join( cols )
 
+    if save_logs:
+        outfile_general = '$(Process).out'
+        errfile_general = '$(Process).err'
+    else:
+        outfile_general = '/dev/null'
+        errfile_general = '/dev/null'
+
     for i in range( n_jobs ):
         dir_actual = dir.replace( '$(Process)', '%d' % i)
         system( 'mkdir -p '+ dirname(dir_actual) )
 
-        #outfile = '%d.out' % tot_jobs
-        #errfile = '%d.err' % tot_jobs
-        outfile = '/dev/null'
-        errfile = '/dev/null'
-
+        outfile = outfile_general.replace( '$(Process)', '%d' % i )
+        errfile = errfile_general.replace( '$(Process)', '%d' % i )
 
         command =  'bsub -W %d:0 -o %s -e %s ' % (nhours, outfile, errfile )
         command_line_explicit = command_line.replace( '$(Process)', '%d' % i )
@@ -94,8 +108,8 @@ for line in  lines:
         fid_qsub_submit_file = open( qsub_submit_file, 'w' )
         fid_qsub_submit_file.write( '#!/bin/bash\n'  )
         fid_qsub_submit_file.write('#PBS -N %s\n' %  (CWD+'/'+dir_actual[:-1]).replace( '/', '_' ) )
-        fid_qsub_submit_file.write('#PBS -o /dev/null\n')
-        fid_qsub_submit_file.write('#PBS -e /dev/null\n')
+        fid_qsub_submit_file.write('#PBS -o %s\n' % outfile)
+        fid_qsub_submit_file.write('#PBS -e %s\n' % errfile)
         fid_qsub_submit_file.write('#PBS -l walltime=48:00:00\n\n')
         fid_qsub_submit_file.write( 'cd %s\n\n' % CWD )
         fid_qsub_submit_file.write( command_line_explicit+' > /dev/null 2> /dev/null \n' )
@@ -107,12 +121,20 @@ for line in  lines:
 
     EXE = cols[ 0 ]
     if not exists( EXE ): EXE = EXE.replace( 'linux', 'macos' )
+    if not exists( EXE ): EXE = EXE.replace( 'macos', 'linux' )
+    if not exists( EXE ):
+        EXE = HOMEDIR + '/src/rosetta_TRUNK/rosetta_source/bin/'+EXE
     if not exists( EXE ):
         EXE = HOMEDIR + '/src/mini/bin/'+EXE
         assert( exists( EXE ) )
     arguments = string.join( cols[ 1: ] )
+
+
     fid_condor.write('\nexecutable = %s\n' % EXE )
     fid_condor.write('arguments = %s\n' % arguments)
+    if save_logs:
+        fid_condor.write( 'output = %s\n' % outfile_general )
+        fid_condor.write( 'error  = %s\n' % errfile_general )
     fid_condor.write('Queue %d\n' % n_jobs )
 
 
