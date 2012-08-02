@@ -22,17 +22,26 @@ rna_homology.py input.fasta template.pdb #_models prefix
 
 """
 
+import sys, os, math
+from os.path import exists,expanduser
+
 def Usage():
     print "Input Error."
     print "Usage: "
     print "rna_homology.py input.fasta template.pdb #_decoys prefix [conserved tertiary restraints]"
 
+rosetta_root = expanduser("~")+"/src/rosetta_TRUNK/"
 rosetta_build = "macosgccrelease"
-rosetta_root = "~/src/rosetta_TRUNK/"
+EXE = rosetta_root+"rosetta_source/bin/rna_denovo."+rosetta_build
+if not exists( EXE ):    rosetta_build = "linuxgccrelease"
+EXE = rosetta_root+"rosetta_source/bin/rna_denovo."+rosetta_build
+if not exists( EXE ):
+    print "could not find:", EXE
+    sys.exit()
+
 use_tertiary = False
 tertiary = ""
 
-import sys, os, math
 import fasta_for_rna_homology, rna_for_rna_homology
 from util_for_rna_homology import make_tag_with_dashes
 
@@ -832,7 +841,7 @@ for i in range(len(all_remodel)):
 
 print "scratch_loop_regions:", scratch_loop_regions
 print "obligate_pairs:      ", obligate_pairs
-exit()
+#exit()
 
 ###############################################################################################################################
 #Check if loops in the template have nucleotides within 13 A of each other
