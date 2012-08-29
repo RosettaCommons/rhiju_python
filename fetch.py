@@ -3,34 +3,56 @@
 import string
 from sys import argv
 from os import system
+from os.path import exists
 
 files = argv[1:]
 
+RNA = False
+if files.count( '-rna' ) > 0:
+    pos = files.index('-rna')
+    del( files[ pos ] )
+    RNA = True
+
+if files.count( '-chain' ):
+    pos = files.index('-chain')
+    del( files[ pos ] )
+    chain = argv[pos]
+    del( files[ pos ] )
+
+
+
 chain = 'A'
-if len( argv ) > 2:
-    chain = argv[2]
 
 system( 'mkdir -p original' )
 
 for pdb in files:
 
     assert( len( pdb ) == 4 )
-    command  = 'curl http://www.rcsb.org/pdb/files/%s.pdb.gz > original/%s.pdb.gz' % ( string.upper( pdb ), string.upper( pdb ) )
-    print command
-    system( command )
 
-    command = 'gunzip original/%s.pdb.gz' % string.upper( pdb )
-    print command
-    system( command )
+    if not exists( 'original/%s.pdb' % string.upper( pdb ) ):
+        command  = 'curl http://www.rcsb.org/pdb/files/%s.pdb.gz > original/%s.pdb.gz' % ( string.upper( pdb ), string.upper( pdb ) )
+        print command
+        system( command )
+
+        command = 'gunzip original/%s.pdb.gz' % string.upper( pdb )
+        print command
+        system( command )
 
     print
     print 'Fetched: original/%s.pdb' % string.upper( pdb )
 
-    command = 'get_pdb.py original/%s.pdb %s' % ( string.upper( pdb ), chain )
-    print command
-    system( command )
+    if RNA:
 
-    print
-    print 'Extracted: %s.pdb' % string.lower( pdb )
+        command = 'make_rna_rosetta_ready.py original/%s.pdb %s' % ( string.upper( pdb ), chain )
+        print command
+        system( command )
+
+    else:
+        command = 'get_pdb.py original/%s.pdb %s' % ( string.upper( pdb ), chain )
+        print command
+        system( command )
+
+        print
+        print 'Extracted: %s.pdb' % string.lower( pdb )
 
 

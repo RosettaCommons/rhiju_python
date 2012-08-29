@@ -45,6 +45,10 @@ def cluster_check( cluster_in ):
         cluster = 'ade.stanford.edu'
         cluster_dir = '/scr/rhiju/'
 
+    if cluster == 'ade':
+        cluster = 'ade.stanford.edu'
+        cluster_dir = '/home/rhiju/'
+
     if cluster == 'abe_scratch':
         cluster = 'rdas@login-abe.ncsa.teragrid.org'
         cluster_dir = '/scratch/users/rdas/'

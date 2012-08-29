@@ -25,7 +25,7 @@ extra_args = argv[2:]
 
 dir = '.'
 clusterdir = abspath(dir).replace('/Users/rhiju/','')
-clusterdir = abspath(dir).replace('/scratch/users/rhiju/','')
+clusterdir = clusterdir.replace('/scratch/users/rhiju/','')
 clusterdir = clusterdir.replace('/work/rhiju/','')
 
 clusterdir = remotedir+clusterdir
@@ -42,6 +42,7 @@ clusterdir = remotedir+clusterdir
 
 cluster_prefix = cluster+':'
 if len(cluster) == 0: cluster_prefix = ''
+
 
 command = 'rsync -avzL '+cluster_prefix+clusterdir+'/'+string.join(extra_args)+' '+dir+' --exclude="condor*log"'
 print(command)

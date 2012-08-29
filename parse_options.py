@@ -8,7 +8,7 @@ def parse_options( argv, tag, default):
         pos = argv.index( "-"+tag )
         del( argv[ pos ] )
 
-        if ( default == 0 and
+        if ( ( default == 0 or isinstance( default, bool ) ) and
              ( pos == (len( argv ) ) or
                argv[ pos ][0] == '-' ) ): # Just a boolean
             value = 1

@@ -45,7 +45,7 @@ for pdbname in pdbnames:
 			count = count + 1
 		    oldresnum = resnum
 
-		    if ( count < len( new_numbers ) ):
+		    if ( count <= len( new_numbers ) ):
 			    newnum = '%4d' % new_numbers[ count-1 ]
 		    else:
 			    newnum = '%4d' % count

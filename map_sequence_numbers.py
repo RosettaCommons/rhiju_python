@@ -1,1 +1,0 @@
-../casp7/python/map_sequence_numbers.py

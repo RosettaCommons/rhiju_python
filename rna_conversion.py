@@ -101,7 +101,7 @@ def make_rna_rosetta_ready( pdbname, removechain=False, ignore_chain=True, chain
                 line_edit = 'ATOM  '+line[6:17]+'  A'+line[20:]
 
             #Don't save alternative conformations.
-            if line[16] == 'A':
+            if line[16] == 'B':
                 continue;
 
             if line_edit[0:4] == 'ATOM':
@@ -117,6 +117,14 @@ def make_rna_rosetta_ready( pdbname, removechain=False, ignore_chain=True, chain
                     elif longname == '  U':
                         longname =   ' rU'
                     elif longname == 'G  ':
+                        longname =   ' rG'
+                    elif longname == 'rA ':
+                        longname =   ' rA'
+                    elif longname == 'rC ':
+                        longname =   ' rC'
+                    elif longname == 'rU ':
+                        longname =   ' rU'
+                    elif longname == 'rG ':
                         longname =   ' rG'
                     elif longname == 'A  ':
                         longname =   ' rA'

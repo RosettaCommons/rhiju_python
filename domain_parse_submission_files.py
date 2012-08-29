@@ -1,1 +1,0 @@
-../casp7/python/domain_parse_submission_files.py

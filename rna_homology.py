@@ -115,7 +115,9 @@ for base in infasta.wc_pair_mutations:
 ##########################################################################################################
 if len( infasta.wc_pair_mutations )  > 0:
     print "####################################################################################"
-    print "Remodeling these pairs:\n", infasta.wc_pair_mutations, "\n", wc_pair_mutation_pairs
+    print "Remodeling these pairs:\n",
+    for m in range( len( infasta.wc_pair_mutations ) ): print "%d-%d " % (infasta.wc_pair_mutations[m], wc_pair_mutation_pairs[m]),
+    print
     print "####################################################################################"
 
 os.system("rm -f "+prefix+".*.cut.out")
@@ -195,7 +197,7 @@ for i in range(0,len(infasta.wc_pair_mutations)):
 
     #Now actually mutate the base pair:
 
-    ndecoys = 5
+    ndecoys = 1
     command = EXE+" -fasta "+prefix+mutstring+".mut.fasta  -params_file " \
         + prefix+mutstring+".prm -nstruct "+str(ndecoys)+" -out::file::silent "+ \
         prefix+mutstring+".out -cycles 20000  -in:file:silent " + prefix + mutstring+ \

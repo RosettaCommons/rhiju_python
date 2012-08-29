@@ -49,17 +49,17 @@ if argv.count('-start_pdb'):
     del( argv[pos] )
     use_start_pdb = 1
 
-#output_virtual = 0
-#if argv.count('-output_virtual'):
-#    pos = argv.index('-output_virtual')
-#    del( argv[pos] )
-#    output_virtual = 1
-
-output_virtual = 1
-if argv.count('-no_virtual'):
-    pos = argv.index('-no_virtual')
+output_virtual = 0
+if argv.count('-output_virtual'):
+    pos = argv.index('-output_virtual')
     del( argv[pos] )
-    output_virtual = 0
+    output_virtual = 1
+
+#output_virtual = 1
+#if argv.count('-no_virtual'):
+#    pos = argv.index('-no_virtual')
+#    del( argv[pos] )
+#    output_virtual = 0
 
 try:
     NSTRUCT = int(argv[-1])
@@ -105,6 +105,10 @@ DB = HOMEDIR+'/minirosetta_database'
 if exists( HOMEDIR+'/src/rosetta_protein_rna/rosetta_source/bin/' ):
     MINI_DIR = HOMEDIR + '/src/rosetta_protein_rna/rosetta_source/bin/'
     DB = HOMEDIR + '/src/rosetta_protein_rna/rosetta_database/'
+
+if exists( HOMEDIR+'/src/rosetta_TRUNK/rosetta_source/bin/' ):
+    MINI_DIR = HOMEDIR + '/src/rosetta_TRUNK/rosetta_source/bin/'
+    DB = HOMEDIR + '/src/rosetta_TRUNK/rosetta_database/'
 
 for infile in infiles:
     tags = []
