@@ -5,6 +5,7 @@ def read_pdb( filename ):
 
     coords = {}
     pdb_lines = {}
+    sequence = {}
 
     for line in open( filename ):
 
@@ -18,6 +19,9 @@ def read_pdb( filename ):
             if not ( chain in coords.keys() ):
                 coords[chain] = {}
                 pdb_lines[chain] = {}
+                sequence[ chain ] = {}
+
+            sequence[chain][resnum] = line[18:20]
 
             if not ( resnum in coords[chain].keys() ):
                 coords[chain][resnum] = {}
@@ -26,4 +30,4 @@ def read_pdb( filename ):
             coords[chain][resnum][atom_name] = position
             pdb_lines[chain][resnum][atom_name] = line[:-1]
 
-    return ( coords, pdb_lines )
+    return ( coords, pdb_lines, sequence )
