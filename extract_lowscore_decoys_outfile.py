@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from sys import argv,exit,stderr
+from sys import argv,exit,stderr,stdout
 from os import popen, system
 from os.path import basename
 import string
@@ -24,6 +24,12 @@ def Help():
 if len(argv)<2:
     Help()
 
+
+output_to_file = False
+if "-out" in argv:
+    pos = argv.index( "-out" )
+    del( argv[ pos ] )
+    output_to_file = True
 
 SCORE_CUTOFF = 0
 
@@ -72,6 +78,8 @@ infiles = argv[1:]
 score_plus_lines = []
 firstlines = []
 IS_OUTFILE = 1
+
+if output_to_file: assert( len( infiles ) == 1 )
 
 for infile in infiles:
 
@@ -138,15 +146,24 @@ for score_plus_line in score_plus_lines:
 
 stderr.write( 'Extracting %d models from %s\n' % (count, string.join( infiles,' ' ) ) )
 
+fid = stdout
+if output_to_file:
+    newfile = infile.replace( ".out", ".top%d.out" % NSTRUCT  )
+    fid = open( newfile , 'w' )
+
 if not IS_OUTFILE:
     command = 'head -n 1 '+infile
-    system(command)
+    lines = popen(command).readlines()
 elif (firstlines[2][:6] == 'REMARK' ):
     command = 'head -n 3 '+infile
-    system(command)
+    lines = popen(command).readlines()
 else:
     command = 'head -n 2 '+infile
-    system(command)
+    lines = popen(command).readlines()
+
+for line in lines: fid.write( line )
+
+
 
 # following basically stolen from cat_outfiles.py
 n = -1
@@ -186,6 +203,10 @@ for infile in infiles:
             except:
                 continue
 
-        print line
+        fid.write(  line+"\n" )
 
     data.close()
+
+if output_to_file:
+    fid.close()
+    stderr.write( "Outputted models to: %s\n" % newfile )
