@@ -129,16 +129,18 @@ for file in X3DNA_outfiles:
 
         loop_length = all_res[n][1] - all_res[n][0] - 1
         if ( all_chain[n][1] == all_chain[n][0] ):
-            selection_string = "%s and chain %s and resi %d+%d"  % (tag,  all_chain[n][0], all_res[n][0],all_res[n][1] )
+            selection_string = "%s and chain %s and resi %4d+%4d"  % (tag,  all_chain[n][0], all_res[n][0],all_res[n][1] )
         else:
-            selection_string = "%s and (chain %s and resi %d) or (chain %s and resi %d)"  % (tag, all_chain[n][0], all_res[n][0], all_chain[n][1], all_res[n][0] )
+            selection_string = "%s and (chain %s and resi %4d) or (chain %s and resi %4d)"  % (tag, all_chain[n][0], all_res[n][0], all_chain[n][1], all_res[n][0] )
 
         if loop_length not in all_loop_info.keys(): all_loop_info[ loop_length ] = []
 
         sequence_string = ""
         for m in range( all_res[n][0], all_res[n][1]+1 ):
-            sequence_string += sequence[ all_chain[n][0] ][ m ]
-
+            if m in sequence[ all_chain[n][0] ].keys():
+                sequence_string += ' ' + sequence[ all_chain[n][0] ][ m ]
+            else:
+                sequence_string += " XX"
         all_loop_info[ loop_length].append( [ selection_string, sequence_string ] )
 
         print "Loop length %d  %s %s" % (loop_length, selection_string, sequence_string )
@@ -148,5 +150,5 @@ for loop_length in all_loop_info.keys():
     print "Writing to: ", loop_file
     fid = open( loop_file, 'w' )
     for loop_info in all_loop_info[ loop_length ]:
-        fid.write( "%40s %s\n" % ( loop_info[0], loop_info[1] ) )
+        fid.write( "%50s %s\n" % ( loop_info[0], loop_info[1] ) )
     fid.close()

@@ -9,7 +9,7 @@ def read_pdb( filename ):
 
     for line in open( filename ):
 
-        if (len(line)>54 and  line[0:4] == 'ATOM' ):
+        if (len(line)>54 and  (line[0:4] == 'ATOM' or line[0:4] == 'HETA' ) ):
 
             resnum = int( line[22:26] )
             chain = line[21]
