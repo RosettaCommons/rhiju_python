@@ -3,6 +3,7 @@
 from rna_server_conversions import prepare_fasta_and_params_file_from_sequence_and_secstruct
 from sys import argv
 from os import system
+from os.path import exists
 from parse_options import parse_options
 from make_tag import make_tag, make_tag_with_dashes
 import string
@@ -23,6 +24,7 @@ if len(argv) < 3:
     exit()
 
 
+system( 'rm -rf README_FARFAR' ) # output file with Rosetta command line -- will be replaced by this script.
 sequence = parse_options( argv, "sequence", "" )
 secstruct = parse_options( argv, "secstruct", "")
 working_res = parse_options( argv, "working_res", [-1] )
@@ -31,11 +33,11 @@ tag = parse_options( argv, 'tag', 'test' )
 fasta = parse_options( argv, 'fasta', "" )
 secstruct_file = parse_options( argv, 'secstruct_file', "" )
 input_pdbs = parse_options( argv, 's', [""] )
+input_silent_files = parse_options( argv, 'silent', [""] )
 input_res  = parse_options( argv, 'input_res', [-1] )
-print argv
 fixed_stems = parse_options( argv, 'fixed_stems', False )
-print argv
 native_pdb = parse_options( argv, 'native', "" )
+working_native_pdb = parse_options( argv, 'working_native', "" )
 cst_file = parse_options( argv, 'cst_file', "" )
 cutpoint_closed = parse_options( argv, "cutpoint_closed", [-1] )
 cutpoint_open = parse_options( argv, "cutpoint_open", [-1] )
@@ -145,19 +147,6 @@ if len( working_res ) > 0:
 else:
     working_input_res = input_res
 
-if len( cutpoint_closed ) > 0:
-    cutpoint_closed = working_res_map( cutpoint_closed, working_res )
-    params_file_outstring += "CUTPOINT_CLOSED "+make_tag( cutpoint_closed )+ "\n"
-
-if len( cutpoint_open ) > 0:
-    cutpoint_open = working_res_map( cutpoint_open, working_res )
-    params_file_outstring += "CUTPOINT_OPEN "+make_tag( cutpoint_open )+ "\n"
-
-if len( virtual_anchor ) > 0:
-    virtual_anchor = working_res_map( virtual_anchor, working_res )
-    params_file_outstring += "VIRTUAL_ANCHOR "+make_tag( virtual_anchor )+ "\n"
-
-
 assert( is_even( len(obligate_pair) ) )
 if len( obligate_pair ) > 0:
     for m in range( len( obligate_pair)/2 ):
@@ -168,7 +157,20 @@ if len( obligate_pair ) > 0:
             if pos2 not in working_res: continue
             pos1 = working_res.index( pos1 ) + 1
             pos2 = working_res.index( pos2 ) + 1
-        params_file_outstring += "OBLIGATE PAIR %d %d W W A \n" % (pos1, pos2)
+        params_file_outstring += "OBLIGATE  PAIR %d %d W W A \n" % (pos1, pos2)
+
+if len( cutpoint_closed ) > 0:
+    cutpoint_closed = working_res_map( cutpoint_closed, working_res )
+    params_file_outstring += "CUTPOINT_CLOSED  "+make_tag( cutpoint_closed )+ "\n"
+
+if len( cutpoint_open ) > 0:
+    cutpoint_open = working_res_map( cutpoint_open, working_res )
+    params_file_outstring += "CUTPOINT_OPEN  "+make_tag( cutpoint_open )+ "\n"
+
+if len( virtual_anchor ) > 0:
+    virtual_anchor = working_res_map( virtual_anchor, working_res )
+    params_file_outstring += "VIRTUAL_ANCHOR "+make_tag( virtual_anchor )+ "\n"
+
 
 if len(cst_file) > 0:  # also have input data...
     lines = open( cst_file ).readlines()
@@ -217,6 +219,7 @@ if len( working_cst_file ) > 0 :
     fid.write( cst_file_outstring )
     fid.close()
 
+assert( not ( len( native_pdb )>0 and len( working_native_pdb ) > 0 ) )
 if ( len(native_pdb) > 0 and len( working_res ) > 0):
     command = "pdbslice.py " + native_pdb + " -subset"
     for m in working_res: command += " %d" % m
@@ -224,8 +227,6 @@ if ( len(native_pdb) > 0 and len( working_res ) > 0):
     system( command )
     working_native_pdb = "%s_%s" % (tag,native_pdb)
     print "Writing native to:", working_native_pdb
-else:
-    working_native_pdb = ""
 
 #########################################
 print
@@ -233,11 +234,10 @@ print "Sample command line: "
 
 command = "rna_denovo.macosgccrelease  -nstruct 500 -params_file %s -fasta %s  -out:file:silent %s.out  -include_neighbor_base_stacks -minimize_rna" % (params_file, fasta_file, tag )
 
-if len( native_pdb ) > 0:
-    if len( working_native_pdb ) > 0:
-        command += " -native %s " % working_native_pdb
-    else:
-        command += " -native %s " % native_pdb
+if len( working_native_pdb ) > 0:
+    command += " -native %s " % working_native_pdb
+elif len( native_pdb ) > 0:
+    command += " -native %s " % native_pdb
 
 if len( extra_minimize_res ) > 0:
     extra_minimize_res = working_res_map( extra_minimize_res, working_res )
@@ -245,7 +245,16 @@ if len( extra_minimize_res ) > 0:
 
 if len( input_pdbs ) > 0:
     command += " -s"
-    for pdb in input_pdbs: command += " "+pdb
+    for pdb in input_pdbs:
+        assert( exists( pdb ) )
+        command += " "+pdb
+    assert( len( input_res ) > 0 )
+
+if len( input_silent_files ) > 0:
+    command += " -in:file:silent"
+    for silent_file in input_silent_files:
+        assert( exists( silent_file ) )
+        command += " "+silent_file
     assert( len( input_res ) > 0 )
 
 if len( input_res ) > 0:

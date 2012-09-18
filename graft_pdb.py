@@ -2,14 +2,27 @@
 
 from read_pdb import read_pdb
 from sys import argv
+from parse_options import parse_options
 
 # Note, this assumes that the pdb's are already aligned!
+
+graft_res = parse_options( argv, "graft_res", [-1] )
 
 main_pdb = argv[1]
 scratch_pdb = argv[2]
 
-[ coords_main, lines_main ] = read_pdb( main_pdb )
-[ coords_scratch, lines_scratch ] = read_pdb( scratch_pdb )
+[ coords_main, lines_main, sequence_main ] = read_pdb( main_pdb )
+[ coords_scratch, lines_scratch, sequence_scratch ] = read_pdb( scratch_pdb )
+
+# get rid of entries that are not in graft_res:
+if len( graft_res ) > 0:
+    lines_scratch_new = {}
+    for chain in lines_scratch.keys():
+        lines_scratch_new[ chain ] = {}
+        for resi in lines_scratch[ chain ]:
+            if resi in graft_res:
+                lines_scratch_new[ chain ][ resi ] = lines_scratch[ chain ][ resi ]
+    lines_scratch = lines_scratch_new
 
 # remove atoms in main_pdb that are being replaced by scratch_pdb:
 for chain in lines_scratch.keys():

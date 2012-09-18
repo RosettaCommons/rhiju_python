@@ -36,6 +36,7 @@ if FIGURE_OUT_BINWIDTH:
 histogram = []
 bincenter = []
 currentbincenter = mindata + binwidth/2.0;
+
 numbins =  int((maxdata-mindata)/binwidth)
 if (numbins == 0): numbins = 1
 for bin in range(numbins):

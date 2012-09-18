@@ -5,7 +5,7 @@ from sys import argv,stderr,stdout
 from os import popen,system
 from os.path import exists
 from amino_acids import longer_names
-from parse_options import parse_options
+from parse_options import parse_options, get_ints
 
 retain_atom_num = parse_options( argv, "retain_atom_num", 0 )
 
@@ -15,9 +15,7 @@ assert( len(argv)>1)
 pdbnames = []
 new_numbers = []
 for i in range(1, len( argv ) ):
-	try:
-		new_numbers.append( int( argv[i] ) )
-	except:
+	if not get_ints( argv[i], new_numbers ):
 		pdbnames.append( argv[i] )
 
 for pdbname in pdbnames:

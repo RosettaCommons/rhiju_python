@@ -1,98 +1,39 @@
 #!/usr/bin/python
 
 from os import popen,system
-from os.path import basename
+from os.path import basename,exists
 from sys import argv,stderr
 import string
+from parse_options import parse_options
 
 
-
-use_subset = 0
-subset_residues = []
-if argv.count('-subset'):
-    use_subset = 1
-    pos = argv.index('-subset')
-    del argv[pos]
-
-    #stderr.write( 'PDBSLICE using a subset of residues: '  )
-    goodint = 1
-    while goodint:
-        try:
-            subset_residue = int(argv[pos])
-            subset_residues.append( subset_residue )
-            del argv[pos]
-            #stderr.write('%d ' % subset_residue )
-        except:
-            goodint = 0
-
-    #stderr.write( '\n'  )
-
-    pdbfiles = argv[1:-1]
-
-    prefix = argv[-1]
-    startseq = 1
-    endseq = 10000000000
-
-
-############################
-if argv.count('-segments'):
-    use_subset = 1
-    pos = argv.index('-segments')
-    del argv[pos]
-
-    segment_residues = []
-    #stderr.write( 'PDBSLICE using a subset of residues: '  )
-    goodint = 1
-    while goodint:
-        try:
-            segment_residue = int(argv[pos])
-            segment_residues.append( segment_residue )
-            del argv[pos]
-            #stderr.write('%d ' % segment_residue )
-        except:
-            goodint = 0
-
-    #stderr.write( '\n'  )
-
-    pdbfiles = argv[1:-1]
-
-    prefix = argv[-1]
-    startseq = 1
-    endseq = 10000000000
+use_subset = False
+subset_residues  = parse_options( argv, "subset", [-1] )
+segment_residues = parse_options( argv, "segment", [-1] )
+if len( segment_residues ) > 0:
+    assert( len( subset_residues ) == 0 )
+    assert( 2 * (len(segment_residues)/2) == len(segment_residues ) ) # check even
     for i in range( len(segment_residues)/2):
         for j in range( segment_residues[2*i], segment_residues[2*i+1]+1 ):
             subset_residues.append( j )
 
-    #print subset_residues
-
-use_excise = 0
-excise_residues = []
-if argv.count('-excise'):
-    use_excise = 1
-    pos = argv.index('-excise')
-    del argv[pos]
-
-    #stderr.write( 'PDBSLICE using a excise of residues: '  )
-    goodint = 1
-    while goodint:
-        try:
-            excise_residue = int(argv[pos])
-            excise_residues.append( excise_residue )
-            del argv[pos]
-            #stderr.write('%d ' % excise_residue )
-        except:
-            goodint = 0
-
-    #stderr.write( '\n'  )
-
+excise_residues = parse_options( argv, "excise", [-1] )
+if len( excise_residues ) > 0:
+    use_excise = True
     pdbfiles = argv[1:-1]
-
     prefix = argv[-1]
     startseq = 1
     endseq = 10000000000
 
+use_subset = ( len( subset_residues ) > 0 )
+use_excise = ( len( excise_residues ) > 0 )
 
-if not use_excise and not use_subset:
+if ( use_excise or use_subset ):
+    pdbfiles = argv[1:-1]
+    prefix = argv[-1]
+    startseq = 1
+    endseq = 10000000000
+else:
     try:
         pdbfiles = argv[1:-2]
         startseq = int( argv[-2])
@@ -107,6 +48,10 @@ if not use_excise and not use_subset:
 atomnums = []
 
 for pdbfile in pdbfiles:
+
+    if not( exists( pdbfile ) ):
+        print "Problem: ",pdbfile, " does not exist!"
+
     gzipped = 0
     outid = open(prefix+basename(pdbfile),'w')
 

@@ -68,17 +68,17 @@ def prepare_fasta_and_params_file_from_sequence_and_secstruct( sequence, secstru
             for m in chainbreak_pos: params_file_outstring += " %d" % m
             params_file_outstring += "\n"
 
-        stems = get_stems( secstruct, '(', ')', sequence_for_fasta )
+        stems = get_stems( secstruct, chainbreak_pos, '(', ')', sequence_for_fasta )
         if stems == None: return None
         params_file_outstring += output_stems( 'STEM', stems )
         if fixed_stems:
             params_file_outstring += output_stems( 'OBLIGATE', stems )
 
-        obligate_stems = get_stems( secstruct, '[', ']', sequence_for_fasta )
+        obligate_stems = get_stems( secstruct, chainbreak_pos, '[', ']', sequence_for_fasta )
         if obligate_stems == None: return None
         params_file_outstring += output_stems( 'OBLIGATE', obligate_stems )
 
-        obligate_stems = get_stems( secstruct, '{', '}', sequence_for_fasta )
+        obligate_stems = get_stems( secstruct, chainbreak_pos, '{', '}', sequence_for_fasta )
         if obligate_stems == None: return None
         params_file_outstring += output_stems( 'OBLIGATE', obligate_stems )
 
@@ -97,7 +97,7 @@ def output_stems( tag, stems ):
         outstring += '\n'
     return outstring
 
-def get_stems( line, left_bracket_char = '(', right_bracket_char = ')', sequence_for_fasta='' ):
+def get_stems( line, chainbreak_pos, left_bracket_char = '(', right_bracket_char = ')', sequence_for_fasta='' ):
     count = 0
     left_brackets = []
     pair_map = {}
@@ -143,7 +143,7 @@ def get_stems( line, left_bracket_char = '(', right_bracket_char = ')', sequence
             already_in_stem[ pair_map[k] ] = 1
 
             # Can we extend in one direction?
-            while( pair_map.has_key( k + 1 ) and  pair_map[ k+1 ] == pair_map[ k ] - 1  and not already_in_stem[k+1] ):
+            while( pair_map.has_key( k + 1 ) and  pair_map[ k+1 ] == pair_map[ k ] - 1  and not already_in_stem[k+1] and (not k in chainbreak_pos) and ( not pair_map[k+1] in chainbreak_pos )  ):
                 k += 1
                 stem_res.append( [k, pair_map[k]] )
                 already_in_stem[ k ] = 1

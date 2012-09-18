@@ -1,7 +1,6 @@
 #!/usr/bin/python
 ## make mammoth structure alignments
 
-
 import string
 from glob import glob
 from sys import argv,stderr,exit
@@ -9,6 +8,7 @@ from os import popen,system
 from os.path import exists,basename
 from operator import add
 from math import sqrt
+from parse_options import parse_options
 
 #############################
 def Help():
@@ -49,101 +49,35 @@ if args.count('-D'):
     distance_threshold = float(args[pos+1])
     assert(R_DEFINED)
 
-CALC_PER_RESIDUE_DEVIATIONS = 0
-if args.count('-per_res'):
-    pos = args.index('-per_res')
-    del( args[ pos] )
-    CALC_PER_RESIDUE_DEVIATIONS = 1
+CALC_PER_RESIDUE_DEVIATIONS = parse_options( args, "per_res", 0 )
+DUMP = parse_options( args, "dump", 0 )
+COPY_RESNUM = parse_options( args, "copy_resnum", 0 )
+rmsd_threshold = parse_options( args, "R", 0.0 );
+RENUMBER_ATOMS = parse_options( args, "renumber_atoms", 0.0 );
+COPY_HETATM = parse_options( args, "copy_hetatm", 0.0 );
+slicenum = parse_options( args, "N", -1 )
 
-if R_DEFINED:
+if ( rmsd_threshold > 0.0 ):
+    R_DEFINED = True
+    distance_threshold = rmsd_threshold
     stderr.write( 'using distance threshold %5.1f A; reporting number of residues within %5.1f A \n' % (distance_threshold, rmsd_threshold))
 
-COPY_RESNUM = 0
-if args.count('-copy_resnum'):
-    del args[args.index('-copy_resnum')]
-    COPY_RESNUM = 1
-
-DUMP = 0
-if args.count('-dump'):
-    del args[args.index('-dump')]
-    DUMP = 1
-
-
-RENUMBER_ATOMS = 0
-if args.count('-renumber_atoms'):
-    del args[args.index('-renumber_atoms')]
-    RENUMBER_ATOMS = 1
-
-COPY_HETATM = 0
-if args.count('-copy_hetatm'):
-    del args[args.index('-copy_hetatm')]
-    COPY_HETATM = 1
-
-if args.count('-N'):
-    pos = args.index('-N')
-    slicenum = int( args[pos+1])
-    del args[pos]
-    del args[pos]
-    stderr.write( 'using first %d residues\n' % slicenum )
+if slicenum > 0:
     slice  = 1
 else:
     rmsd_threshold = 4.0
     slice = 0
 
-
-subset_residues1 = []
-subset_residues2 = []
-use_subset = 0
-
-if args.count('-subset'):
-    pos = args.index('-subset')
-    del args[pos]
-    use_subset = 1
-    #stderr.write( 'using a subset of residues: '  )
-    goodint = 1
-    subset_residues = []
-    while goodint:
-        try:
-            subset_residue = int(args[pos])
-            del args[pos]
-            subset_residues.append( subset_residue )
-        except:
-            goodint = 0
-
+subset_residues = parse_options( args, "subset", [-1] );
+subset_residues1 = parse_options( args, "subset_residue1", [-1] );
+subset_residues2 = parse_options( args, "subset_residue2", [-1] );
+if len( subset_residues ) > 0:
     subset_residues1 = subset_residues
     subset_residues2 = subset_residues
-    #stderr.write( '\n'  )
+use_subset = ( len( subset_residues1 ) > 0 and len( subset_residues2 ) > 0 )
 
-if args.count('-subset1'):
-    pos = args.index('-subset1')
-    del args[pos]
-    use_subset = 1
-    #stderr.write( 'using a subset of residues: '  )
-    goodint = 1
-    while goodint:
-        try:
-            subset_residue = int(args[pos])
-            del args[pos]
-            subset_residues1.append( subset_residue )
-        except:
-            goodint = 0
 
-    #stderr.write( '\n'  )
-
-if args.count('-subset2'):
-    pos = args.index('-subset2')
-    del args[pos]
-    use_subset = 1
-    #stderr.write( 'using a subset of residues: '  )
-    goodint = 1
-    while goodint:
-        try:
-            subset_residue = int(args[pos])
-            del args[pos]
-            subset_residues2.append( subset_residue )
-        except:
-            goodint = 0
-
+# this is kind of dangerous...
 if args.count('-1'):
     del args[args.index('-1')]
     SHOW_MODEL_0 = 0
