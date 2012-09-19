@@ -47,8 +47,8 @@ def make_rna_rosetta_ready( pdbname, removechain=False, ignore_chain=True, chain
         if chainids[i] == '_':
             chainids[i] = ' '
 
-    #goodnames = [' rA',' rC',' rG',' rU',' MG']
-    goodnames = [' rA',' rC',' rG',' rU']
+    goodnames = [' rA',' rC',' rG',' rU',' MG']
+    #goodnames = [' rA',' rC',' rG',' rU']
 
     for line in lines:
         if len(line)>5 and line[:6]=='ENDMDL':
