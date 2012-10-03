@@ -72,8 +72,8 @@ if len( secstruct_file ) > 0 :
     assert( len(secstruct) == 0 )
     secstruct = open( secstruct_file ).readlines()[0][:-1]
 
-
-if len( secstruct ) == 0:  sectruct = len(sequence) * '.'
+if len( secstruct ) == 0:
+    for m in range(len(sequence)): secstruct += '.'
 
 assert( len( sequence ) == len( secstruct ))
 assert( secstruct.count('(') == secstruct.count(')') )
@@ -158,6 +158,16 @@ if len( obligate_pair ) > 0:
             pos1 = working_res.index( pos1 ) + 1
             pos2 = working_res.index( pos2 ) + 1
         params_file_outstring += "OBLIGATE  PAIR %d %d W W A \n" % (pos1, pos2)
+
+# need to handle Mg(2+)
+#mg_pos = []
+#for i in range( len( sequence ) ):
+#    if sequence[i]=='z': mg_pos.append( i+1 )
+#working_mg_pos = working_res_map( mg_pos, working_res )
+#if len( working_mg_pos ) > 0:
+#    for i in mg_pos:
+#        cutpoint_open.append( i-1 )
+#        virtual_anchor.append( i )
 
 if len( cutpoint_closed ) > 0:
     cutpoint_closed = working_res_map( cutpoint_closed, working_res )

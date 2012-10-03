@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 def cluster_check( cluster_in ):
-    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','vanlang_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','kwip','lovejoy','tsuname','lovejoy_scratch','backup' ];
+    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','vanlang_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','kwip','lovejoy','tsuname','lovejoy_scratch','backup','lonestar','ranger','lonestar_work','trestles' ];
 
     cluster = cluster_in
     if cluster not in clusterlist:
@@ -16,6 +16,9 @@ def cluster_check( cluster_in ):
     if cluster == 'tg-condor': cluster ='dasr@tg-condor.purdue.teragrid.org'
     if cluster == 'abe': cluster = 'rdas@login-abe.ncsa.teragrid.org'
     if cluster == 'ncsa': cluster ='rdas@tg-login.ncsa.teragrid.org'
+    if cluster == 'lonestar': cluster ='rdas@lonestar.tacc.xsede.org'
+    if cluster == 'trestles': cluster ='rdas@trestles.sdsc.edu'
+    if cluster == 'ranger': cluster ='rdas@ranger.tacc.xsede.org'
 
     if cluster == 'backup':
         cluster = ''
@@ -24,6 +27,10 @@ def cluster_check( cluster_in ):
     if cluster == 'steele_scratch':
         cluster = 'dasr@tg-steele.purdue.teragrid.org'
         cluster_dir = '/scratch/scratch95/d/dasr/'
+
+    if cluster == 'lonestar_work':
+        cluster ='rdas@lonestar.tacc.xsede.org'
+        cluster_dir = '/work/01218/rdas/'
 
     if cluster == 'tg-condor_scratch':
         cluster = 'dasr@tg-condor.purdue.teragrid.org'

@@ -12,9 +12,13 @@ from get_sequence import get_sequence
 
 MAX_SEQUENCE_LENGTH = 32
 
-nts = ['g','c','u','a','G','C','U','A']
+nts = ['g','c','u','a','G','C','U','A','z','Z']
 spacers = ['+','*',' '] # any of these are OK as strand separators
 complement = {'a':['u'], 'u':['a','g'], 'c':['g'], 'g':['c','u']};
+
+def ValidationError( string ):
+    print string
+    exit()
 
 def prepare_fasta_and_params_file_from_sequence_and_secstruct( sequence, secstruct='', fixed_stems = False ):
 
@@ -22,15 +26,15 @@ def prepare_fasta_and_params_file_from_sequence_and_secstruct( sequence, secstru
     params_file_outstring = ""
 
     if len( secstruct ) > 0 and len( secstruct ) != len( sequence ):
-        #raise ValidationError("If secstruct is specified, length of secstruct must be equal to length of sequence.!" )
+        raise ValidationError("If secstruct is specified, length of secstruct must be equal to length of sequence.!" )
         return None
 
     if len(sequence.split('\n')) != 1:
-        #raise ValidationError("sequence must be one line!")
+        raise ValidationError("sequence must be one line!")
         return None
 
     if len( secstruct ) > 0 and len(secstruct.split('\n')) != 1:
-        #raise ValidationError("secstruct must be blank or one line!")
+       #raise ValidationError("secstruct must be blank or one line!")
         return None
 
     # find chainbreaks
@@ -44,11 +48,11 @@ def prepare_fasta_and_params_file_from_sequence_and_secstruct( sequence, secstru
             count += 1
         elif c in spacers:
             if ( c == 0 ):
-                #raise ValidationError( "Cannot start secstruct with spacer!" )
+                raise ValidationError( "Cannot start secstruct with spacer!" )
                 return None
             chainbreak_pos.append( count )
         else:
-            #raise ValidationError( "Unrecognized character in sequence: %s!" % c  )
+            raise ValidationError( "Unrecognized character in sequence: %s!" % c  )
             return None
 
     fasta_file_outstring = "> Input sequence: " + sequence + "\n"
@@ -81,6 +85,9 @@ def prepare_fasta_and_params_file_from_sequence_and_secstruct( sequence, secstru
         obligate_stems = get_stems( secstruct, chainbreak_pos, '{', '}', sequence_for_fasta )
         if obligate_stems == None: return None
         params_file_outstring += output_stems( 'OBLIGATE', obligate_stems )
+
+    #assume that 'z' means Mg(2+)
+    fasta_file_outstring = fasta_file_outstring.replace( 'z','Z[MG]')
 
     return ( fasta_file_outstring, params_file_outstring )
 
@@ -181,7 +188,7 @@ def convert_fasta_to_rosetta_format( fasta_file_sequence ):
         print ''
 
     # quick validation
-    goodchars = ['a','c','g','u']
+    goodchars = ['a','c','g','u','z']
     for char in sequence:
         if char not in goodchars:
             #stderr.write( 'Character %s is not a,c,g, or u\n'% char )
