@@ -11,7 +11,7 @@ def cluster_check( cluster_in ):
     cluster_dir = ''
 
     if cluster == 'biox2': cluster = 'biox2.stanford.edu'
-    if cluster == 'ade': cluster = 'ade.stanford.edu'
+    if cluster == 'ade': cluster = 'rhiju@ade.stanford.edu'
     if cluster == 'steele': cluster = 'dasr@tg-steele.purdue.teragrid.org'
     if cluster == 'tg-condor': cluster ='dasr@tg-condor.purdue.teragrid.org'
     if cluster == 'abe': cluster = 'rdas@login-abe.ncsa.teragrid.org'

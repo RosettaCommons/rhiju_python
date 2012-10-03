@@ -27,6 +27,8 @@ dir = '.'
 clusterdir = abspath(dir).replace('/Users/rhiju/','')
 clusterdir = clusterdir.replace('/scratch/users/rhiju/','')
 clusterdir = clusterdir.replace('/work/rhiju/','')
+clusterdir = clusterdir.replace('/home1/01218/rdas/','')
+clusterdir = clusterdir.replace('/work/01218/rdas/','')
 
 clusterdir = remotedir+clusterdir
 
