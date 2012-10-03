@@ -1,3 +1,4 @@
+#!/opt/apps/python/epd/7.2.2/bin/python
 #!/usr/bin/python
 
 from sys import argv,exit
@@ -36,10 +37,15 @@ lines = open(infile).readlines()
 bsub_file = 'bsubMINI'
 condor_file = 'condorMINI'
 qsub_file = 'qsubMINI'
+qsub_file_MPI = 'qsubMPI'
+job_file_MPI = 'MPI.job'
 
 fid = open( bsub_file,'w')
 fid_condor = open( condor_file,'w')
 fid_qsub = open( qsub_file,'w')
+
+fid_job_MPI = open( job_file_MPI,'w')
+fid_qsub_MPI = open( qsub_file_MPI,'w')
 
 tot_jobs = 0
 
@@ -117,6 +123,10 @@ for line in  lines:
 
         fid_qsub.write( 'qsub %s\n' % qsub_submit_file )
 
+
+        # MPI job file
+        fid_job_MPI.write( '%s ;;; %s\n' % (CWD, command_line_explicit) )
+
         tot_jobs += 1
 
     EXE = cols[ 0 ]
@@ -138,9 +148,35 @@ for line in  lines:
     fid_condor.write('Queue %d\n' % n_jobs )
 
 
+tasks_per_node_MPI = 12 # lonestar
+N_MPIJOBS =  tot_jobs 
+if ( N_MPIJOBS % tasks_per_node_MPI != 0 ):  # checking modulo 12 (or whatever the number of cores/node) 
+    N_MPIJOBS += ( tot_jobs/ tasks_per_node_MPI + 1) * tasks_per_node_MPI 
+
+
+fid_qsub_MPI.write( '#!/bin/bash 	 \n')
+fid_qsub_MPI.write( '#$ -V 	#Inherit the submission environment\n')
+fid_qsub_MPI.write( '#$ -cwd 	# Start job in submission directory\n')
+fid_qsub_MPI.write( '#$ -N %s 	# Job Name\n' % (CWD + '/' + outdir).replace( '/', '_' ) )
+fid_qsub_MPI.write( '#$ -j y 	# Combine stderr and stdout\n')
+fid_qsub_MPI.write( '#$ -o $JOB_NAME.o$JOB_ID 	# Name of the output file\n')
+fid_qsub_MPI.write( '#$ -pe %dway %d 	# Requests X (=12) tasks/node, Y (=12) cores total (Y must be multiples of 12, set X to 12 for lonestar)\n' % (tasks_per_node_MPI, N_MPIJOBS) )
+fid_qsub_MPI.write( '#$ -q normal 	# Queue name normal\n')
+if nhours == 0: # for testing
+    fid_qsub_MPI.write( '#$ -l h_rt=00:01:00 	# Run time (hh:mm:ss)\n' )
+else:
+    fid_qsub_MPI.write( '#$ -l h_rt=%2d:00:00 	# Run time (hh:mm:ss)\n' % nhours)
+#fid_qsub_MPI.write( '#$ -M rhiju@stanford.edu	# Address for email notification\n')
+fid_qsub_MPI.write( '#$ -m be 	# Email at Begin and End of job\n')
+fid_qsub_MPI.write( 'set -x 	# Echo commands, use set echo with csh\n')
+fid_qsub_MPI.write( 'ibrun mpi_simple_job_submit.py %s	# Run the MPI python\n' % job_file_MPI)
+
+
 fid.close()
 fid_condor.close()
 fid_qsub.close()
+fid_qsub_MPI.close()
+fid_job_MPI.close()
 
 print 'Created bsub submission file ',bsub_file,' with ',tot_jobs, ' jobs queued. To run, type: '
 print '>source',bsub_file
@@ -150,3 +186,6 @@ print '>condor_submit',condor_file
 print
 print 'Created qsub submission files ',qsub_file,' with ',tot_jobs, ' jobs queued. To run, type: '
 print '>source ',qsub_file
+print
+print 'Created MPI qsub submission files ',qsub_file_MPI,' with ',tot_jobs, ' jobs queued. To run, type: '
+print '>qsub ',qsub_file_MPI
