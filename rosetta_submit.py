@@ -185,12 +185,14 @@ for n in range( tot_nodes ):
     fid_job_submit_file_MPI.close()
 
     # qsub MPI
+    jobname= (CWD + '/' + outdir).replace( '/', '_' )
+    jobname = jobname[-30:]
     qsub_submit_file_MPI = '%s/qsubMPI%d.sh' % (qsub_file_dir_MPI, n )
     fid_qsub_submit_file_MPI = open( qsub_submit_file_MPI, 'w' )
     fid_qsub_submit_file_MPI.write( '#!/bin/bash 	 \n')
     fid_qsub_submit_file_MPI.write( '#$ -V 	#Inherit the submission environment\n')
     fid_qsub_submit_file_MPI.write( '#$ -cwd 	# Start job in submission directory\n')
-    fid_qsub_submit_file_MPI.write( '#$ -N %s 	# Job Name\n' % (CWD + '/' + outdir).replace( '/', '_' ) )
+    fid_qsub_submit_file_MPI.write( '#$ -N %s 	# Job Name\n' % jobname )
     fid_qsub_submit_file_MPI.write( '#$ -j y 	# Combine stderr and stdout\n')
     fid_qsub_submit_file_MPI.write( '#$ -o $JOB_NAME.o$JOB_ID 	# Name of the output file\n')
     fid_qsub_submit_file_MPI.write( '#$ -pe %dway %d 	# Requests X (=12) tasks/node, Y (=12) cores total (Y must be multiples of 12, set X to 12 for lonestar)\n' % (tasks_per_node_MPI, tasks_per_node_MPI) )
@@ -198,7 +200,7 @@ for n in range( tot_nodes ):
     if nhours == 0: # for testing
         fid_qsub_submit_file_MPI.write( '#$ -l h_rt=00:01:00 	# Run time (hh:mm:ss)\n' )
     else:
-        fid_qsub_submit_file_MPI.write( '#$ -l h_rt=%2d:00:00 	# Run time (hh:mm:ss)\n' % nhours)
+        fid_qsub_submit_file_MPI.write( '#$ -l h_rt=%02d:00:00 	# Run time (hh:mm:ss)\n' % nhours)
     #fid_qsub_submit_file_MPI.write( '#$ -M rhiju@stanford.edu	# Address for email notification\n')
     fid_qsub_submit_file_MPI.write( '#$ -m be 	# Email at Begin and End of job\n')
     fid_qsub_submit_file_MPI.write( 'set -x 	# Echo commands, use set echo with csh\n')
