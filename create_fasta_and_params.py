@@ -44,9 +44,12 @@ cutpoint_open = parse_options( argv, "cutpoint_open", [-1] )
 extra_minimize_res = parse_options( argv, "extra_minimize_res", [-1] )
 virtual_anchor = parse_options( argv, "virtual_anchor", [-1] )
 obligate_pair = parse_options( argv, "obligate_pair", [-1] )
+obligate_pair_explicit = parse_options( argv, "obligate_pair_explicit", [""] )
+remove_obligate_pair = parse_options( argv, "remove_obligate_pair", [-1] )
 remove_pair = parse_options( argv, "remove_pair", [-1] )
+chain_connection = parse_options( argv, "chain_connection", [-1] )
 
-print argv
+#print argv
 #assert( len( argv ) == 1 )
 
 extra_args = ""
@@ -159,6 +162,64 @@ if len( obligate_pair ) > 0:
             pos2 = working_res.index( pos2 ) + 1
         params_file_outstring += "OBLIGATE  PAIR %d %d W W A \n" % (pos1, pos2)
 
+
+assert( is_even( len(remove_obligate_pair) ) )
+if len( remove_obligate_pair ) > 0:
+    for m in range( len( remove_obligate_pair)/2 ):
+        pos1 = remove_obligate_pair[ 2*m ]
+        pos2 = remove_obligate_pair[ 2*m+1 ]
+        if len( working_res ) > 0:
+            if pos1 not in working_res: continue
+            if pos2 not in working_res: continue
+            pos1 = working_res.index( pos1 ) + 1
+            pos2 = working_res.index( pos2 ) + 1
+        params_file_lines = params_file_outstring.split( '\n' )
+        new_lines = []
+        for line in params_file_lines:
+            found_pair = 0
+            if line.find( 'OBLIGATE' ) > -1:
+                pairs = line.split( 'PAIR' )[1:]
+                for pair in pairs:
+                    cols = pair.split()
+                    if int(cols[0]) == pos1 and int(cols[1]) == pos2:
+                        found_pair = 1
+                        break
+                    if int(cols[0]) == pos2 and int(cols[1]) == pos1:
+                        found_pair = 1
+                        break
+            if found_pair:
+                print 'Removing line: ', line
+                continue
+            new_lines.append( line )
+        params_file_outstring = string.join( new_lines, '\n' )
+
+
+assert( ( len(obligate_pair_explicit) % 5 == 0 ) )
+if len( obligate_pair_explicit ) > 0:
+    for m in range( len( obligate_pair_explicit)/5 ):
+        pos1 = int( obligate_pair_explicit[ 5*m ] )
+        pos2 = int( obligate_pair_explicit[ 5*m+1 ] )
+        edge1 = obligate_pair_explicit[ 5*m+2 ]
+        edge2 = obligate_pair_explicit[ 5*m+3 ]
+        orientation = obligate_pair_explicit[ 5*m+4 ]
+        if len( working_res ) > 0:
+            if pos1 not in working_res: continue
+            if pos2 not in working_res: continue
+            pos1 = working_res.index( pos1 ) + 1
+            pos2 = working_res.index( pos2 ) + 1
+        params_file_outstring += "OBLIGATE  PAIR %d %d %s %s %s \n" % (pos1, pos2, edge1, edge2, orientation)
+
+
+if len( chain_connection ) > 0:
+    assert( len( chain_connection ) == 4 )
+    working_chain_connection = working_res_map( chain_connection, working_res )
+    if len( working_chain_connection ) == 4:
+        seg1_start = working_chain_connection[ 0 ]
+        seg1_stop  = working_chain_connection[ 1 ]
+        seg2_start = working_chain_connection[ 2 ]
+        seg2_stop = working_chain_connection[ 3 ]
+        params_file_outstring += "CHAIN_CONNECTION SEGMENT1 %d %d  SEGMENT2 %d %d \n" % (seg1_start, seg1_stop, seg2_start, seg2_stop )
+
 # need to handle Mg(2+)
 #mg_pos = []
 #for i in range( len( sequence ) ):
@@ -186,20 +247,27 @@ if len(cst_file) > 0:  # also have input data...
     lines = open( cst_file ).readlines()
 
     if len( working_res ) > 0:
-        for line in lines: # for now, just handle coordinate constraints, later be smart about atompairs
+        for line in lines:
             if len( line ) == 0: continue
             if line[0] == "[":
-                assert( line.split()[1] == "coordinates" )
-                cst_file_outstring += line
+                cst_tag = line.split()[1]
+                if ( cst_tag == "coordinates" ):
+                    cst_file_outstring += line
+                else:
+                    assert( cst_tag == "atompairs" ) # must have cst file with atompairs first, then coordinates.
+                    if len( cst_file_outstring ) == 0:
+                        cst_file_outstring += line
+                    print "WARNING! WARNING! WARNING! "
+                    print "if you have atompairs in your .cst file, make sure to put them first!"
             else:
                 cols = line.split()
                 if len( cols ) < 4: continue
                 if int(cols[1]) not in working_res: continue
-                assert( int(cols[3]) in working_res )
+                if int(cols[3]) not in working_res: continue
                 newline = "%s %d %s %d  %s\n" % (cols[0],  working_res.index(int(cols[1]))+1, cols[2],  working_res.index( int(cols[3]) )+1, string.join( cols[4:] ) )
                 cst_file_outstring += newline
     else:
-        for line in lines:  cst_file_outstring += lines
+        for line in lines:  cst_file_outstring += line
 
 
 for i in range(len(input_res)):
@@ -242,7 +310,7 @@ if ( len(native_pdb) > 0 and len( working_res ) > 0):
 print
 print "Sample command line: "
 
-command = "rna_denovo.macosgccrelease  -nstruct 500 -params_file %s -fasta %s  -out:file:silent %s.out  -include_neighbor_base_stacks -minimize_rna" % (params_file, fasta_file, tag )
+command = "rna_denovo  -nstruct 500 -params_file %s -fasta %s  -out:file:silent %s.out  -include_neighbor_base_stacks -minimize_rna" % (params_file, fasta_file, tag )
 
 if len( working_native_pdb ) > 0:
     command += " -native %s " % working_native_pdb

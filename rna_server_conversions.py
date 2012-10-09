@@ -80,10 +80,12 @@ def prepare_fasta_and_params_file_from_sequence_and_secstruct( sequence, secstru
 
         obligate_stems = get_stems( secstruct, chainbreak_pos, '[', ']', sequence_for_fasta )
         if obligate_stems == None: return None
+        params_file_outstring += output_stems( 'STEM', obligate_stems )
         params_file_outstring += output_stems( 'OBLIGATE', obligate_stems )
 
         obligate_stems = get_stems( secstruct, chainbreak_pos, '{', '}', sequence_for_fasta )
         if obligate_stems == None: return None
+        params_file_outstring += output_stems( 'STEM', obligate_stems )
         params_file_outstring += output_stems( 'OBLIGATE', obligate_stems )
 
     #assume that 'z' means Mg(2+)

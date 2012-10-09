@@ -46,6 +46,7 @@ for pdbname in pdbnames:
 		    if ( count <= len( new_numbers ) ):
 			    newnum = '%4d' % new_numbers[ count-1 ]
 		    else:
+			    if len( new_numbers) > 0: print 'WARNING! residue number %d is greater than length of input numbering %d' % (count, len( new_numbers) )
 			    newnum = '%4d' % count
 
 		    if retain_atom_num:
@@ -54,6 +55,8 @@ for pdbname in pdbnames:
 			    line_edit = '%s%5d%s%s%s' % (line_edit[0:6],atomnum,line[11:22], newnum, line_edit[26:] )
 
 		    outid.write(line_edit)
+
+	if ( count < len( new_numbers) ): print 'WARNING! number of residues %d is less than length of input numbering %d' % (count, len( new_numbers) )
 
 	outid.close()
 

@@ -95,6 +95,8 @@ def make_rna_rosetta_ready( pdbname, removechain=False, ignore_chain=True, chain
                 line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='1MG'):
                 line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
+            elif (line[0:6] == 'HETATM') & (line[17:20]=='GTP'):
+                line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]==' YG'):
                 line_edit = 'ATOM  '+line[6:17]+'  G'+line[20:]
             elif (line[0:6] == 'HETATM') & (line[17:20]=='1MA'):

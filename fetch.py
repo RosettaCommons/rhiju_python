@@ -19,9 +19,7 @@ if files.count( '-chain' ):
     chain = argv[pos]
     del( files[ pos ] )
 
-
-
-chain = 'A'
+chain = ''
 
 system( 'mkdir -p original' )
 
