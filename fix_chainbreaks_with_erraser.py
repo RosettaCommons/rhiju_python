@@ -46,7 +46,6 @@ for pdb in pdbs:
     print rebuild_num
 
     tag = pdb.replace( '.pdb', '')
-    exit()
 
     if len( rebuild_num ) > 0:
         print rebuild_num
