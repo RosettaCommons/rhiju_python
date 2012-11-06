@@ -1,4 +1,3 @@
-#!/opt/apps/python/epd/7.2.2/bin/python
 #!/usr/bin/python
 
 from sys import argv,exit
@@ -23,9 +22,10 @@ except:
 
 tasks_per_node_MPI = 12 # lonestar
 
-hostname_tag = popen( 'hostname' ).readlines()[0]
 hostname = ''
-if hostname_tag.find( 'ls4' ) > 0: hostname = 'lonestar'
+hostname_tag = popen( 'hostname' ).readlines()[0]
+if hostname_tag.find( 'ls4' ) > -1: hostname = 'lonestar'
+if hostname_tag.find( 'DasLab' ) > -1: hostname = 'ade'
 
 save_logs = False
 if argv.count( '-save_logs' )>0:
@@ -243,7 +243,7 @@ if len( hostname ) == 0:
     print '>source',bsub_file
     print
 
-if len( hostname ) == 0:
+if len( hostname ) == 0 or hostname == 'ade':
     print 'Created condor submission file ',condor_file,' with ',tot_jobs, ' jobs queued. To run, type: '
     print '>condor_submit',condor_file
     print

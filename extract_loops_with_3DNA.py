@@ -76,7 +76,7 @@ for file in X3DNA_outfiles:
     wc_bps = []
     all_res = []
     all_chain = []
-    wc_bp_steps = []
+    all_bp_tag = []
     seq1 = []
     seq2 = []
 
@@ -105,6 +105,8 @@ for file in X3DNA_outfiles:
             all_res.append( [res2,res1] )
             all_chain.append( [chain2,chain1] )
 
+        all_bp_tag.append( bp_tag[1:4] )
+
         line = fid.readline()
 
 
@@ -117,38 +119,52 @@ for file in X3DNA_outfiles:
         if ( all_chain[n][1] != all_chain[n][0] ): continue
         #print all_res[n]
 
+        loop_chain  = all_chain[n][1]
+
         nested_base_pair_exists = False
         for m in range( len( all_res ) ): # This is totally inefficient...
             if not (m+1) in wc_bps: continue
-            if all_chain[m][0] != all_chain[n][0]: continue
-            if all_chain[m][1] != all_chain[n][1]: continue
+            if all_chain[m][0] != loop_chain: continue
+            if all_chain[m][1] != loop_chain: continue
             if (all_res[m][0] > all_res[n][0]) and (all_res[m][1] < all_res[n][1]):
                 nested_base_pair_exists = True
                 break
         if nested_base_pair_exists: continue
 
         loop_length = all_res[n][1] - all_res[n][0] - 1
-        if ( all_chain[n][1] == all_chain[n][0] ):
-            selection_string = "%s and chain %s and resi %4d+%4d"  % (tag,  all_chain[n][0], all_res[n][0],all_res[n][1] )
-        else:
-            selection_string = "%s and (chain %s and resi %4d) or (chain %s and resi %4d)"  % (tag, all_chain[n][0], all_res[n][0], all_chain[n][1], all_res[n][0] )
+        selection_string = "%s and chain %s and resi %4d+%4d"  % (tag,  loop_chain, all_res[n][0],all_res[n][1] )
 
         if loop_length not in all_loop_info.keys(): all_loop_info[ loop_length ] = []
 
+        # loop sequence
         sequence_string = ""
         for m in range( all_res[n][0], all_res[n][1]+1 ):
             if m in sequence[ all_chain[n][0] ].keys():
                 sequence_string += ' ' + sequence[ all_chain[n][0] ][ m ]
             else:
-                sequence_string += " XX"
-        all_loop_info[ loop_length].append( [ selection_string, sequence_string ] )
+                sequence_string += " XXX"
 
-        print "Loop length %d  %s %s" % (loop_length, selection_string, sequence_string )
+        # 'tertiary' contacts with residues outside loop? here, just tabulate the first hit (but may be more!)
+        tert_string = "END"
+        for m in range( all_res[n][0]+1, all_res[n][1] ):
+            tert_string_base = "XXX"
+            for q in range( len( all_res ) ):
+                if ( all_res[q][0] == m and all_chain[q][0] == loop_chain ) or \
+                       ( all_res[q][1] == m and all_chain[q][1] == loop_chain ):
+                    tert_string_base = all_bp_tag[q]
+                    break
+            tert_string += " "+tert_string_base
+        tert_string += " END"
+
+
+        all_loop_info[ loop_length].append( [ selection_string, sequence_string, tert_string ] )
+
+        print "Loop length %3d  %s %s    %s" % (loop_length, selection_string, sequence_string, tert_string )
 
 for loop_length in all_loop_info.keys():
     loop_file = "loops%d.txt" % loop_length
     print "Writing to: ", loop_file
     fid = open( loop_file, 'w' )
     for loop_info in all_loop_info[ loop_length ]:
-        fid.write( "%50s %s\n" % ( loop_info[0], loop_info[1] ) )
+        fid.write( "%50s %s    %s\n" % ( loop_info[0], loop_info[1], loop_info[2] ) )
     fid.close()

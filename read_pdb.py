@@ -21,7 +21,7 @@ def read_pdb( filename ):
                 pdb_lines[chain] = {}
                 sequence[ chain ] = {}
 
-            sequence[chain][resnum] = line[18:20]
+            sequence[chain][resnum] = line[17:20]
 
             if not ( resnum in coords[chain].keys() ):
                 coords[chain][resnum] = {}
