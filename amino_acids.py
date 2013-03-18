@@ -19,6 +19,7 @@ longer_names={'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
               #'PY3': '3', 'PY2': '2',
               #'NAP': 'B',
               ' rA': 'a', ' rC': 'c', ' rG': 'g', ' rU': 'u',
+              ' DA': 'a', ' DC': 'c', ' DG': 'g', ' DU': 'u',' dT':'t',
               #'ADE': 'a', 'CYT': 'c', 'GUA': 'g', 'URA': 'u'
               }
 

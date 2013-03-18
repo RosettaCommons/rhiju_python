@@ -6,9 +6,18 @@ from os import popen,system
 from os.path import exists,basename
 from amino_acids import longer_names
 
-assert( len(argv)>2)
+#assert( len(argv)>2)
 pdbname = argv[1]
-chainid = argv[2]
+
+ignorechain = 0
+if len( argv ) > 2:
+    chainid = argv[2]
+else:
+    chainid = '_'
+    ignorechain = 1
+
+
+if argv.count('-ignorechain'):     ignorechain = 1
 
 if (pdbname[-4:] != '.pdb' and pdbname[-8:] != '.pdb1.gz'):
     pdbname += '.pdb'
@@ -19,9 +28,6 @@ removechain = 0
 if argv.count('-nochain'):
     removechain = 1
 
-ignorechain = 0
-if argv.count('-ignorechain'):
-    ignorechain = 1
 
 netpdbname = '/net/wwpdb/' + pdbname[1:3] + '/' + pdbname
 if not exists(netpdbname):
@@ -84,6 +90,7 @@ for i in range(len(lines)):
                 oldresnum = resnum
                 while (resnum == oldresnum):
                     i += 1
+                    if i >= len( lines ): break
                     line = lines[i]
                     resnum = line_edit[23:26]
 

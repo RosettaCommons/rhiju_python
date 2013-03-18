@@ -14,7 +14,7 @@ def extractchain(actualpdbname, out, chains_to_extract):
 #    out = open(actualpdbname_chain_to_extract,'w')
     for i in range( len(lines)):
         line = lines[i]
-        if (line.count('ATOM') or (line.count('HETATM')and line.count('MSE'))) \
+        if (line.count('ATOM') or (line.count('HETATM'))  )\
                 and (line[21:22] in chains_to_extract ):
             #line = line[0:21]+chain_to_extract+line[22:]
             out.write(line)

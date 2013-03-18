@@ -9,6 +9,7 @@ longer_names={'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
               'MET': 'M', 'PHE': 'F', 'PRO': 'P', 'SER': 'S',
               'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V',
               ' rA': 'a', ' rC': 'c', ' rG': 'g', ' rU': 'u',
+              '  A': 'a', '  C': 'c', '  G': 'g', '  U': 'u',
               ' MG': 'Z'
               }
 
