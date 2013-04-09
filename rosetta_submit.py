@@ -90,6 +90,11 @@ for line in  lines:
     command_line = command_line.replace( '~/', HOMEDIR+'/')
     command_line = command_line.replace( '/home/rhiju',HOMEDIR)
 
+    if command_line.find( "MAPseeker" ) > -1 :
+        command_line += " --outpath "+dir
+        command_line += " -j %d" % n_jobs
+        command_line += " --start_at_read $(Process)"
+
     cols = string.split( command_line )
 
     if len( cols ) == 0: continue
@@ -146,11 +151,15 @@ for line in  lines:
     EXE = cols[ 0 ]
     if not exists( EXE ): EXE = EXE.replace( 'linux', 'macos' )
     if not exists( EXE ): EXE = EXE.replace( 'macos', 'linux' )
+    EXE_original = EXE
     if not exists( EXE ):
-        EXE = HOMEDIR + '/src/rosetta_TRUNK/rosetta_source/bin/'+EXE
+        EXE = HOMEDIR + '/src/rosetta_TRUNK/rosetta_source/bin/'+EXE_original
     if not exists( EXE ):
-        EXE = HOMEDIR + '/src/mini/bin/'+EXE
-        assert( exists( EXE ) )
+        EXE = HOMEDIR + '/src/mini/bin/'+EXE_original
+    if not exists( EXE ):
+        EXE = HOMEDIR + '/src/map_seeker/src/cmake/apps/'+EXE_original
+    print EXE
+    assert( exists( EXE ) )
     arguments = string.join( cols[ 1: ] )
 
 
