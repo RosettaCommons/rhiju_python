@@ -23,6 +23,12 @@ if argv.count('-ignorechain'):
     del( argv[ pos ] )
     ignore_chain = 1
 
+no_renumber = 0
+if argv.count('-no_renumber'):
+    pos = argv.index('-no_renumber')
+    del( argv[ pos ] )
+    no_renumber = 1
+
 chainids = []
 if len( argv ) > 2:
     chainids = argv[2:]
@@ -35,7 +41,7 @@ else:
 
 for pdbname in pdbnames:
 
-    outputstring = make_rna_rosetta_ready( pdbname, removechain, ignore_chain, chainids )
+    outputstring = make_rna_rosetta_ready( pdbname, removechain, ignore_chain, chainids, no_renumber )
 
     outfile = string.lower( basename( pdbname ) )
     outfile = outfile.replace( '.pdb', '_RNA.pdb').replace('.gz','');

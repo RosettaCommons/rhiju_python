@@ -31,9 +31,13 @@ if not exists( EXE_DIR ):
     DB = '/scratch/scratch95/d/dasr/src/rosetta/rosetta_database'
 if not exists( EXE_DIR ):
     EXE_DIR =  '/home/rhiju/src/rosetta_TRUNK/rosetta_source/bin/'
-
+if not exists( EXE_DIR ):
+    EXE_DIR = '/Users/rhiju/src/rosetta/main/source/bin/'
 
 DB = EXE_DIR + '../../rosetta_database'
+if not exists( DB ):
+    DB = EXE_DIR + '../../database/'
+
 assert( exists( EXE_DIR ) )
 assert( exists( DB ) )
 

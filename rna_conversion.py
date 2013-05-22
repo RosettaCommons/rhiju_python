@@ -14,7 +14,7 @@ longer_names={'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
 
 
 # accepts a pdb file name, returns a string with pdb entries -- or None if there is an error.
-def make_rna_rosetta_ready( pdbname, removechain=False, ignore_chain=True, chainids = [] ):
+def make_rna_rosetta_ready( pdbname, removechain=False, ignore_chain=True, chainids = [], no_renumber = False ):
 
     fastaid = stderr
     num_model = 0
@@ -161,6 +161,8 @@ def make_rna_rosetta_ready( pdbname, removechain=False, ignore_chain=True, chain
                     continue
 
                 newnum = '%4d' % count
+                if no_renumber: newnum = '%4s' % resnum
+
                 line_edit = line_edit[0:16] + ' ' + longname + line_edit[20:22] + \
                             newnum + line_edit[26:]
                 if removechain:

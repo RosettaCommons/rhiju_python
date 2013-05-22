@@ -41,7 +41,7 @@ for pdb in files:
 
     if RNA:
 
-        command = 'make_rna_rosetta_ready.py original/%s.pdb %s' % ( string.upper( pdb ), chain )
+        command = 'make_rna_rosetta_ready.py original/%s.pdb %s -no_renumber' % ( string.upper( pdb ), chain )
         print command
         system( command )
 

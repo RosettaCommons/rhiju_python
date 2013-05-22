@@ -93,7 +93,7 @@ for pdb in pdb_list:
 
 
 
-for pdb in pdb_list[1:]:
+for pdb in pdb_list:
 
     pdb1_to_superimpose = pdb1
     pdb_to_superimpose = pdb
@@ -175,7 +175,6 @@ for pdb in pdb_list[1:]:
              string.split(popen('grep -A1 "Translation vector (Exp" %s'\
                                 %file).readlines()[1])[1:])
 
-
     def E_transform(v,matrix,tP,tE):
         ans = [0.0]*3
         for i in range(3):
@@ -204,7 +203,9 @@ for pdb in pdb_list[1:]:
                     atom_count = atom_count + 1
                     print '%s%5d%s'%(line[:6],atom_count,line[11:-1])
 
-                    if (line[12:16]==' CA ' or line[12:16]==' C4*' or line[12:16]==' C4''') and CALC_PER_RESIDUE_DEVIATIONS: model0_xyzs.append( [float(line[30:38]), float(line[38:46]), float(line[46:54])] )
+                    if (line[12:16]==' CA ' or line[12:16]==' C4*' or line[12:16]==' C4''') \
+                            and CALC_PER_RESIDUE_DEVIATIONS:
+                        model0_xyzs.append( [float(line[30:38]), float(line[38:46]), float(line[46:54])] )
 
                     if COPY_RESNUM:
                         resnum = line[22:26]
