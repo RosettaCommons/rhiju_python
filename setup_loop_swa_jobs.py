@@ -9,6 +9,7 @@ args = argv
 no_hb_env_dep = parse_options( args, "no_hb_env_dep", 0 )
 near_native = parse_options( args, "near_native", 0 )
 loop_force_Nsquared = parse_options( args, "loop_force_Nsquared", 0 )
+allow_sampling_of_loop_takeoff = parse_options( args, "allow_sampling_of_loop_takeoff", 0 )
 nstruct = parse_options( args, "nstruct", 400 )
 
 njobs = 412
@@ -127,7 +128,8 @@ for line in lines:
 
     fid = open( readme_setup_file, 'w' )
     fid.write( 'rm -rf STEP* *~ CONDOR core.* SLAVE*  \n' )
-    command = 'grinder_dagman.py  -loop_start_pdb %s  -native %s -fasta %s -cluster_radius 0.25 -final_number %d  -denovo 1   -loop_res `seq %d %d` -weights score12.wts -disable_sampling_of_loop_takeoff  ' % (noloop_start_pdb, pdb_file, fasta_file, nstruct, loop_start, loop_stop)
+    command = 'grinder_dagman.py  -loop_start_pdb %s  -native %s -fasta %s -cluster_radius 0.25 -final_number %d  -denovo 1   -loop_res `seq %d %d` -weights score12.wts  ' % (noloop_start_pdb, pdb_file, fasta_file, nstruct, loop_start, loop_stop)
+    if ( not allow_sampling_of_loop_takeoff ): command += ' -disable_sampling_of_loop_takeoff'
     if ( near_native ): command += ' -rmsd_screen %8.3f -cst_file %s ' % ( 2.0, native_cst_file )
     if ( no_hb_env_dep ): command = command.replace( 'score12.wts', 'score12_no_hb_env_dep.wts' )
     if (loop_force_Nsquared): command += ' -loop_force_Nsquared'

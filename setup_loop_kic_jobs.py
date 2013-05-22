@@ -31,13 +31,9 @@ if not exists( EXE_DIR ):
     DB = '/scratch/scratch95/d/dasr/src/rosetta/rosetta_database'
 if not exists( EXE_DIR ):
     EXE_DIR =  '/home/rhiju/src/rosetta_TRUNK/rosetta_source/bin/'
-if not exists( EXE_DIR ):
-    EXE_DIR = '/Users/rhiju/src/rosetta/main/source/bin/'
+
 
 DB = EXE_DIR + '../../rosetta_database'
-if not exists( DB ):
-    DB = EXE_DIR + '../../database/'
-
 assert( exists( EXE_DIR ) )
 assert( exists( DB ) )
 
@@ -92,7 +88,7 @@ for line in lines:
     readme_file = 'README'
     fid = open( readme_file, 'w' )
 
-    fid.write( '%s/loopmodel.linuxgccrelease -database %s  -loops:remodel perturb_kic -loops:refine refine_kic -loops:input_pdb region_FINAL.out.1.pdb -in:file:native %s -loops:loop_file %s -loops:max_kic_build_attempts 10000 -in:file:fullatom -out:file:fullatom -out:prefix 1bhe -out:pdb -ex1 -ex2 -ex1aro -extrachi_cutoff 0 -out:nstruct 1000 -out:file:silent_struct_type binary  -out:file:silent %s_kic.out -fix_ca_bond_angles  -kic_use_linear_chainbreak  -allow_omega_move  -sample_omega_at_pre_prolines' % (EXE_DIR,DB,pdb_file,loop_file,pdb) )
+    fid.write( '%s/loopmodel.linuxgccrelease -database %s  -loops:remodel perturb_kic -loops:refine refine_kic -s region_FINAL.out.1.pdb -in:file:native %s -loops:loop_file %s -loops:max_kic_build_attempts 10000 -in:file:fullatom -out:file:fullatom -out:prefix 1bhe -out:pdb -ex1 -ex2 -ex1aro -extrachi_cutoff 0 -out:nstruct 1000 -out:file:silent_struct_type binary  -out:file:silent %s_kic.out -fix_ca_bond_angles  -kic_use_linear_chainbreak  -allow_omega_move  -sample_omega_at_pre_prolines' % (EXE_DIR,DB,pdb_file,loop_file,pdb) )
 
     if use_disulfides: fid.write( ' -fix_disulf '+disulfide_file )
 
