@@ -61,10 +61,14 @@ for line in lines:
         for m in range( len( sequence ) ):
             if not in_loop[ m ] or (m+1 >= loop_start) or (m+1 <= loop_stop ): input_res.append( m+1 )
 
-        EXE = '/home/rhiju/src/mini/bin/stepwise_protein_test.linuxgccrelease'
-        #assert( exists(EXE) )
-        if not exists( EXE ): EXE =  '/Users/rhiju/src/mini/bin/stepwise_protein_test.macosgccrelease'
-        command =  '%s  -database ~/minirosetta_database -in:file:silent %s -calc_rms_res %d-%d -cluster_test -cluster:radius 1.0 -out:file:silent %s -score_diff_cut %8.3f -in:file:silent_struct_type binary -nstruct %d' % ( EXE, loop_silent_file, loop_start, loop_stop, cluster_silent_file, SCORE_DIFF_CUT, NSTRUCT )
+        #EXE = '/home/rhiju/src/mini/bin/stepwise_protein_test.linuxgccrelease'
+        #EXE = '/home/rhiju/src/rosetta/source/bin/swa_protein_main.linuxgccrelease'
+        EXE = '/Users/rhiju/src/rosetta_protein_rna/rosetta_source/bin/stepwise_protein_test.macosgccrelease'
+        DB = '/Users/rhiju/src/rosetta_protein_rna/rosetta_database'
+        #if not exists( EXE ): EXE =   '/Users/rhiju/src/rosetta/main/source/bin/swa_protein_main'
+        assert( exists(EXE) )
+
+        command =  '%s -database %s -in:file:silent %s -calc_rms_res %d-%d -cluster_test -cluster:radius 1.0 -out:file:silent %s -score_diff_cut %8.3f -in:file:silent_struct_type binary -nstruct %d' % ( EXE, DB, loop_silent_file, loop_start, loop_stop, cluster_silent_file, SCORE_DIFF_CUT, NSTRUCT )
         print command
         system( command )
 

@@ -2,7 +2,7 @@
 from sys import argv
 from os import system
 from parse_options import parse_options
-from os.path import exists, basename, dirname
+from os.path import exists, basename, dirname, expanduser
 import string
 
 
@@ -41,8 +41,12 @@ if len( executable_dir ) > 0:
 
 if not exists( executable ):
     executable = executable.replace( 'linux','macos' ).replace( '/home','/Users')
+if not exists( executable ):
+    executable = executable.replace( '~',expanduser( '~' ) )
 if not exists( database ):
     database = database.replace( '/home', '/Users' )
+if not exists( database ):
+    database = database.replace( '~',expanduser( '~' ) )
 
 cols[ pos+1 ] = database
 arguments = string.join( cols )

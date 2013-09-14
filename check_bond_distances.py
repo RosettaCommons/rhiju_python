@@ -8,7 +8,10 @@ file = argv[ 1 ]
 coord = {}
 resnums = []
 
-backbone_atoms = [ ' N  ',' CA ',' C  '];
+backbone_atoms_protein = [ " N  ", " CA ", " C  "];
+backbone_atoms_rna     = [ " P  ", " O5'", " C5'", " C4'", " C3'", " O3'"];
+backbone_atoms = backbone_atoms_protein + backbone_atoms_rna
+
 for atom in backbone_atoms: coord[ atom ] = {}
 
 lines = open( file ).readlines()
@@ -63,16 +66,47 @@ def get_angle( coord, i1,j1,i2,j2,i3,j3 ):
 
     return angle
 
-for i in range( len(resnums) ):
-    resnum = resnums[ i ]
-    dist_N_CA = get_dist( coord, resnum  , ' N  ', resnum  ,' CA ' );
-    dist_CA_C = get_dist( coord, resnum  , ' CA ', resnum  ,' C  ' );
-    dist_C_N  = get_dist( coord, resnum  , ' C  ', resnum+1,' N  ' );
-    angle_N_CA_C = get_angle( coord, resnum, ' N  ', resnum, ' CA ', resnum, ' C  ');
-    angle_CA_C_N = get_angle( coord, resnum, ' CA ', resnum, ' C  ', resnum+1, ' N  ');
-    angle_C_N_CA = get_angle( coord, resnum, ' C  ', resnum+1, ' N  ', resnum+1, ' CA ');
+def strip_whitespace( s ):
+    return s.replace( ' ','')
 
-    print  '%d %8.4f %8.4f %8.4f %8.4f %8.4f %8.4f' % ( resnum, dist_N_CA, dist_CA_C, dist_C_N, angle_N_CA_C, angle_CA_C_N, angle_C_N_CA )
+PRINT_TAG = False
+
+for i in range( len(resnums) ):
+
+    resnum = resnums[ i ]
+
+    if resnum in coord[ " CA " ].keys(): # protein
+        dist_N_CA = get_dist( coord, resnum  , ' N  ', resnum  ,' CA ' );
+        dist_CA_C = get_dist( coord, resnum  , ' CA ', resnum  ,' C  ' );
+        dist_C_N  = get_dist( coord, resnum  , ' C  ', resnum+1,' N  ' );
+        angle_N_CA_C = get_angle( coord, resnum, ' N  ', resnum, ' CA ', resnum, ' C  ');
+        angle_CA_C_N = get_angle( coord, resnum, ' CA ', resnum, ' C  ', resnum+1, ' N  ');
+        angle_C_N_CA = get_angle( coord, resnum, ' C  ', resnum+1, ' N  ', resnum+1, ' CA ');
+        print  '%d %8.4f %8.4f %8.4f %8.4f %8.4f %8.4f' % ( resnum, dist_N_CA, dist_CA_C, dist_C_N, angle_N_CA_C, angle_CA_C_N, angle_C_N_CA )
+
+    elif resnum in coord[ " C4'"].keys(): # RNA
+        print  '%3d:' % resnum,
+        for i in range( len( backbone_atoms_rna ) ):
+            atom1 = backbone_atoms_rna[i]
+            resnum1 = resnum
+            atom2 = backbone_atoms_rna[ (i+1) % len( backbone_atoms_rna ) ]
+            resnum2 = resnum + ( i+1 >= len( backbone_atoms_rna ) )
+            if PRINT_TAG: print ' %s-%s'% ( strip_whitespace( atom1 ), strip_whitespace( atom2 ) ),
+            print '%6.4f' % ( get_dist( coord, resnum1, atom1 , resnum2, atom2  ) ),
+
+        print '  ',
+
+        for i in range( len( backbone_atoms_rna ) ):
+            atom1 = backbone_atoms_rna[i]
+            resnum1 = resnum
+            atom2 = backbone_atoms_rna[ (i+1) % len( backbone_atoms_rna ) ]
+            resnum2 = resnum + ( i+1 >= len( backbone_atoms_rna ) )
+            atom3 = backbone_atoms_rna[ (i+2) % len( backbone_atoms_rna ) ]
+            resnum3 = resnum + ( i+2 >= len( backbone_atoms_rna ) )
+            if PRINT_TAG: print ' %s-%s-%s' %  (strip_whitespace(atom1), strip_whitespace(atom2), strip_whitespace( atom3 ) ) ,
+            print '%9.4f' % ( get_angle( coord, resnum1, atom1 , resnum2, atom2, resnum3, atom3  ) ),
+    print
+
 
 
 

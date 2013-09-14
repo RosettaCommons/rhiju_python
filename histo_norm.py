@@ -3,6 +3,10 @@
 import sys
 import string
 
+if len( sys.argv ) < 1:
+    print sys.argv[0] + " <infile> <column> <binwidth> <minval> <maxval> "
+    exit( 0 )
+
 infile = sys.argv[1]
 thecolumn =int( sys.argv[2] )
 
@@ -38,6 +42,7 @@ bincenter = []
 currentbincenter = mindata + binwidth/2.0;
 
 numbins =  int((maxdata-mindata)/binwidth)
+print numbins
 if (numbins == 0): numbins = 1
 for bin in range(numbins):
     histogram.append( 0.0 )
