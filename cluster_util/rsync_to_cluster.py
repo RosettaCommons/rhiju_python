@@ -8,7 +8,7 @@ from cluster_info import *
 
 def Help():
     print
-    print argv[0]+' <cluster> <any extra rsync flags>'
+    print argv[0]+' <cluster> [<name of files to sync>]'
     print
     exit()
 
@@ -21,9 +21,17 @@ cluster_in = argv[1]
 if cluster == 'unknown':
     Help()
 
-extra_args = argv[2:]
+args = argv[2:]
+dir = ''
+extra_args = []
+for m in args:
+    if len(m)>2 and m.find( '--') > 0:
+        extra_args.append( m )
+    else:
+        dir += ' '+m
 
-dir = '.'
+if len(dir) == 0: dir = '.'
+
 clusterdir = abspath(dir).replace('/Users/rhiju/','')
 clusterdir = clusterdir.replace('/work/rhiju/','')
 clusterdir = clusterdir.replace('/scratch/users/rhiju/','')
