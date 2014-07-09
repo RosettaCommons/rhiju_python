@@ -99,13 +99,13 @@ for pdb in pdb_list:
     pdb_to_superimpose = pdb
 
     if slice:
-        command = '~rhiju/python/pdbslice.py %s 1 %d blah_' % (pdb1, slicenum)
+        command = 'pdbslice.py %s 1 %d blah_' % (pdb1, slicenum)
         system(command)
         pdb_to_superimpose = 'blah_'+pdb1
 
     if use_subset:
 
-        command = '~rhiju/python/pdbslice.py '+pdb1
+        command = 'pdbslice.py '+pdb1
         command += ' -subset '
         for i in subset_residues1:
             command += ' %d ' % i
@@ -113,7 +113,7 @@ for pdb in pdb_list:
         system(command)
         pdb1_to_superimpose = 'blah_'+basename(pdb1)
 
-        command = '~rhiju/python/pdbslice.py '+pdb
+        command = 'pdbslice.py '+pdb
         command += ' -subset '
         for i in subset_residues2:
             command += ' %d ' % i

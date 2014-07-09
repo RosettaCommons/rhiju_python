@@ -16,6 +16,7 @@ if len(pdbfiles) < 1:
     Help()
 
 backbone_atoms = [' P  ',' O1P',' O2P',' O5*',' C5*',' C4*',' O4*',' C3*',' O3*',' C2*',' O2*',' C1*','2HO*']
+backbone_atoms = backbone_atoms + [" OP1"," OP2"," O5'"," C5'"," C4'"," O4'"," C3'"," O3'"," C2'"," O2'"," C1'","2HO'"]
 
 for pdbfile in pdbfiles:
 
@@ -43,4 +44,4 @@ for pdbfile in pdbfiles:
             fid.write(line[:12]+new_atom+' '+new_res+line[20:])
 
     fid.close()
-
+    print "Created: ", new_pdbfile

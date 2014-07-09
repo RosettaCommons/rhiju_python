@@ -32,7 +32,7 @@ for m in args:
 
 if len(dir) == 0: dir = '.'
 
-clusterdir = abspath(dir).replace('/Users/rhiju/','')
+clusterdir = abspath('.').replace('/Users/rhiju/','')
 clusterdir = clusterdir.replace('/work/rhiju/','')
 clusterdir = clusterdir.replace('/scratch/users/rhiju/','')
 

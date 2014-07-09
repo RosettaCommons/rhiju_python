@@ -3,4 +3,5 @@
 from os import system
 from sys import argv
 
-system( 'java -cp ~rhiju/src/dangle/chiropraxis.jar chiropraxis.dangle.Dangle "alpha, beta, gamma, delta, epsilon, zeta" %s | suitename' % argv[1] )
+for pdb in argv:
+    system( 'java -cp ~rhiju/src/dangle/chiropraxis.jar chiropraxis.dangle.Dangle "alpha, beta, gamma, delta, epsilon, zeta" %s | suitename -chart ' % pdb )
