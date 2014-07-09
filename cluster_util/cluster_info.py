@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 def cluster_check( cluster_in ):
-    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','biox3','biox3_scratch','vanlang_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','kwip','lovejoy','tsuname','lovejoy_scratch','backup','lonestar','ranger','lonestar_work','trestles','stampede','stampede_scratch' ];
+    clusterlist = [ 'syd','niau','seth','bes','hapy','apep','gebb','ptah','yah','isis','yah','maat','nut','fin','dig','biox2','biox2_scratch','biox3','biox3_scratch','vanlang_scratch','ade','ade.stanford.edu','steele','steele_scratch','tg-condor','tg-condor_scratch','abe','ncsa','abe_scratch','ade_scratch','vanlang','kwipapat','kwip','lovejoy','tsuname','lovejoy_scratch','backup','lonestar','ranger','lonestar_work','lonestar_scratch','trestles','stampede','stampede_scratch' ];
 
     cluster = cluster_in
     if cluster not in clusterlist:
@@ -40,6 +40,10 @@ def cluster_check( cluster_in ):
     if cluster == 'lonestar_work':
         cluster ='rdas@lonestar.tacc.xsede.org'
         cluster_dir = '/work/01218/rdas/'
+
+    if cluster == 'lonestar_scratch':
+        cluster ='rdas@lonestar.tacc.xsede.org'
+        cluster_dir = '/scratch/01218/rdas/'
 
     if cluster == 'tg-condor_scratch':
         cluster = 'dasr@tg-condor.purdue.teragrid.org'
