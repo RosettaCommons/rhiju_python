@@ -25,38 +25,29 @@ if len(argv) <=2:
 
 MAMMOTH = '~rhiju/src/mammoth2/mammoth_rna'
 
-RENUMBER_ATOMS = 0
 SHOW_MODEL_0 = 1
-
 model_count = 0
 atom_count = 0
 
 args = argv[1:]
-R_DEFINED = 0
-if args.count('-R'):
-    pos = args.index('-R')
-    rmsd_threshold = float(args[pos+1])
-    del args[pos]
-    del args[pos]
-    distance_threshold = rmsd_threshold  #+ 3
-    R_DEFINED = 1
-else:
-#    rmsd_threshold = 0.0
-    rmsd_threshold = 4.0
-
-if args.count('-D'):
-    pos = args.index('-D')
-    distance_threshold = float(args[pos+1])
-    assert(R_DEFINED)
-
-CALC_PER_RESIDUE_DEVIATIONS = parse_options( args, "per_res", 0 )
+OUTPUT_PER_RES = parse_options( args, "per_res", 0 )
 DUMP = parse_options( args, "dump", 0 )
 COPY_RESNUM = parse_options( args, "copy_resnum", 0 )
 rmsd_threshold = parse_options( args, "R", 0.0 );
+distance_threshold = parse_options( args, "D", 0.0 );
 RENUMBER_ATOMS = parse_options( args, "renumber_atoms", 0.0 );
 COPY_HETATM = parse_options( args, "copy_hetatm", 0.0 );
 slicenum = parse_options( args, "N", -1 )
+rmsd_res = parse_options( args, "rmsd_res", [-1] )
 
+CALC_PER_RESIDUE_DEVIATIONS = OUTPUT_PER_RES or len( rmsd_res ) > 0
+
+if ( rmsd_threshold > 0.0 ):
+    R_DEFINED = True
+else:
+    rmsd_threshold = 4.0
+    R_DEFINED = False
+if ( distance_threshold > 0.0 ):  assert(R_DEFINED)
 if ( rmsd_threshold > 0.0 ):
     R_DEFINED = True
     distance_threshold = rmsd_threshold
@@ -76,7 +67,6 @@ if len( subset_residues ) > 0:
     subset_residues2 = subset_residues
 use_subset = ( len( subset_residues1 ) > 0 and len( subset_residues2 ) > 0 )
 
-
 # this is kind of dangerous...
 if args.count('-1'):
     del args[args.index('-1')]
@@ -90,8 +80,6 @@ for pdb in pdb_list:
     if not exists( pdb ):
         stderr.write( 'Could not find '+pdb+'\n' )
         Help()
-
-
 
 for pdb in pdb_list:
 
@@ -202,9 +190,7 @@ for pdb in pdb_list:
                 if line[:4] in ['ATOM','HETA']:
                     atom_count = atom_count + 1
                     print '%s%5d%s'%(line[:6],atom_count,line[11:-1])
-
-                    if (line[12:16]==' CA ' or line[12:16]==' C4*' or line[12:16]==' C4''') \
-                            and CALC_PER_RESIDUE_DEVIATIONS:
+                    if (line[12:16]==' CA ' or line[12:16]==' C4*' or line[12:16]==" C4'") and CALC_PER_RESIDUE_DEVIATIONS:
                         model0_xyzs.append( [float(line[30:38]), float(line[38:46]), float(line[46:54])] )
 
                     if COPY_RESNUM:
@@ -253,10 +239,10 @@ for pdb in pdb_list:
                     new_resnum = model0_resnum[rescount]
                     line = line[0:22]+new_resnum+line[26:]
 
-                if (line[12:16]==' CA ' or line[12:16]==' C4*')  and CALC_PER_RESIDUE_DEVIATIONS:
-                    per_res_dev.append( sqrt( ( model0_xyzs[rescount][0] - pos[0] )*( model0_xyzs[rescount][0] - pos[0] ) + \
-                                              ( model0_xyzs[rescount][1] - pos[1] )*( model0_xyzs[rescount][1] - pos[1] ) + \
-                                              ( model0_xyzs[rescount][2] - pos[2] )*( model0_xyzs[rescount][2] - pos[2] ) ) )
+                if (line[12:16]==' CA ' or line[12:16]==' C4*' or line[12:16]==" C4'")  and CALC_PER_RESIDUE_DEVIATIONS:
+                        per_res_dev.append( sqrt( ( model0_xyzs[rescount][0] - pos[0] )*( model0_xyzs[rescount][0] - pos[0] ) + \
+                        ( model0_xyzs[rescount][1] - pos[1] )*( model0_xyzs[rescount][1] - pos[1] ) + \
+                        ( model0_xyzs[rescount][2] - pos[2] )*( model0_xyzs[rescount][2] - pos[2] ) ) )
 
 
                 if RENUMBER_ATOMS:
@@ -289,7 +275,15 @@ for pdb in pdb_list:
 
     all_per_res_dev.append( per_res_dev )
 
-if CALC_PER_RESIDUE_DEVIATIONS:
+# this is a quick hack -- does not actually look at residues numbers specified in PDB.
+if len( rmsd_res ) > 0:
+    for n in range(  len( all_per_res_dev ) ):
+        rmsd = 0.0
+        for m in rmsd_res:  rmsd += all_per_res_dev[n][m-1]*all_per_res_dev[n][m-1]
+        rmsd = sqrt( rmsd / len( rmsd_res ) )
+        stderr.write( 'RMSD over %d specified residues in filename %s is: %5.2f\n' % (len(rmsd_res),pdb_list[n],rmsd) )
+
+if OUTPUT_PER_RES:
     for n in range(  len( all_per_res_dev[ 0 ]  ) ):
         stderr.write( '%d ' % (n+1) )
         for i in range( len( all_per_res_dev ) ) :
