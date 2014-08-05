@@ -25,10 +25,12 @@ args = argv[2:]
 dir = ''
 extra_args = []
 for m in args:
-    if len(m)>2 and m.find( '--') > 0:
+    if len( m ) > 2 and m.find( '--' ) > -1:
         extra_args.append( m )
     else:
         dir += ' '+m
+
+print 'DIR', dir
 
 if len(dir) == 0: dir = '.'
 
