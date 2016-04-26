@@ -59,13 +59,17 @@ else:
     rmsd_threshold = 4.0
     slice = 0
 
+
 subset_residues = parse_options( args, "subset", [-1] );
 subset_residues1 = parse_options( args, "subset_residue1", [-1] );
 subset_residues2 = parse_options( args, "subset_residue2", [-1] );
 if len( subset_residues ) > 0:
     subset_residues1 = subset_residues
     subset_residues2 = subset_residues
-use_subset = ( len( subset_residues1 ) > 0 and len( subset_residues2 ) > 0 )
+
+subset_match = parse_options( args, "subset_match", 0 );
+
+use_subset = ( len( subset_residues1 ) > 0 and len( subset_residues2 ) > 0 ) or subset_match
 
 # this is kind of dangerous...
 if args.count('-1'):
@@ -92,6 +96,14 @@ for pdb in pdb_list:
         pdb_to_superimpose = 'blah_'+pdb1
 
     if use_subset:
+
+        if subset_match: # will override subset_residues
+
+            res1 = [int(x) for x in popen( 'get_res_num.py -no_dashes '+pdb1 ).readlines()[0][:-1].split() ];
+            res2 = [int(x) for x in popen( 'get_res_num.py -no_dashes '+pdb ).readlines()[0][:-1].split() ];
+            subset_residues = list( set(res1).intersection( res2 ) )
+            subset_residues1 = subset_residues
+            subset_residues2 = subset_residues
 
         command = 'pdbslice.py '+pdb1
         command += ' -subset '
@@ -132,13 +144,13 @@ for pdb in pdb_list:
     lines = popen(command).readlines()
 
     if slice:
-        command = 'rm blah_'+basename(pdb1)
+        command = 'rm -rf blah_'+basename(pdb1)
         system(command)
 
     if use_subset:
-        command = 'rm blah_'+basename(pdb1)
+        command = 'rm -rf blah_'+basename(pdb1)
         system(command)
-        command = 'rm blah_'+basename(pdb)
+        command = 'rm -rf blah_'+basename(pdb)
         system(command)
 
     if not lines:
