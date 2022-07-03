@@ -140,7 +140,7 @@ for pdb in pdb_list:
 #                  %(pdb1,pdb)
 
     #stderr.write(command+'\n')
-    print command
+    #print command
     lines = popen(command).readlines()
 
     if slice:
@@ -164,15 +164,15 @@ for pdb in pdb_list:
 
     file = 'maxsub_sup.pdb'
     matrix = map(lambda x:map(float,string.split(x)[1:]),
-                 popen('grep -A3 "Transformation Matrix" %s'%file).readlines()[1:4])
+                 popen('grep -a -A3 "Transformation Matrix" %s'%file).readlines()[1:4])
 
 
     P_translation = map(float,
-                        string.split(popen('grep -A1 "Translation vector (Pred" %s'\
+                        string.split(popen('grep -a -A1 "Translation vector (Pred" %s'\
                                            %file).readlines()[1])[1:])
 
     E_translation = map(float,
-             string.split(popen('grep -A1 "Translation vector (Exp" %s'\
+             string.split(popen('grep -a -A1 "Translation vector (Exp" %s'\
                                 %file).readlines()[1])[1:])
 
     def E_transform(v,matrix,tP,tE):
@@ -283,7 +283,7 @@ for pdb in pdb_list:
     print 'ENDMDL'
     if DUMP:
         fid_model.close()
-        stderr.write(  'Created: %s\n' % sup_model_filename )
+        #stderr.write(  'Created: %s\n' % sup_model_filename )
 
     all_per_res_dev.append( per_res_dev )
 

@@ -8,6 +8,8 @@ from parse_options import parse_options
 rmsd_threshold = parse_options( argv, 'R', 8.0);
 subset_res = parse_options( argv,'subset',[-1])
 
+EXE = 'superimpose.py'
+
 infilelist = argv[1]
 
 lines = open(infilelist,'r').readlines()
@@ -31,10 +33,10 @@ for i in range(len(lines)):
         line2 = lines[j]
 
         if ( rmsd_threshold == 8.0 ):
-            command = '~rhiju/python/superimpose.py %s %s  %s > q 2> blah.err' % (line1,line2,subset_tag)
+            command = EXE+' %s %s  %s > q 2> blah.err' % (line1,line2,subset_tag)
         else:
-            command = '~rhiju/python/superimpose.py %s %s  %s -R %6.2f > q 2> blah.err' % (line1,line2,subset_tag,rmsd_threshold)
-#        print(command)
+            command = EXE+' %s %s  %s -R %6.2f > q 2> blah.err' % (line1,line2,subset_tag,rmsd_threshold)
+        print(command)
         system(command)
 
         superimposeline = open( 'blah.err', 'r').readlines()[-1]

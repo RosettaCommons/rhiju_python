@@ -16,7 +16,7 @@ numchar = len( sequence )
 print numchar
 scanchar = numchar
 
-MAXCHAR = 60
+MAXCHAR = 6000
 if (numchar > MAXCHAR ):
     print 'Truncating down to', MAXCHAR,' !!!!!'
     scanchar = MAXCHAR
