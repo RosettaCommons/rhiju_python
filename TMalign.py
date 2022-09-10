@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import string
 from glob import glob
 from sys import argv,stderr,exit
@@ -17,9 +17,17 @@ args = parser.parse_args()
 
 args.pdb[0]
 
+if not exists( args.refpdb ):
+    stderr.write( 'Could not find reference PDB file: '+args.refpdb+'\n' )
+    exit(0)
+
 EXEC = 'TMalign'
 
 for i in range(len(args.pdb)):
+    if not exists( args.pdb[i] ):
+        stderr.write( 'Could not find PDB file: '+args.pdb[i]+'\n' )
+        exit(0)
+
     cmdline = '%s %s %s' % (EXEC, args.pdb[i], args.refpdb)
     if args.dump:
         sup_model_file = args.pdb[i].replace( '.pdb','' ) + '.TMsup.pdb'
