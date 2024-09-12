@@ -70,14 +70,14 @@ def al2seq(seq1,seq2):
     off1 = string.find(seq1,s1)
     off2 = string.find(seq2,s2)
     if 0:
-        print a1
-        print s1
-        print seq1
-        print '---'
-        print a2
-        print s2
-        print seq2
-        print off1,off2
+        print(a1)
+        print(s1)
+        print(seq1)
+        print('---')
+        print(a2)
+        print(s2)
+        print(seq2)
+        print(off1,off2)
     assert off1 >= 0 and off1 == start1-1
     assert off2 >= 0 and off2 == start2-1
     for i in range(len(a1)):
@@ -127,14 +127,14 @@ def al2seqD(seq1,seq2):
     off1 = string.find(seq1,s1)
     off2 = string.find(seq2,s2)
     if 0:
-        print a1
-        print s1
-        print seq1
-        print '---'
-        print a2
-        print s2
-        print seq2
-        print off1,off2
+        print(a1)
+        print(s1)
+        print(seq1)
+        print('---')
+        print(a2)
+        print(s2)
+        print(seq2)
+        print(off1,off2)
     assert off1 >= 0 and off1 == start1-1
     assert off2 >= 0 and off2 == start2-1
     for i in range(len(a1)):
@@ -247,7 +247,7 @@ def Align(a,b):
                 for j in range(W):
                     p1 = i+j
                     p2 = pos+j
-                    if p1 not in a2b.keys() and p2 not in b2a.keys():
+                    if p1 not in list(a2b.keys()) and p2 not in list(b2a.keys()):
                         a2b[p1] = p2
                         b2a[p2] = p1
 
@@ -258,11 +258,11 @@ def Align(a,b):
                 for j in range(W):
                     p1 = pos+j
                     p2 = i+j
-                    if p1 not in a2b.keys() and p2 not in b2a.keys():
+                    if p1 not in list(a2b.keys()) and p2 not in list(b2a.keys()):
                         a2b[p1] = p2
                         b2a[p2] = p1
 
-        ks = a2b.keys()
+        ks = list(a2b.keys())
         ks.sort()
         done = 1
         for i in range(len(ks)-1):
@@ -279,7 +279,7 @@ def Align(a,b):
     prev = -1
     before = {}
     for i in range(len(a)):
-        if i in a2b.keys():
+        if i in list(a2b.keys()):
             prev = a2b[i]
         else:
             before[i] = prev
@@ -288,7 +288,7 @@ def Align(a,b):
     prev = len(b)
     for j in range(len(a)):
         i = len(a)-j-1
-        if i in a2b.keys():
+        if i in list(a2b.keys()):
             prev = a2b[i]
         else:
             after[i] = prev
@@ -303,15 +303,15 @@ def Align(a,b):
         #print 'b4',before
         #print 'after',after
 
-        for i in al.keys():
-            if i not in a2b.keys() and before[i] < al[i] < after[i]:
+        for i in list(al.keys()):
+            if i not in list(a2b.keys()) and before[i] < al[i] < after[i]:
                 a2b[i] = al[i]
 
         #reset the before and after
         prev = -1
         before = {}
         for i in range(len(a)):
-            if i in a2b.keys():
+            if i in list(a2b.keys()):
                 prev = a2b[i]
             else:
                 before[i] = prev
@@ -320,18 +320,18 @@ def Align(a,b):
         prev = len(b)
         for j in range(len(a)):
             i = len(a)-j-1
-            if i in a2b.keys():
+            if i in list(a2b.keys()):
                 prev = a2b[i]
             else:
                 after[i] = prev
 
-        ks = a2b.keys()
+        ks = list(a2b.keys())
         ks.sort()
         for i in range(len(ks)-1):
             assert a2b[ks[i+1]]>a2b[ks[i]]
 
 
-    ks = a2b.keys()
+    ks = list(a2b.keys())
     ks.sort()
 
     for i in range(len(ks)-1):
@@ -363,11 +363,11 @@ def NoBlastAlign(a,b):
                 for j in range(W):
                     p1 = i+j
                     p2 = pos+j
-                    if p1 not in a2b.keys() and p2 not in b2a.keys():
+                    if p1 not in list(a2b.keys()) and p2 not in list(b2a.keys()):
                         a2b[p1] = p2
                         b2a[p2] = p1
 
-        ks = a2b.keys()
+        ks = list(a2b.keys())
         ks.sort()
         done = 1
         for i in range(len(ks)-1):
@@ -404,14 +404,14 @@ def NBAlign(a,b):
         while string.count(b[start:],word):
             pos = string.find(b[start:],word)+start
             offset = pos-i
-            if not counts.has_key(offset):counts[offset] = []
+            if offset not in counts:counts[offset] = []
             for j in range(W):
                 p1 = i+j
                 counts[offset].append(p1)
             start = pos+1
 
     l = []
-    for k in counts.keys():l.append([len(counts[k]),k])
+    for k in list(counts.keys()):l.append([len(counts[k]),k])
     l.sort()
     l.reverse()
 
@@ -425,7 +425,7 @@ def NBAlign(a,b):
         #print pair
         offset = pair[1]
         for p1 in counts[offset]:
-            if not a2b.has_key(p1) and \
+            if p1 not in a2b and \
                before[p1]<p1+offset and \
                after[p1]>p1+offset:
                 a2b[p1] = p1+offset
@@ -434,7 +434,7 @@ def NBAlign(a,b):
         prev = -1
         before = {}
         for i in range(LA):
-            if i in a2b.keys():
+            if i in list(a2b.keys()):
                 prev = a2b[i]
             else:
                 before[i] = prev
@@ -443,19 +443,19 @@ def NBAlign(a,b):
         prev = LB
         for j in range(LA):
             i = len(a)-j-1
-            if i in a2b.keys():
+            if i in list(a2b.keys()):
                 prev = a2b[i]
             else:
                 after[i] = prev
 
-    if len(a2b.keys()) == min(LA,LB):
+    if len(list(a2b.keys())) == min(LA,LB):
         return a2b
 
     ## fill in gaps
     prev = -1
     before = {}
     for i in range(LA):
-        if i in a2b.keys():
+        if i in list(a2b.keys()):
             prev = i ## different from above!!!!!!!!!!!
         else:
             before[i] = prev
@@ -464,13 +464,13 @@ def NBAlign(a,b):
     prev = LB
     for j in range(LA):
         i = len(a)-j-1
-        if i in a2b.keys():
+        if i in list(a2b.keys()):
             prev = i ## different from above!!!!!!!!!!!!!!
         else:
             after[i] = prev
 
     for i in range(LA):
-        if not a2b.has_key(i) and before[i]>=0 and after[i]<LB:
+        if i not in a2b and before[i]>=0 and after[i]<LB:
             o1 = a2b[before[i]] - before[i]
             o2 = a2b[after[i]] - after[i]
             if o1==o2:

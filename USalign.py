@@ -8,10 +8,11 @@ from operator import add
 from math import sqrt
 import argparse
 
-parser = argparse.ArgumentParser(description='Run TMalign on a bunch of PDBs.')
+parser = argparse.ArgumentParser(description='Run USalign on a bunch of PDBs.')
 parser.add_argument('refpdb', help='Reference PDB file')
 parser.add_argument('pdb', type=str, nargs='+', help='PDB file to align')
 parser.add_argument('-dump', action='store_true', help='Prepare superposition PDB as .TMsup.pdb ')
+parser.add_argument('-TMscore', type=int,default=0, help='Prepare superposition PDB as .TMsup.pdb ')
 
 args = parser.parse_args()
 
@@ -28,7 +29,7 @@ for i in range(len(args.pdb)):
         stderr.write( 'Could not find PDB file: '+args.pdb[i]+'\n' )
         exit(0)
 
-    cmdline = '%s %s %s' % (EXEC, args.pdb[i], args.refpdb)
+    cmdline = '%s %s %s -TMscore %d' % (EXEC, args.pdb[i], args.refpdb, args.TMscore)
     if args.dump:
         sup_model_file = args.pdb[i].replace( '.pdb','' ) + '.TMsup.pdb'
         cmdline += ' -o %s' % sup_model_file

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from os import system
 from os.path import basename
@@ -28,7 +28,7 @@ for prediction in predictions:
 
         slice_res = []
         for i in range( len( prediction_sequence ) ):
-            if i in al.keys(): slice_res.append( i+1 )
+            if i in list(al.keys()): slice_res.append( i+1 )
 
         command = 'pdbslice.py %s -subset %s tmp_' % ( prediction, make_tag( slice_res ) )
         system( command )
@@ -65,8 +65,8 @@ for prediction in predictions:
     gdt_ha = (0.25 *(maxsubs[0]+maxsubs[1]+maxsubs[2]+maxsubs[3]))/tot_length
     gdt_ts = (0.25 *(maxsubs[1]+maxsubs[2]+maxsubs[3]+maxsubs[4]))/tot_length
 
-    print 'GDT_HA: %8.3f  GDT_TS: %8.3f ' % (gdt_ha, gdt_ts ),
-    print ' MM0.5:%8.3f  MM1:%8.3f'  % ( 1.0*maxsubs[0]/tot_length, 1.0*maxsubs[1]/tot_length),
-    print '%s' % ( prediction)
+    print('GDT_HA: %8.3f  GDT_TS: %8.3f ' % (gdt_ha, gdt_ts ), end=' ')
+    print(' MM0.5:%8.3f  MM1:%8.3f'  % ( 1.0*maxsubs[0]/tot_length, 1.0*maxsubs[1]/tot_length), end=' ')
+    print('%s' % ( prediction))
 
 
